@@ -1,0 +1,43 @@
+@import "tailwindcss";
+@import "bootstrap-icons/font/bootstrap-icons.css";
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+    --jasain-primary: #22C55E;
+    --jasain-dark: #16A34A;
+    --jasain-light: #DCFCE7;
+    --jasain-background: #F8FAF9;
+    --jasain-text: #1F2937;
+    --jasain-white: #FFFFFF;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--jasain-background);
+    color: var(--jasain-text);
+}
+
+button,
+a,
+input,
+textarea,
+select {
+    transition-property:
+        color,
+        background-color,
+        border-color,
+        box-shadow,
+        opacity,
+        transform;
+    transition-duration: 180ms;
+}
+
+::selection {
+    background-color: var(--jasain-light);
+    color: var(--jasain-dark);
+}
