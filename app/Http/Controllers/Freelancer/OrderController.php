@@ -50,6 +50,7 @@ class OrderController extends Controller
             'payment',
             'deliveries' => fn ($query) => $query->latest(),
             'review.client',
+            'conversation',
         ]);
 
         $latestDelivery = $order->deliveries->first();

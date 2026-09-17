@@ -558,50 +558,84 @@
                                 {{-- Pay button --}}
                                 @if($order->status === 'pending_payment')
 
-                                    <button
-                                        type="button"
-                                        id="pay-button"
-                                        class="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1E9E5A] px-4 text-xs font-semibold text-white shadow-[0_6px_18px_rgba(30,158,90,0.16)] transition duration-200 hover:bg-[#0F6B3A] hover:shadow-[0_8px_22px_rgba(30,158,90,0.20)] disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
+                                    @if(app()->environment('local'))
 
-                                        <i class="bi bi-lock-fill text-[10px]"></i>
+                                        <div class="mt-6 rounded-xl border border-dashed border-[#BFE0CC] bg-[#F5FBF7] p-4">
 
-                                        <span id="pay-button-text">
+                                            <div class="flex items-start gap-3">
+
+                                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EAF7EF] text-[#1E9E5A]">
+                                                    <i class="bi bi-wrench-adjustable-circle text-sm"></i>
+                                                </div>
+
+                                                <div>
+                                                    <p class="text-xs font-semibold text-[#355248]">
+                                                        Mode Development
+                                                    </p>
+
+                                                    <p class="mt-1 text-[10px] leading-5 text-[#71837B]">
+                                                        Payment gateway belum dihubungkan. Gunakan simulator untuk menguji alur order.
+                                                    </p>
+                                                </div>
+
+                                            </div>
+
+                                            <form
+                                                action="{{ route('client.orders.payment.simulate', $order) }}"
+                                                method="POST"
+                                                class="mt-4"
+                                            >
+                                                @csrf
+
+                                                <button
+                                                    type="submit"
+                                                    onclick="return confirm('Simulasikan pembayaran berhasil untuk order ini?')"
+                                                    class="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#1E9E5A] px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0F6B3A]"
+                                                >
+                                                    <i class="bi bi-check-circle"></i>
+                                                    Simulasikan Pembayaran Berhasil
+                                                </button>
+                                            </form>
+
+                                            <p class="mt-3 text-center text-[10px] leading-4 text-[#8B9992]">
+                                                Tombol ini hanya tersedia pada environment lokal.
+                                            </p>
+
+                                        </div>
+
+                                    @else
+
+                                        <button
+                                            type="button"
+                                            disabled
+                                            class="mt-6 flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-gray-200 px-4 py-3 text-sm font-semibold text-gray-500"
+                                        >
+                                            <i class="bi bi-credit-card"></i>
                                             Bayar sekarang
-                                        </span>
+                                        </button>
 
-                                    </button>
+                                        <p class="mt-3 text-center text-xs leading-5 text-gray-400">
+                                            Payment gateway akan kita hubungkan pada tahap berikutnya.
+                                        </p>
 
-
-                                    <p
-                                        id="payment-message"
-                                        class="mt-3 hidden text-center text-[10px] leading-5 text-red-600"
-                                    ></p>
-
-
-                                    <p class="mt-3 text-center text-[9px] leading-5 text-[#9AA6A0]">
-                                        Dengan melanjutkan pembayaran, kamu menyetujui
-                                        proses transaksi dan ketentuan JASAIN.
-                                    </p>
+                                    @endif
 
                                 @elseif($order->status === 'paid')
 
-                                    <div class="mt-5 rounded-xl border border-[#CDE7D7] bg-[#EAF7EF] p-4">
+                                    <div class="mt-6 rounded-xl border border-green-200 bg-green-50 p-4">
 
                                         <div class="flex items-start gap-3">
 
-                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#1E9E5A]">
-                                                <i class="bi bi-check-lg text-sm"></i>
-                                            </div>
+                                            <i class="bi bi-check-circle-fill mt-0.5 text-[#16A34A]"></i>
 
                                             <div>
 
-                                                <p class="text-xs font-semibold text-[#168A4D]">
+                                                <p class="text-sm font-medium text-green-800">
                                                     Pembayaran berhasil
                                                 </p>
 
-                                                <p class="mt-1 text-[10px] leading-5 text-[#638077]">
-                                                    Order ini sudah dibayar dan menunggu freelancer mengerjakan pekerjaan.
+                                                <p class="mt-1 text-xs leading-5 text-green-700">
+                                                    Order sudah dibayar dan akan diproses oleh freelancer.
                                                 </p>
 
                                             </div>

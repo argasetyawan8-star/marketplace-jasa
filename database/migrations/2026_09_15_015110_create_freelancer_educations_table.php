@@ -1,0 +1,33 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('freelancer_educations', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('freelancer_profile_id')
+                ->constrained('freelancer_profiles')
+                ->cascadeOnDelete();
+
+            $table->string('institution');
+            $table->string('field_of_study')->nullable();
+
+            $table->unsignedSmallInteger('start_year')->nullable();
+            $table->unsignedSmallInteger('end_year')->nullable();
+
+            $table->timestamps();
+
+            $table->index('freelancer_profile_id');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('freelancer_educations');
+    }
+};

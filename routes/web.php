@@ -2,9 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 
-// --------------------------------------------------------------------------
-// Admin Controllers
-// --------------------------------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| Admin Controllers
+|--------------------------------------------------------------------------
+*/
 
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\CommissionController as AdminCommissionController;
@@ -16,9 +18,11 @@ use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\WithdrawalController as AdminWithdrawalController;
 
-// --------------------------------------------------------------------------
-// Client Controllers
-// --------------------------------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| Client Controllers
+|--------------------------------------------------------------------------
+*/
 
 use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
 use App\Http\Controllers\Client\FavoriteController as ClientFavoriteController;
@@ -26,10 +30,23 @@ use App\Http\Controllers\Client\MessageController as ClientMessageController;
 use App\Http\Controllers\Client\OfferController as ClientOfferController;
 use App\Http\Controllers\Client\OrderController as ClientOrderController;
 use App\Http\Controllers\Client\DeliveryController as ClientDeliveryController;
+use App\Http\Controllers\Client\ReviewController as ClientReviewController;
+use App\Http\Controllers\Client\JobController as ClientJobController;
 
-// --------------------------------------------------------------------------
-// Freelancer Controllers
-// --------------------------------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| Development / Payment
+|--------------------------------------------------------------------------
+*/
+
+use App\Http\Controllers\DevelopmentPaymentController;
+use App\Http\Controllers\PaymentController;
+
+/*
+|--------------------------------------------------------------------------
+| Freelancer Controllers
+|--------------------------------------------------------------------------
+*/
 
 use App\Http\Controllers\Freelancer\DashboardController as FreelancerDashboardController;
 use App\Http\Controllers\Freelancer\DeliveryController as FreelancerDeliveryController;
@@ -40,22 +57,36 @@ use App\Http\Controllers\Freelancer\ProfileController as FreelancerProfileContro
 use App\Http\Controllers\Freelancer\ServiceController as FreelancerServiceController;
 use App\Http\Controllers\Freelancer\WalletController as FreelancerWalletController;
 use App\Http\Controllers\Freelancer\WithdrawalController as FreelancerWithdrawalController;
+use App\Http\Controllers\Freelancer\JobController as FreelancerJobController;
+use App\Http\Controllers\Freelancer\JobProposalController as FreelancerJobProposalController;
 
-// --------------------------------------------------------------------------
-// Marketplace Controllers
-// --------------------------------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| Marketplace Controllers
+|--------------------------------------------------------------------------
+*/
 
 use App\Http\Controllers\Marketplace\CategoryController;
 use App\Http\Controllers\Marketplace\FreelancerController;
 use App\Http\Controllers\Marketplace\HomeController;
 use App\Http\Controllers\Marketplace\SearchController;
 use App\Http\Controllers\Marketplace\ServiceController;
+use App\Http\Controllers\Marketplace\JobController as MarketplaceJobController;
 
-// --------------------------------------------------------------------------
-// Other Controllers
-// --------------------------------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| Job Board Chat
+|--------------------------------------------------------------------------
+*/
 
-use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\JobBoardChatController;
+
+/*
+|--------------------------------------------------------------------------
+| Other Controllers
+|--------------------------------------------------------------------------
+*/
+
 use App\Http\Controllers\ProfileController;
 
 
@@ -85,10 +116,26 @@ Route::get(
     [ServiceController::class, 'show']
 )->name('marketplace.service');
 
+/*
+|--------------------------------------------------------------------------
+| Public Job Board
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/jobs',
+    [MarketplaceJobController::class, 'index']
+)->name('marketplace.jobs.index');
+
+Route::get(
+    '/jobs/{job}',
+    [MarketplaceJobController::class, 'show']
+)->name('marketplace.jobs.show');
+
 
 /*
 |--------------------------------------------------------------------------
-| Profile
+| User Profile
 |--------------------------------------------------------------------------
 */
 
@@ -118,7 +165,6 @@ Route::middleware('auth')->group(function () {
         '/profile',
         [ProfileController::class, 'destroy']
     )->name('profile.destroy');
-
 });
 
 
@@ -171,8 +217,6 @@ Route::middleware(['auth', 'role:client'])
             [ClientOrderController::class, 'show']
         )->name('orders.show');
 
-        
-
 
         /*
         |--------------------------------------------------------------------------
@@ -184,6 +228,11 @@ Route::middleware(['auth', 'role:client'])
             '/orders/{order}/payment/token',
             [PaymentController::class, 'token']
         )->name('orders.payment.token');
+
+        Route::post(
+            '/orders/{order}/payment/simulate',
+            [DevelopmentPaymentController::class, 'simulate']
+        )->name('orders.payment.simulate');
 
 
         /*
@@ -237,7 +286,7 @@ Route::middleware(['auth', 'role:client'])
 
         /*
         |--------------------------------------------------------------------------
-        | Offers
+        | Offers / Quotations
         |--------------------------------------------------------------------------
         */
 
@@ -261,43 +310,114 @@ Route::middleware(['auth', 'role:client'])
         Route::get(
             '/orders/{order}/delivery',
             [ClientDeliveryController::class, 'show']
-        )->name('orders.delivery.show');
+        )->name('delivery.show');
 
         Route::post(
-            '/deliveries/{delivery}/approve',
+            '/orders/{order}/delivery/approve',
             [ClientDeliveryController::class, 'approve']
-        )->name('deliveries.approve');
+        )->name('delivery.approve');
 
         Route::post(
-            '/deliveries/{delivery}/revision',
-            [ClientDeliveryController::class, 'requestRevision']
-        )->name('deliveries.revision');
-
-        Route::get('/orders/{order}/delivery', [\App\Http\Controllers\Client\DeliveryController::class, 'show'])
-            ->name('delivery.show');
-
-        Route::post('/orders/{order}/delivery/approve', [\App\Http\Controllers\Client\DeliveryController::class, 'approve'])
-            ->name('delivery.approve');
-
-        Route::post('/orders/{order}/delivery/revision', [\App\Http\Controllers\Client\DeliveryController::class, 'revision'])
-            ->name('delivery.revision');
+            '/orders/{order}/delivery/revision',
+            [ClientDeliveryController::class, 'revision']
+        )->name('delivery.revision');
 
 
-            /*
+        /*
         |--------------------------------------------------------------------------
         | Review
         |--------------------------------------------------------------------------
-        *//*
+        */
+
+        Route::get(
+            '/orders/{order}/review',
+            [ClientReviewController::class, 'create']
+        )->name('reviews.create');
+
+        Route::post(
+            '/orders/{order}/review',
+            [ClientReviewController::class, 'store']
+        )->name('reviews.store');
+
+
+        /*
         |--------------------------------------------------------------------------
-        | Delivery
+        | Job Board - Client
         |--------------------------------------------------------------------------
         */
 
-            Route::get('/orders/{order}/review', [\App\Http\Controllers\Client\ReviewController::class, 'create'])
-                ->name('reviews.create');
+        Route::get(
+            '/jobs',
+            [ClientJobController::class, 'index']
+        )->name('jobs.index');
 
-            Route::post('/orders/{order}/review', [\App\Http\Controllers\Client\ReviewController::class, 'store'])
-                ->name('reviews.store');
+        Route::get(
+            '/jobs/create',
+            [ClientJobController::class, 'create']
+        )->name('jobs.create');
+
+        Route::post(
+            '/jobs',
+            [ClientJobController::class, 'store']
+        )->name('jobs.store');
+
+        Route::get(
+            '/jobs/{job}',
+            [ClientJobController::class, 'show']
+        )->name('jobs.show');
+
+        Route::get(
+            '/jobs/{job}/edit',
+            [ClientJobController::class, 'edit']
+        )->name('jobs.edit');
+
+        Route::patch(
+            '/jobs/{job}',
+            [ClientJobController::class, 'update']
+        )->name('jobs.update');
+
+        Route::post(
+            '/jobs/{job}/publish',
+            [ClientJobController::class, 'publish']
+        )->name('jobs.publish');
+
+        Route::post(
+            '/jobs/{job}/close',
+            [ClientJobController::class, 'close']
+        )->name('jobs.close');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Job Proposals
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post(
+            '/jobs/{job}/proposals/{proposal}/accept',
+            [ClientJobController::class, 'acceptProposal']
+        )->name('jobs.proposals.accept');
+
+        Route::post(
+            '/jobs/{job}/proposals/{proposal}/reject',
+            [ClientJobController::class, 'rejectProposal']
+        )->name('jobs.proposals.reject');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Job Board Chat
+        |--------------------------------------------------------------------------
+        |
+        | Chat menggunakan Conversation utama JASAIN.
+        |
+        */
+
+        Route::get(
+            '/jobs/{job}/proposals/{proposal}/chat',
+            [JobBoardChatController::class, 'start']
+        )->name('jobs.chat.start');
+
     });
 
 
@@ -344,6 +464,116 @@ Route::middleware(['auth', 'role:freelancer'])
             '/profile',
             [FreelancerProfileController::class, 'update']
         )->name('profile.update');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Profile - Experience
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post(
+            '/profile/experiences',
+            [FreelancerProfileController::class, 'storeExperience']
+        )->name('profile.experiences.store');
+
+        Route::put(
+            '/profile/experiences/{experience}',
+            [FreelancerProfileController::class, 'updateExperience']
+        )->name('profile.experiences.update');
+
+        Route::delete(
+            '/profile/experiences/{experience}',
+            [FreelancerProfileController::class, 'destroyExperience']
+        )->name('profile.experiences.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Profile - Education
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post(
+            '/profile/educations',
+            [FreelancerProfileController::class, 'storeEducation']
+        )->name('profile.educations.store');
+
+        Route::put(
+            '/profile/educations/{education}',
+            [FreelancerProfileController::class, 'updateEducation']
+        )->name('profile.educations.update');
+
+        Route::delete(
+            '/profile/educations/{education}',
+            [FreelancerProfileController::class, 'destroyEducation']
+        )->name('profile.educations.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Profile - Certificates
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post(
+            '/profile/certificates',
+            [FreelancerProfileController::class, 'storeCertificate']
+        )->name('profile.certificates.store');
+
+        Route::put(
+            '/profile/certificates/{certificate}',
+            [FreelancerProfileController::class, 'updateCertificate']
+        )->name('profile.certificates.update');
+
+        Route::delete(
+            '/profile/certificates/{certificate}',
+            [FreelancerProfileController::class, 'destroyCertificate']
+        )->name('profile.certificates.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Profile - Skills
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post(
+            '/profile/skills',
+            [FreelancerProfileController::class, 'storeSkill']
+        )->name('profile.skills.store');
+
+        Route::put(
+            '/profile/skills/{skill}',
+            [FreelancerProfileController::class, 'updateSkill']
+        )->name('profile.skills.update');
+
+        Route::delete(
+            '/profile/skills/{skill}',
+            [FreelancerProfileController::class, 'destroySkill']
+        )->name('profile.skills.destroy');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Profile - Languages
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post(
+            '/profile/languages',
+            [FreelancerProfileController::class, 'storeLanguage']
+        )->name('profile.languages.store');
+
+        Route::put(
+            '/profile/languages/{language}',
+            [FreelancerProfileController::class, 'updateLanguage']
+        )->name('profile.languages.update');
+
+        Route::delete(
+            '/profile/languages/{language}',
+            [FreelancerProfileController::class, 'destroyLanguage']
+        )->name('profile.languages.destroy');
 
 
         /*
@@ -428,10 +658,20 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerMessageController::class, 'index']
         )->name('messages.index');
 
+        Route::get(
+            '/messages/{conversation}',
+            [FreelancerMessageController::class, 'show']
+        )->name('messages.show');
+
+        Route::post(
+            '/messages/{conversation}',
+            [FreelancerMessageController::class, 'store']
+        )->name('messages.store');
+
 
         /*
         |--------------------------------------------------------------------------
-        | Offers
+        | Offers / Quotations - Service Marketplace
         |--------------------------------------------------------------------------
         */
 
@@ -444,23 +684,6 @@ Route::middleware(['auth', 'role:freelancer'])
             '/messages/{conversation}/offer',
             [FreelancerOfferController::class, 'store']
         )->name('messages.offers.store');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Conversation Detail
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get(
-            '/messages/{conversation}',
-            [FreelancerMessageController::class, 'show']
-        )->name('messages.show');
-
-        Route::post(
-            '/messages/{conversation}',
-            [FreelancerMessageController::class, 'store']
-        )->name('messages.store');
 
 
         /*
@@ -496,6 +719,60 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerWithdrawalController::class, 'store']
         )->name('withdrawals.store');
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Job Board - Freelancer
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/jobs',
+            [FreelancerJobController::class, 'index']
+        )->name('jobs.index');
+
+        Route::get(
+            '/jobs/{job}',
+            [FreelancerJobController::class, 'show']
+        )->name('jobs.show');
+
+        Route::post(
+            '/jobs/{job}/proposals',
+            [FreelancerJobProposalController::class, 'store']
+        )->name('jobs.proposals.store');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Job Board Chat
+        |--------------------------------------------------------------------------
+        |
+        | Menggunakan Conversation utama JASAIN.
+        |
+        */
+
+        Route::get(
+            '/jobs/{job}/proposals/{proposal}/chat',
+            [JobBoardChatController::class, 'start']
+        )->name('jobs.chat.start');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Job Board - Quotation
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/jobs/{job}/proposals/{proposal}/offer',
+            [FreelancerOfferController::class, 'create']
+        )->name('jobs.proposals.offer.create');
+
+        Route::post(
+            '/jobs/{job}/proposals/{proposal}/offer',
+            [FreelancerOfferController::class, 'store']
+        )->name('jobs.proposals.offer.store');
+
     });
 
 
@@ -504,9 +781,9 @@ Route::middleware(['auth', 'role:freelancer'])
 | Public Freelancer Profile
 |--------------------------------------------------------------------------
 |
-| PENTING:
-| Route ini diletakkan SETELAH seluruh route Freelancer
-| agar /freelancer/dashboard tidak dianggap sebagai username.
+| Route public profile diletakkan setelah seluruh route internal
+| freelancer supaya /freelancer/dashboard dan route internal lainnya
+| tidak dianggap sebagai username.
 |
 */
 
@@ -514,7 +791,10 @@ Route::get(
     '/freelancer/{username}',
     [FreelancerController::class, 'show']
 )
-    ->where('username', '^(?!dashboard$)[A-Za-z0-9_-]+$')
+    ->where(
+        'username',
+        '^(?!dashboard$)[A-Za-z0-9_-]+$'
+    )
     ->name('marketplace.freelancer');
 
 
@@ -695,7 +975,7 @@ Route::middleware(['auth', 'role:admin'])
         )->name('withdrawals.update');
 
 
-        /*php artisan route:list --path=admin/withdrawals
+        /*
         |--------------------------------------------------------------------------
         | Reviews
         |--------------------------------------------------------------------------

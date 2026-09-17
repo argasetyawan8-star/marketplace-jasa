@@ -22,11 +22,17 @@ class OrderController extends Controller
                 'items.service',
                 'freelancerProfile.user',
             ])
-            ->where('client_id', auth()->id())
+            ->where(
+                'client_id',
+                auth()->id()
+            )
             ->latest()
             ->paginate(10);
 
-        return view('client.orders.index', compact('orders'));
+        return view(
+            'client.orders.index',
+            compact('orders')
+        );
     }
 
     /**
@@ -42,9 +48,14 @@ class OrderController extends Controller
         $order->load([
             'items.service',
             'freelancerProfile.user',
+            'payment',
+            'conversation',
         ]);
 
-        return view('client.orders.show', compact('order'));
+        return view(
+            'client.orders.show',
+            compact('order')
+        );
     }
 
     /**
@@ -60,16 +71,21 @@ class OrderController extends Controller
         $order->load([
             'items.service',
             'freelancerProfile.user',
+            'payment',
         ]);
 
-        return view('client.orders.checkout', compact('order'));
+        return view(
+            'client.orders.checkout',
+            compact('order')
+        );
     }
 
     /**
      * Membuat order baru dari service.
      */
-    public function store(Request $request): RedirectResponse
-    {
+    public function store(
+        Request $request
+    ): RedirectResponse {
         $validated = $request->validate([
             'service_id' => [
                 'required',
@@ -84,44 +100,55 @@ class OrderController extends Controller
             ],
         ]);
 
-        /**
-         * Ambil service yang hanya boleh dipesan
-         * jika statusnya published.
-         */
         $service = Service::query()
             ->with('freelancerProfile.user')
-            ->where('id', $validated['service_id'])
-            ->where('status', 'published')
+            ->where(
+                'id',
+                $validated['service_id']
+            )
+            ->where(
+                'status',
+                'published'
+            )
             ->firstOrFail();
 
-        /**
-         * Pastikan service memiliki freelancer.
-         */
-        if (! $service->freelancerProfile) {
+        /*
+        |--------------------------------------------------------------------------
+        | Pastikan service memiliki freelancer
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$service->freelancerProfile) {
             abort(404);
         }
 
-        /**
-         * Pastikan freelancer sedang tersedia.
-         */
-        if (! $service->freelancerProfile->is_available) {
+        /*
+        |--------------------------------------------------------------------------
+        | Pastikan freelancer tersedia
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$service->freelancerProfile->is_available) {
             return back()->with(
                 'error',
                 'Freelancer sedang tidak tersedia untuk menerima order.'
             );
         }
 
-        /**
-         * Harga jasa.
-         */
+        /*
+        |--------------------------------------------------------------------------
+        | Harga jasa
+        |--------------------------------------------------------------------------
+        */
+
         $subtotal = (float) $service->starting_price;
 
-        /**
-         * Sementara menggunakan 10% untuk development.
-         *
-         * Nanti kita pindahkan ke pengaturan marketplace
-         * supaya Admin bisa mengubahnya.
-         */
+        /*
+        |--------------------------------------------------------------------------
+        | Platform fee sementara 10%
+        |--------------------------------------------------------------------------
+        */
+
         $platformFeeRate = 0.10;
 
         $platformFee = round(
@@ -131,72 +158,96 @@ class OrderController extends Controller
 
         $total = $subtotal;
 
-        $freelancerAmount = $total - $platformFee;
+        $freelancerAmount =
+            $total - $platformFee;
 
-        /**
-         * Simpan order + item dalam satu transaction.
-         */
-        $order = DB::transaction(function () use (
-            $service,
-            $validated,
-            $subtotal,
-            $platformFee,
-            $total,
-            $freelancerAmount
-        ) {
-            $orderNumber = 'ORD-'
-                . now()->format('YmdHis')
-                . '-'
-                . random_int(100, 999);
+        /*
+        |--------------------------------------------------------------------------
+        | Simpan order + item
+        |--------------------------------------------------------------------------
+        */
 
-            $order = Order::create([
-                'client_id' => auth()->id(),
+        $order = DB::transaction(
+            function () use (
+                $service,
+                $validated,
+                $subtotal,
+                $platformFee,
+                $total,
+                $freelancerAmount
+            ) {
 
-                'freelancer_profile_id' =>
-                    $service->freelancer_profile_id,
+                $orderNumber =
+                    'ORD-' .
+                    now()->format('YmdHis') .
+                    '-' .
+                    random_int(100, 999);
 
-                'order_number' => $orderNumber,
+                $order = Order::create([
+                    'client_id' =>
+                        auth()->id(),
 
-                'status' => 'pending_payment',
+                    'freelancer_profile_id' =>
+                        $service->freelancer_profile_id,
 
-                'subtotal' => $subtotal,
+                    'order_number' =>
+                        $orderNumber,
 
-                'platform_fee' => $platformFee,
+                    'status' =>
+                        'pending_payment',
 
-                'total' => $total,
+                    'subtotal' =>
+                        $subtotal,
 
-                'freelancer_amount' => $freelancerAmount,
+                    'platform_fee' =>
+                        $platformFee,
 
-                'requirements' =>
-                    $validated['requirements'] ?? null,
+                    'total' =>
+                        $total,
 
-                'delivery_days' =>
-                    $service->delivery_days,
+                    'freelancer_amount' =>
+                        $freelancerAmount,
 
-                'due_at' =>
-                    now()->addDays($service->delivery_days),
-            ]);
+                    'requirements' =>
+                        $validated['requirements']
+                        ?? null,
 
-            $order->items()->create([
-                'service_id' => $service->id,
+                    'delivery_days' =>
+                        $service->delivery_days,
 
-                'service_title' => $service->title,
+                    'due_at' =>
+                        now()->addDays(
+                            $service->delivery_days
+                        ),
+                ]);
 
-                'quantity' => 1,
+                $order->items()->create([
+                    'service_id' =>
+                        $service->id,
 
-                'unit_price' => $subtotal,
+                    'service_title' =>
+                        $service->title,
 
-                'subtotal' => $subtotal,
+                    'quantity' =>
+                        1,
 
-                'delivery_days' =>
-                    $service->delivery_days,
+                    'unit_price' =>
+                        $subtotal,
 
-                'requirements' =>
-                    $validated['requirements'] ?? null,
-            ]);
+                    'subtotal' =>
+                        $subtotal,
 
-            return $order;
-        });
+                    'delivery_days' =>
+                        $service->delivery_days,
+
+                    'requirements' =>
+                        $validated['requirements']
+                        ?? null,
+                ]);
+
+                return $order;
+            }
+        );
 
         return redirect()
             ->route(

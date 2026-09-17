@@ -7,6 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\FreelancerExperience;
+use App\Models\FreelancerEducation;
+use App\Models\FreelancerCertificate;
+use App\Models\FreelancerSkill;
+use App\Models\FreelancerLanguage;
+
 
 
 class FreelancerProfile extends Model
@@ -81,4 +87,31 @@ public function reviews(): HasMany
         'freelancer_profile_id'
     );
 }
+
+public function experiences(): HasMany
+{
+    return $this->hasMany(FreelancerExperience::class);
+}
+
+public function educations(): HasMany
+{
+    return $this->hasMany(FreelancerEducation::class);
+}
+
+public function certificates(): HasMany
+{
+    return $this->hasMany(FreelancerCertificate::class);
+}
+
+public function skills(): HasMany
+{
+    return $this->hasMany(FreelancerSkill::class);
+}
+
+public function languages(): HasMany
+{
+    return $this->hasMany(FreelancerLanguage::class);
+}
+
+
 }

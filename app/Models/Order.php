@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Commission;
+use App\Models\Conversation;
 
 
 class Order extends Model
@@ -14,6 +15,7 @@ class Order extends Model
     protected $fillable = [
         'client_id',
         'freelancer_profile_id',
+        'conversation_id',
         'order_number',
         'status',
         'subtotal',
@@ -115,4 +117,10 @@ public function review(): HasOne
 {
     return $this->hasOne(Review::class);
 }
+
+public function conversation(): BelongsTo
+{
+    return $this->belongsTo(Conversation::class);
 }
+}
+

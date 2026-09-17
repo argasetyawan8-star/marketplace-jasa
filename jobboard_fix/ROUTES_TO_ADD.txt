@@ -1,0 +1,29 @@
+Tambahkan import:
+
+use App\Http\Controllers\Marketplace\JobController as MarketplaceJobController;
+use App\Http\Controllers\Client\JobController as ClientJobController;
+use App\Http\Controllers\Freelancer\JobController as FreelancerJobController;
+use App\Http\Controllers\Freelancer\JobProposalController as FreelancerJobProposalController;
+
+1) Marketplace (public), di luar group role:
+Route::get('/jobs', [MarketplaceJobController::class, 'index'])->name('marketplace.jobs.index');
+Route::get('/jobs/{job}', [MarketplaceJobController::class, 'show'])->name('marketplace.jobs.show');
+
+2) Di dalam group Client auth + role:client:
+Route::get('/jobs', [ClientJobController::class, 'index'])->name('jobs.index');
+Route::get('/jobs/create', [ClientJobController::class, 'create'])->name('jobs.create');
+Route::post('/jobs', [ClientJobController::class, 'store'])->name('jobs.store');
+Route::get('/jobs/{job}', [ClientJobController::class, 'show'])->name('jobs.show');
+Route::get('/jobs/{job}/edit', [ClientJobController::class, 'edit'])->name('jobs.edit');
+Route::patch('/jobs/{job}', [ClientJobController::class, 'update'])->name('jobs.update');
+Route::post('/jobs/{job}/publish', [ClientJobController::class, 'publish'])->name('jobs.publish');
+Route::post('/jobs/{job}/close', [ClientJobController::class, 'close'])->name('jobs.close');
+
+3) Di dalam group Freelancer auth + role:freelancer:
+Route::get('/jobs', [FreelancerJobController::class, 'index'])->name('jobs.index');
+Route::get('/jobs/{job}', [FreelancerJobController::class, 'show'])->name('jobs.show');
+Route::post('/jobs/{job}/proposals', [FreelancerJobProposalController::class, 'store'])->name('jobs.proposals.store');
+
+Catatan:
+- Letakkan route /jobs/{job} setelah /jobs/create dan route statis lain agar tidak tertabrak parameter.
+- Karena client/freelancer group sama-sama memakai prefix /jobs tetapi middleware berbeda, nama route tetap aman karena prefix name masing-masing berbeda.

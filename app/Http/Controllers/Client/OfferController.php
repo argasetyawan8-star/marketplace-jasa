@@ -6,51 +6,62 @@ use App\Http\Controllers\Controller;
 use App\Models\Offer;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Payment;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class OfferController extends Controller
 {
-    public function accept(Offer $offer)
-    {
+    public function accept(
+        Offer $offer
+    ): RedirectResponse {
         abort_unless(
             $offer->client_id === Auth::id(),
             403
         );
 
-        if ($offer->status !== 'sent') {
-            return back()->with(
-                'error',
-                'Penawaran ini sudah tidak dapat diproses.'
-            );
-        }
+        abort_unless(
+            $offer->status === 'sent',
+            404
+        );
 
-        if ($offer->expires_at && $offer->expires_at->isPast()) {
+        if (
+            $offer->expires_at &&
+            $offer->expires_at->isPast()
+        ) {
             $offer->update([
                 'status' => 'expired',
             ]);
 
             return back()->with(
                 'error',
-                'Penawaran ini sudah kedaluwarsa.'
+                'Quotation ini sudah kedaluwarsa.'
             );
         }
 
-        $order = DB::transaction(function () use ($offer) {
+        $offer->load([
+            'conversation',
+            'job',
+            'jobProposal',
+            'service',
+            'freelancerProfile',
+        ]);
 
+        $order = DB::transaction(function () use ($offer) {
             /*
             |--------------------------------------------------------------------------
-            | Perhitungan
+            | Platform fee
             |--------------------------------------------------------------------------
             |
-            | 10% adalah asumsi sementara untuk project JASAIN.
+            | Untuk sekarang kita gunakan 10%.
+            | Nanti bisa dipindahkan ke setting admin.
             |
             */
 
-            $platformFeeRate = 10;
-
             $subtotal = (float) $offer->price;
+
+            $platformFeeRate = 10;
 
             $platformFee = round(
                 $subtotal * ($platformFeeRate / 100),
@@ -59,120 +70,122 @@ class OfferController extends Controller
 
             $total = $subtotal;
 
-            $freelancerAmount = round(
-                $subtotal - $platformFee,
-                2
+            $freelancerAmount = max(
+                0,
+                $total - $platformFee
             );
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Order
-            |--------------------------------------------------------------------------
-            */
-
             $order = Order::create([
-                'order_number' =>
-                    'ORD-' .
-                    now()->format('YmdHis') .
-                    '-' .
-                    random_int(1000, 9999),
-
-                'client_id' =>
-                    $offer->client_id,
-
+                'client_id' => $offer->client_id,
                 'freelancer_profile_id' =>
                     $offer->freelancer_profile_id,
-
-                'subtotal' =>
-                    $subtotal,
-
-                'platform_fee' =>
-                    $platformFee,
-
-                'total' =>
-                    $total,
-
+                'conversation_id' =>
+                    $offer->conversation_id,
+                'order_number' =>
+                    $this->generateOrderNumber(),
+                'status' => 'pending_payment',
+                'subtotal' => $subtotal,
+                'platform_fee' => $platformFee,
+                'total' => $total,
                 'freelancer_amount' =>
                     $freelancerAmount,
-
-                'status' =>
-                    'pending_payment',
-
-                'due_at' =>
-                    now()->addDays($offer->delivery_days),
-
-               'requirements' =>
-                         $offer->description,
+                'requirements' =>
+                    $offer->description,
+                'delivery_days' =>
+                    $offer->delivery_days,
+                'due_at' => now()->addDays(
+                    $offer->delivery_days
+                ),
             ]);
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Order Item
-            |--------------------------------------------------------------------------
-            */
-
             OrderItem::create([
-                'order_id' =>
-                    $order->id,
+                'order_id' => $order->id,
 
-                'service_id' =>
-                    $offer->service_id,
+                /*
+                |--------------------------------------------------------------------------
+                | Job Board
+                |--------------------------------------------------------------------------
+                |
+                | Karena Job Board tidak harus berasal dari service,
+                | service_id sengaja dibuat NULL.
+                |
+                */
+
+                'service_id' => null,
 
                 'service_title' =>
                     $offer->title,
 
-                'quantity' =>
-                    1,
+                'quantity' => 1,
 
-                'unit_price' =>
-                    $subtotal,
+                'unit_price' => $subtotal,
 
-                'subtotal' =>
-                    $subtotal,
+                'subtotal' => $subtotal,
+
+                'delivery_days' =>
+                    $offer->delivery_days,
+
+                'requirements' =>
+                    $offer->description,
             ]);
-
 
             /*
             |--------------------------------------------------------------------------
-            | Payment
-            |--------------------------------------------------------------------------
-            */
-
-            Payment::create([
-                'order_id' =>
-                    $order->id,
-
-                'payment_type' =>
-                    'midtrans',
-
-                'status' =>
-                    'pending',
-
-                'gross_amount' =>
-                    $total,
-            ]);
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Update Offer
+            | Offer
             |--------------------------------------------------------------------------
             */
 
             $offer->update([
-                'status' =>
-                    'accepted',
-
-                'accepted_at' =>
-                    now(),
+                'status' => 'accepted',
+                'accepted_at' => now(),
             ]);
 
+            /*
+            |--------------------------------------------------------------------------
+            | Proposal
+            |--------------------------------------------------------------------------
+            */
+
+            if ($offer->jobProposal) {
+                $offer->jobProposal->update([
+                    'status' => 'accepted',
+                ]);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Job
+            |--------------------------------------------------------------------------
+            |
+            | Setelah quotation diterima, Job tidak boleh lagi
+            | menerima proposal baru.
+            |
+            | Status tetap in_review sampai pembayaran berhasil.
+            |
+            */
+
+            if ($offer->job) {
+                $offer->job->update([
+                    'status' => 'in_review',
+                ]);
+
+                $offer->job
+                    ->proposals()
+                    ->where('id', '!=', $offer->jobProposal?->id)
+                    ->where('status', 'pending')
+                    ->update([
+                        'status' => 'rejected',
+                    ]);
+            }
 
             return $order;
         });
 
+        /*
+        |--------------------------------------------------------------------------
+        | Redirect ke checkout
+        |--------------------------------------------------------------------------
+        */
 
         return redirect()
             ->route(
@@ -181,36 +194,54 @@ class OfferController extends Controller
             )
             ->with(
                 'success',
-                'Penawaran diterima. Silakan lanjutkan pembayaran.'
+                'Quotation diterima. Order berhasil dibuat, silakan lanjut ke pembayaran.'
             );
     }
 
-
-    public function reject(Offer $offer)
-    {
+    public function reject(
+        Offer $offer
+    ): RedirectResponse {
         abort_unless(
             $offer->client_id === Auth::id(),
             403
         );
 
-        if ($offer->status !== 'sent') {
-            return back()->with(
-                'error',
-                'Penawaran ini sudah tidak dapat diproses.'
-            );
-        }
+        abort_unless(
+            $offer->status === 'sent',
+            404
+        );
 
         $offer->update([
-            'status' =>
-                'rejected',
-
-            'rejected_at' =>
-                now(),
+            'status' => 'rejected',
+            'rejected_at' => now(),
         ]);
 
         return back()->with(
             'success',
-            'Penawaran berhasil ditolak.'
+            'Quotation berhasil ditolak.'
         );
+    }
+
+    private function generateOrderNumber(): string
+    {
+        do {
+            $number =
+                'JASAIN-' .
+                now()->format('Ymd') .
+                '-' .
+                strtoupper(
+                    Str::random(8)
+                );
+
+            $exists = Order::query()
+                ->where(
+                    'order_number',
+                    $number
+                )
+                ->exists();
+
+        } while ($exists);
+
+        return $number;
     }
 }

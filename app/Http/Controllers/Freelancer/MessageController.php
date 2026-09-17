@@ -19,19 +19,32 @@ class MessageController extends Controller
         $freelancerProfile = auth()->user()
             ->freelancerProfile;
 
-        abort_unless($freelancerProfile, 403);
+        abort_unless(
+            $freelancerProfile,
+            403
+        );
 
         $conversations = Conversation::query()
             ->with([
                 'client',
                 'service',
+                'job',
+                'jobProposal',
             ])
             ->withCount([
-                'messages as unread_messages_count' => function ($query) {
-                    $query
-                        ->where('sender_id', '!=', auth()->id())
-                        ->where('is_read', false);
-                },
+                'messages as unread_messages_count' =>
+                    function ($query) {
+                        $query
+                            ->where(
+                                'sender_id',
+                                '!=',
+                                auth()->id()
+                            )
+                            ->where(
+                                'is_read',
+                                false
+                            );
+                    },
             ])
             ->where(
                 'freelancer_profile_id',
@@ -50,8 +63,9 @@ class MessageController extends Controller
     /**
      * Membuka percakapan.
      */
-    public function show(Conversation $conversation): View
-    {
+    public function show(
+        Conversation $conversation
+    ): View {
         $freelancerProfile = auth()->user()
             ->freelancerProfile;
 
@@ -66,20 +80,30 @@ class MessageController extends Controller
             'client',
             'freelancerProfile.user',
             'service',
+            'job',
+            'job.category',
+            'job.subcategory',
+            'jobProposal.selectedExperience',
+            'jobProposal.portfolios',
             'messages.sender',
             'offers.client',
+            'order.items',
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Tandai pesan dari client sebagai sudah dibaca.
-        |--------------------------------------------------------------------------
-        */
-
         Message::query()
-            ->where('conversation_id', $conversation->id)
-            ->where('sender_id', '!=', auth()->id())
-            ->where('is_read', false)
+            ->where(
+                'conversation_id',
+                $conversation->id
+            )
+            ->where(
+                'sender_id',
+                '!=',
+                auth()->id()
+            )
+            ->where(
+                'is_read',
+                false
+            )
             ->update([
                 'is_read' => true,
                 'read_at' => now(),
@@ -133,6 +157,9 @@ class MessageController extends Controller
                 'freelancer.messages.show',
                 $conversation
             )
-            ->with('success', 'Pesan berhasil dikirim.');
+            ->with(
+                'success',
+                'Pesan berhasil dikirim.'
+            );
     }
 }
