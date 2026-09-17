@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Freelancer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use App\Models\Withdrawal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class WithdrawalController extends Controller
 {
@@ -33,7 +35,10 @@ class WithdrawalController extends Controller
         );
 
         $withdrawals = Withdrawal::query()
-            ->where('freelancer_profile_id', $freelancerProfile->id)
+            ->where(
+                'freelancer_profile_id',
+                $freelancerProfile->id
+            )
             ->latest()
             ->paginate(10);
 
@@ -82,18 +87,6 @@ class WithdrawalController extends Controller
 
         abort_unless($freelancerProfile, 403);
 
-        $wallet = Wallet::firstOrCreate(
-            [
-                'freelancer_profile_id' => $freelancerProfile->id,
-            ],
-            [
-                'balance' => 0,
-                'pending_balance' => 0,
-                'total_earned' => 0,
-                'total_withdrawn' => 0,
-            ]
-        );
-
         $validated = $request->validate([
             'amount' => [
                 'required',
@@ -123,26 +116,64 @@ class WithdrawalController extends Controller
         ]);
 
         $amount = (float) $validated['amount'];
-        $balance = (float) $wallet->balance;
-
-        if ($amount > $balance) {
-            return back()
-                ->withErrors([
-                    'amount' => 'Nominal penarikan melebihi saldo yang tersedia.',
-                ])
-                ->withInput();
-        }
 
         DB::transaction(function () use (
-            $wallet,
             $freelancerProfile,
             $validated,
             $amount
         ) {
+            /*
+             * Ambil wallet di dalam transaction dan lock row-nya.
+             * Ini mencegah dua request withdrawal memakai saldo
+             * yang sama secara bersamaan.
+             */
+            $wallet = Wallet::where(
+                'freelancer_profile_id',
+                $freelancerProfile->id
+            )
+                ->lockForUpdate()
+                ->first();
+
+            /*
+             * Kalau wallet belum ada, buat terlebih dahulu.
+             */
+            if (! $wallet) {
+                $wallet = Wallet::create([
+                    'freelancer_profile_id' => $freelancerProfile->id,
+                    'balance' => 0,
+                    'pending_balance' => 0,
+                    'total_earned' => 0,
+                    'total_withdrawn' => 0,
+                ]);
+
+                $wallet = Wallet::whereKey($wallet->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+            }
+
+            $balance = (float) $wallet->balance;
+
+            /*
+             * Cek ulang saldo setelah row wallet dikunci.
+             */
+            if ($amount > $balance) {
+                throw ValidationException::withMessages([
+                    'amount' => 'Nominal penarikan melebihi saldo yang tersedia.',
+                ]);
+            }
+
+            /*
+             * Untuk tahap development, admin fee masih 0.
+             * Nanti bisa dibuat configurable.
+             */
             $adminFee = 0;
+
             $netAmount = $amount - $adminFee;
 
-            Withdrawal::create([
+            /*
+             * Buat data withdrawal.
+             */
+            $withdrawal = Withdrawal::create([
                 'freelancer_profile_id' => $freelancerProfile->id,
                 'amount' => $amount,
                 'admin_fee' => $adminFee,
@@ -152,11 +183,45 @@ class WithdrawalController extends Controller
                 'account_number' => $validated['account_number'],
                 'note' => $validated['note'] ?? null,
                 'status' => 'pending',
+                'rejection_reason' => null,
+                'processed_at' => null,
             ]);
 
-            $wallet->decrement('balance', $amount);
+            /*
+             * Saldo tersedia dikurangi.
+             * Nilai withdrawal dipindahkan ke pending_balance
+             * sampai admin memproses pengajuan.
+             */
+            $newBalance = $balance - $amount;
 
-            $wallet->increment('pending_balance', $amount);
+            $newPendingBalance =
+                (float) $wallet->pending_balance + $amount;
+
+            $wallet->update([
+                'balance' => $newBalance,
+                'pending_balance' => $newPendingBalance,
+            ]);
+
+            /*
+             * Catat transaksi wallet.
+             */
+            WalletTransaction::create([
+                'wallet_id' => $wallet->id,
+                'type' => 'debit',
+                'category' => 'withdrawal',
+                'amount' => $amount,
+                'balance_after' => $newBalance,
+                'description' =>
+                    'Pengajuan penarikan sebesar Rp ' .
+                    number_format(
+                        $amount,
+                        0,
+                        ',',
+                        '.'
+                    ),
+                'reference_type' => 'Withdrawal',
+                'reference_id' => $withdrawal->id,
+            ]);
         });
 
         return redirect()

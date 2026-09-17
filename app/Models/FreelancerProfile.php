@@ -113,5 +113,12 @@ public function languages(): HasMany
     return $this->hasMany(FreelancerLanguage::class);
 }
 
+public function verification(): HasOne
+{
+    return $this->hasOne(
+        FreelancerVerification::class
+    );
+}
+
 
 }

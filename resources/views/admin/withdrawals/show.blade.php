@@ -522,19 +522,19 @@
                                 class="w-full rounded-xl border border-[#BFCFC7] bg-white px-4 py-3 text-sm text-[#123128] outline-none transition hover:border-[#AFC2B8] focus:border-[#1E9E5A] focus:ring-4 focus:ring-[#EAF7EF] dark:border-[#3A5245] dark:bg-[#16251D] dark:text-white dark:hover:border-[#4C695B] dark:focus:border-[#7AD8B5] dark:focus:ring-[#214532]"
                             >
 
-                                <option value="pending" @selected(old('status', $withdrawal->status) === 'pending')>
-                                    Menunggu
+                                <option value="pending">
+                                    Pending
                                 </option>
 
-                                <option value="processing" @selected(old('status', $withdrawal->status) === 'processing')>
+                                <option value="processing">
                                     Diproses
                                 </option>
 
-                                <option value="approved" @selected(old('status', $withdrawal->status) === 'approved')>
-                                    Disetujui
+                                <option value="completed">
+                                    Disetujui / Selesai
                                 </option>
 
-                                <option value="rejected" @selected(old('status', $withdrawal->status) === 'rejected')>
+                                <option value="rejected">
                                     Ditolak
                                 </option>
 

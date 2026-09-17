@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\WithdrawalController as AdminWithdrawalController;
+use App\Http\Controllers\Admin\VerificationController as AdminVerificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,6 +60,7 @@ use App\Http\Controllers\Freelancer\WalletController as FreelancerWalletControll
 use App\Http\Controllers\Freelancer\WithdrawalController as FreelancerWithdrawalController;
 use App\Http\Controllers\Freelancer\JobController as FreelancerJobController;
 use App\Http\Controllers\Freelancer\JobProposalController as FreelancerJobProposalController;
+use App\Http\Controllers\Freelancer\VerificationController as FreelancerVerificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -773,6 +775,22 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerOfferController::class, 'store']
         )->name('jobs.proposals.offer.store');
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Verifications
+        |--------------------------------------------------------------------------
+        */
+        Route::get(
+            '/verification',
+            [FreelancerVerificationController::class, 'index']
+        )->name('verification.index');
+
+        Route::post(
+            '/verification',
+            [FreelancerVerificationController::class, 'store']
+        )->name('verification.store');
+
     });
 
 
@@ -995,6 +1013,37 @@ Route::middleware(['auth', 'role:admin'])
             '/reviews/{review}',
             [AdminReviewController::class, 'update']
         )->name('reviews.update');
+
+                /*
+        |--------------------------------------------------------------------------
+        | Freelancer Verification
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/verifications',
+            [AdminVerificationController::class, 'index']
+        )->name('verifications.index');
+
+        Route::get(
+            '/verifications/{verification}',
+            [AdminVerificationController::class, 'show']
+        )->name('verifications.show');
+
+        Route::get(
+            '/verifications/{verification}/document',
+            [AdminVerificationController::class, 'document']
+        )->name('verifications.document');
+
+        Route::post(
+            '/verifications/{verification}/approve',
+            [AdminVerificationController::class, 'approve']
+        )->name('verifications.approve');
+
+        Route::post(
+            '/verifications/{verification}/reject',
+            [AdminVerificationController::class, 'reject']
+        )->name('verifications.reject');
 
     });
 
