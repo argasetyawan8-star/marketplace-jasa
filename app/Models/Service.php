@@ -26,12 +26,23 @@ class Service extends Model
         'thumbnail',
         'status',
         'is_featured',
+
+        // Moderation
+        'rejection_reason',
+        'submitted_at',
+        'reviewed_at',
+        'reviewed_by',
     ];
 
     protected $casts = [
         'starting_price' => 'decimal:2',
         'rating' => 'decimal:2',
+        'orders_count' => 'integer',
+        'delivery_days' => 'integer',
+        'reviews_count' => 'integer',
         'is_featured' => 'boolean',
+        'submitted_at' => 'datetime',
+        'reviewed_at' => 'datetime',
     ];
 
     /**
@@ -58,8 +69,19 @@ class Service extends Model
         return $this->belongsTo(Subcategory::class);
     }
 
+    /**
+     * Service memiliki banyak favorite.
+     */
     public function favorites(): HasMany
-{
-    return $this->hasMany(Favorite::class);
-}
+    {
+        return $this->hasMany(Favorite::class);
+    }
+
+    /**
+     * Admin yang terakhir mereview service.
+     */
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
 }

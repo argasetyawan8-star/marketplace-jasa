@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\WithdrawalController as AdminWithdrawalController;
 use App\Http\Controllers\Admin\VerificationController as AdminVerificationController;
+use App\Http\Controllers\Admin\ServiceModerationController as AdminServiceModerationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -61,6 +62,7 @@ use App\Http\Controllers\Freelancer\WithdrawalController as FreelancerWithdrawal
 use App\Http\Controllers\Freelancer\JobController as FreelancerJobController;
 use App\Http\Controllers\Freelancer\JobProposalController as FreelancerJobProposalController;
 use App\Http\Controllers\Freelancer\VerificationController as FreelancerVerificationController;
+use App\Http\Controllers\Freelancer\ServiceModerationController as FreelancerServiceModerationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -90,7 +92,6 @@ use App\Http\Controllers\JobBoardChatController;
 */
 
 use App\Http\Controllers\ProfileController;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -134,7 +135,6 @@ Route::get(
     [MarketplaceJobController::class, 'show']
 )->name('marketplace.jobs.show');
 
-
 /*
 |--------------------------------------------------------------------------
 | User Profile
@@ -169,7 +169,6 @@ Route::middleware('auth')->group(function () {
     )->name('profile.destroy');
 });
 
-
 /*
 |--------------------------------------------------------------------------
 | Client
@@ -191,7 +190,6 @@ Route::middleware(['auth', 'role:client'])
             '/dashboard',
             [ClientDashboardController::class, 'index']
         )->name('dashboard');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -219,7 +217,6 @@ Route::middleware(['auth', 'role:client'])
             [ClientOrderController::class, 'show']
         )->name('orders.show');
 
-
         /*
         |--------------------------------------------------------------------------
         | Payment
@@ -235,7 +232,6 @@ Route::middleware(['auth', 'role:client'])
             '/orders/{order}/payment/simulate',
             [DevelopmentPaymentController::class, 'simulate']
         )->name('orders.payment.simulate');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -257,7 +253,6 @@ Route::middleware(['auth', 'role:client'])
             '/favorites/{service}',
             [ClientFavoriteController::class, 'destroy']
         )->name('favorites.destroy');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -285,7 +280,6 @@ Route::middleware(['auth', 'role:client'])
             [ClientMessageController::class, 'start']
         )->name('messages.start');
 
-
         /*
         |--------------------------------------------------------------------------
         | Offers / Quotations
@@ -301,7 +295,6 @@ Route::middleware(['auth', 'role:client'])
             '/offers/{offer}/reject',
             [ClientOfferController::class, 'reject']
         )->name('offers.reject');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -324,7 +317,6 @@ Route::middleware(['auth', 'role:client'])
             [ClientDeliveryController::class, 'revision']
         )->name('delivery.revision');
 
-
         /*
         |--------------------------------------------------------------------------
         | Review
@@ -340,7 +332,6 @@ Route::middleware(['auth', 'role:client'])
             '/orders/{order}/review',
             [ClientReviewController::class, 'store']
         )->name('reviews.store');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -388,7 +379,6 @@ Route::middleware(['auth', 'role:client'])
             [ClientJobController::class, 'close']
         )->name('jobs.close');
 
-
         /*
         |--------------------------------------------------------------------------
         | Job Proposals
@@ -405,7 +395,6 @@ Route::middleware(['auth', 'role:client'])
             [ClientJobController::class, 'rejectProposal']
         )->name('jobs.proposals.reject');
 
-
         /*
         |--------------------------------------------------------------------------
         | Job Board Chat
@@ -419,9 +408,7 @@ Route::middleware(['auth', 'role:client'])
             '/jobs/{job}/proposals/{proposal}/chat',
             [JobBoardChatController::class, 'start']
         )->name('jobs.chat.start');
-
     });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -445,7 +432,6 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerDashboardController::class, 'index']
         )->name('dashboard');
 
-
         /*
         |--------------------------------------------------------------------------
         | Profile
@@ -466,7 +452,6 @@ Route::middleware(['auth', 'role:freelancer'])
             '/profile',
             [FreelancerProfileController::class, 'update']
         )->name('profile.update');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -489,7 +474,6 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerProfileController::class, 'destroyExperience']
         )->name('profile.experiences.destroy');
 
-
         /*
         |--------------------------------------------------------------------------
         | Profile - Education
@@ -510,7 +494,6 @@ Route::middleware(['auth', 'role:freelancer'])
             '/profile/educations/{education}',
             [FreelancerProfileController::class, 'destroyEducation']
         )->name('profile.educations.destroy');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -533,7 +516,6 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerProfileController::class, 'destroyCertificate']
         )->name('profile.certificates.destroy');
 
-
         /*
         |--------------------------------------------------------------------------
         | Profile - Skills
@@ -555,7 +537,6 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerProfileController::class, 'destroySkill']
         )->name('profile.skills.destroy');
 
-
         /*
         |--------------------------------------------------------------------------
         | Profile - Languages
@@ -576,7 +557,6 @@ Route::middleware(['auth', 'role:freelancer'])
             '/profile/languages/{language}',
             [FreelancerProfileController::class, 'destroyLanguage']
         )->name('profile.languages.destroy');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -619,6 +599,16 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerServiceController::class, 'destroy']
         )->name('services.destroy');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Service Moderation
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post(
+            '/services/{service}/submit-review',
+            [FreelancerServiceModerationController::class, 'submitReview']
+        )->name('services.submit-review');
 
         /*
         |--------------------------------------------------------------------------
@@ -636,7 +626,6 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerOrderController::class, 'show']
         )->name('orders.show');
 
-
         /*
         |--------------------------------------------------------------------------
         | Delivery
@@ -647,7 +636,6 @@ Route::middleware(['auth', 'role:freelancer'])
             '/orders/{order}/delivery',
             [FreelancerDeliveryController::class, 'store']
         )->name('orders.delivery.store');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -670,7 +658,6 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerMessageController::class, 'store']
         )->name('messages.store');
 
-
         /*
         |--------------------------------------------------------------------------
         | Offers / Quotations - Service Marketplace
@@ -687,7 +674,6 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerOfferController::class, 'store']
         )->name('messages.offers.store');
 
-
         /*
         |--------------------------------------------------------------------------
         | Wallet
@@ -698,7 +684,6 @@ Route::middleware(['auth', 'role:freelancer'])
             '/wallet',
             [FreelancerWalletController::class, 'index']
         )->name('wallet.index');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -721,7 +706,6 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerWithdrawalController::class, 'store']
         )->name('withdrawals.store');
 
-
         /*
         |--------------------------------------------------------------------------
         | Job Board - Freelancer
@@ -743,7 +727,6 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerJobProposalController::class, 'store']
         )->name('jobs.proposals.store');
 
-
         /*
         |--------------------------------------------------------------------------
         | Job Board Chat
@@ -757,7 +740,6 @@ Route::middleware(['auth', 'role:freelancer'])
             '/jobs/{job}/proposals/{proposal}/chat',
             [JobBoardChatController::class, 'start']
         )->name('jobs.chat.start');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -775,12 +757,12 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerOfferController::class, 'store']
         )->name('jobs.proposals.offer.store');
 
-
         /*
         |--------------------------------------------------------------------------
         | Verifications
         |--------------------------------------------------------------------------
         */
+
         Route::get(
             '/verification',
             [FreelancerVerificationController::class, 'index']
@@ -790,9 +772,7 @@ Route::middleware(['auth', 'role:freelancer'])
             '/verification',
             [FreelancerVerificationController::class, 'store']
         )->name('verification.store');
-
     });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -814,7 +794,6 @@ Route::get(
         '^(?!dashboard$)[A-Za-z0-9_-]+$'
     )
     ->name('marketplace.freelancer');
-
 
 /*
 |--------------------------------------------------------------------------
@@ -838,7 +817,6 @@ Route::middleware(['auth', 'role:admin'])
             [AdminDashboardController::class, 'index']
         )->name('dashboard');
 
-
         /*
         |--------------------------------------------------------------------------
         | Users
@@ -854,7 +832,6 @@ Route::middleware(['auth', 'role:admin'])
             '/users/{user}',
             [AdminUserController::class, 'show']
         )->name('users.show');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -887,7 +864,6 @@ Route::middleware(['auth', 'role:admin'])
             [AdminCategoryController::class, 'destroy']
         )->name('categories.destroy');
 
-
         /*
         |--------------------------------------------------------------------------
         | Services
@@ -919,7 +895,6 @@ Route::middleware(['auth', 'role:admin'])
             [AdminServiceController::class, 'destroy']
         )->name('services.destroy');
 
-
         /*
         |--------------------------------------------------------------------------
         | Orders
@@ -935,7 +910,6 @@ Route::middleware(['auth', 'role:admin'])
             '/orders/{order}',
             [AdminOrderController::class, 'show']
         )->name('orders.show');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -953,7 +927,6 @@ Route::middleware(['auth', 'role:admin'])
             [AdminPaymentController::class, 'show']
         )->name('payments.show');
 
-
         /*
         |--------------------------------------------------------------------------
         | Commissions
@@ -969,7 +942,6 @@ Route::middleware(['auth', 'role:admin'])
             '/commissions/{commission}',
             [AdminCommissionController::class, 'show']
         )->name('commissions.show');
-
 
         /*
         |--------------------------------------------------------------------------
@@ -992,7 +964,6 @@ Route::middleware(['auth', 'role:admin'])
             [AdminWithdrawalController::class, 'update']
         )->name('withdrawals.update');
 
-
         /*
         |--------------------------------------------------------------------------
         | Reviews
@@ -1014,7 +985,7 @@ Route::middleware(['auth', 'role:admin'])
             [AdminReviewController::class, 'update']
         )->name('reviews.update');
 
-                /*
+        /*
         |--------------------------------------------------------------------------
         | Freelancer Verification
         |--------------------------------------------------------------------------
@@ -1045,8 +1016,32 @@ Route::middleware(['auth', 'role:admin'])
             [AdminVerificationController::class, 'reject']
         )->name('verifications.reject');
 
-    });
+        /*
+        |--------------------------------------------------------------------------
+        | Service Moderation
+        |--------------------------------------------------------------------------
+        */
 
+        Route::get(
+            '/service-moderation',
+            [AdminServiceModerationController::class, 'index']
+        )->name('service-moderation.index');
+
+        Route::get(
+            '/service-moderation/{service}',
+            [AdminServiceModerationController::class, 'show']
+        )->name('service-moderation.show');
+
+        Route::post(
+            '/service-moderation/{service}/publish',
+            [AdminServiceModerationController::class, 'publish']
+        )->name('service-moderation.publish');
+
+        Route::post(
+            '/service-moderation/{service}/reject',
+            [AdminServiceModerationController::class, 'reject']
+        )->name('service-moderation.reject');
+    });
 
 /*
 |--------------------------------------------------------------------------
