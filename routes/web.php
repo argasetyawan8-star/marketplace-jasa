@@ -34,6 +34,8 @@ use App\Http\Controllers\Client\OrderController as ClientOrderController;
 use App\Http\Controllers\Client\DeliveryController as ClientDeliveryController;
 use App\Http\Controllers\Client\ReviewController as ClientReviewController;
 use App\Http\Controllers\Client\JobController as ClientJobController;
+use App\Http\Controllers\Client\InvoiceController as ClientInvoiceController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -192,30 +194,41 @@ Route::middleware(['auth', 'role:client'])
         )->name('dashboard');
 
         /*
-        |--------------------------------------------------------------------------
-        | Orders
-        |--------------------------------------------------------------------------
-        */
+|--------------------------------------------------------------------------
+| Orders
+|--------------------------------------------------------------------------
+*/
 
-        Route::get(
-            '/orders',
-            [ClientOrderController::class, 'index']
-        )->name('orders.index');
+Route::get(
+    '/orders',
+    [ClientOrderController::class, 'index']
+)->name('orders.index');
 
-        Route::post(
-            '/orders',
-            [ClientOrderController::class, 'store']
-        )->name('orders.store');
+Route::post(
+    '/orders',
+    [ClientOrderController::class, 'store']
+)->name('orders.store');
 
-        Route::get(
-            '/orders/{order}/checkout',
-            [ClientOrderController::class, 'checkout']
-        )->name('orders.checkout');
+Route::get(
+    '/orders/{order}/checkout',
+    [ClientOrderController::class, 'checkout']
+)->name('orders.checkout');
 
-        Route::get(
-            '/orders/{order}',
-            [ClientOrderController::class, 'show']
-        )->name('orders.show');
+/*
+|--------------------------------------------------------------------------
+| Invoice & Transaction Detail
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/orders/{order}/invoice',
+    [ClientInvoiceController::class, 'show']
+)->name('orders.invoice');
+
+Route::get(
+    '/orders/{order}',
+    [ClientOrderController::class, 'show']
+)->name('orders.show');
 
         /*
         |--------------------------------------------------------------------------
@@ -659,20 +672,37 @@ Route::middleware(['auth', 'role:freelancer'])
         )->name('messages.store');
 
         /*
-        |--------------------------------------------------------------------------
-        | Offers / Quotations - Service Marketplace
-        |--------------------------------------------------------------------------
-        */
+|--------------------------------------------------------------------------
+| Offers / Quotations - Service Marketplace
+|--------------------------------------------------------------------------
+*/
 
-        Route::get(
-            '/messages/{conversation}/offer',
-            [FreelancerOfferController::class, 'create']
-        )->name('messages.offers.create');
+Route::get(
+    '/messages/{conversation}/offer',
+    [FreelancerOfferController::class, 'createService']
+)->name('messages.offers.create');
 
-        Route::post(
-            '/messages/{conversation}/offer',
-            [FreelancerOfferController::class, 'store']
-        )->name('messages.offers.store');
+Route::post(
+    '/messages/{conversation}/offer',
+    [FreelancerOfferController::class, 'storeService']
+)->name('messages.offers.store');
+
+
+/*
+|--------------------------------------------------------------------------
+| Job Board - Quotation
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/jobs/{job}/proposals/{proposal}/offer',
+    [FreelancerOfferController::class, 'createJob']
+)->name('jobs.proposals.offer.create');
+
+Route::post(
+    '/jobs/{job}/proposals/{proposal}/offer',
+    [FreelancerOfferController::class, 'storeJob']
+)->name('jobs.proposals.offer.store');
 
         /*
         |--------------------------------------------------------------------------

@@ -15,7 +15,354 @@ use Illuminate\View\View;
 
 class OfferController extends Controller
 {
-    public function create(
+    /*
+    |--------------------------------------------------------------------------
+    | SERVICE MARKETPLACE
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Form membuat penawaran dari percakapan jasa.
+     */
+    public function createService(
+        Conversation $conversation
+    ): View {
+        $freelancerProfile = Auth::user()->freelancerProfile;
+
+        abort_unless(
+            $freelancerProfile,
+            403
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pastikan conversation milik freelancer yang sedang login
+        |--------------------------------------------------------------------------
+        */
+
+        abort_unless(
+            $conversation->freelancer_profile_id ===
+                $freelancerProfile->id,
+            403
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Percakapan harus berasal dari jasa
+        |--------------------------------------------------------------------------
+        */
+
+        abort_unless(
+            $conversation->service_id,
+            404
+        );
+
+        $conversation->load([
+            'client',
+            'service',
+            'service.category',
+            'service.subcategory',
+            'offers',
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pastikan jasa memang milik freelancer yang login
+        |--------------------------------------------------------------------------
+        */
+
+        abort_unless(
+            $conversation->service?->freelancer_profile_id ===
+                $freelancerProfile->id,
+            403
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Jangan membuat penawaran baru jika masih ada quotation aktif
+        |--------------------------------------------------------------------------
+        */
+
+        $hasActiveOffer = Offer::query()
+            ->where(
+                'conversation_id',
+                $conversation->id
+            )
+            ->whereIn(
+                'status',
+                ['sent', 'accepted']
+            )
+            ->where(function ($query) {
+                $query
+                    ->whereNull('expires_at')
+                    ->orWhere(
+                        'expires_at',
+                        '>',
+                        now()
+                    );
+            })
+            ->exists();
+
+        return view(
+            'freelancer.offers.service-create',
+            compact(
+                'conversation',
+                'freelancerProfile',
+                'hasActiveOffer'
+            )
+        );
+    }
+
+    /**
+     * Simpan penawaran dari percakapan jasa.
+     */
+    public function storeService(
+        Request $request,
+        Conversation $conversation
+    ): RedirectResponse {
+        $freelancerProfile = Auth::user()->freelancerProfile;
+
+        abort_unless(
+            $freelancerProfile,
+            403
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ownership conversation
+        |--------------------------------------------------------------------------
+        */
+
+        abort_unless(
+            $conversation->freelancer_profile_id ===
+                $freelancerProfile->id,
+            403
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Conversation harus memiliki jasa
+        |--------------------------------------------------------------------------
+        */
+
+        abort_unless(
+            $conversation->service_id,
+            404
+        );
+
+        $conversation->load([
+            'client',
+            'service',
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Jasa harus milik freelancer yang login
+        |--------------------------------------------------------------------------
+        */
+
+        abort_unless(
+            $conversation->service?->freelancer_profile_id ===
+                $freelancerProfile->id,
+            403
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Jasa harus tersedia di marketplace
+        |--------------------------------------------------------------------------
+        */
+
+        abort_unless(
+            $conversation->service?->status === 'published',
+            404
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validasi
+        |--------------------------------------------------------------------------
+        */
+
+        $validated = $request->validate([
+            'title' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'description' => [
+                'nullable',
+                'string',
+                'max:10000',
+            ],
+
+            'price' => [
+                'required',
+                'numeric',
+                'min:1',
+            ],
+
+            'delivery_days' => [
+                'required',
+                'integer',
+                'min:1',
+                'max:365',
+            ],
+
+            'revision_count' => [
+                'required',
+                'integer',
+                'min:0',
+                'max:100',
+            ],
+
+            'expires_at' => [
+                'nullable',
+                'date',
+                'after:now',
+            ],
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pastikan tidak ada quotation aktif
+        |--------------------------------------------------------------------------
+        */
+
+        $hasActiveOffer = Offer::query()
+            ->where(
+                'conversation_id',
+                $conversation->id
+            )
+            ->whereIn(
+                'status',
+                ['sent', 'accepted']
+            )
+            ->where(function ($query) {
+                $query
+                    ->whereNull('expires_at')
+                    ->orWhere(
+                        'expires_at',
+                        '>',
+                        now()
+                    );
+            })
+            ->exists();
+
+        if ($hasActiveOffer) {
+            return back()
+                ->withInput()
+                ->with(
+                    'error',
+                    'Masih ada quotation aktif pada percakapan ini.'
+                );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Buat offer
+        |--------------------------------------------------------------------------
+        */
+
+        $offer = Offer::create([
+            'conversation_id' =>
+                $conversation->id,
+
+            'client_id' =>
+                $conversation->client_id,
+
+            'freelancer_profile_id' =>
+                $freelancerProfile->id,
+
+            'service_id' =>
+                $conversation->service_id,
+
+            'job_id' =>
+                null,
+
+            'job_proposal_id' =>
+                null,
+
+            'title' =>
+                $validated['title'],
+
+            'description' =>
+                $validated['description'] ?? null,
+
+            'price' =>
+                $validated['price'],
+
+            'delivery_days' =>
+                $validated['delivery_days'],
+
+            'revision_count' =>
+                $validated['revision_count'],
+
+            'status' =>
+                'sent',
+
+            'expires_at' =>
+                $validated['expires_at'] ?? null,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Masukkan quotation ke timeline chat
+        |--------------------------------------------------------------------------
+        */
+
+        Message::create([
+            'conversation_id' =>
+                $conversation->id,
+
+            'sender_id' =>
+                Auth::id(),
+
+            'message' =>
+                'Freelancer mengirim quotation baru: ' .
+                $offer->title,
+
+            'type' =>
+                'offer',
+
+            'is_read' =>
+                false,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update conversation
+        |--------------------------------------------------------------------------
+        */
+
+        $conversation->update([
+            'last_message_at' =>
+                now(),
+        ]);
+
+        return redirect()
+            ->route(
+                'freelancer.messages.show',
+                $conversation
+            )
+            ->with(
+                'success',
+                'Quotation berhasil dikirim kepada client.'
+            );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | JOB BOARD
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Form membuat quotation Job Board.
+     */
+    public function createJob(
         Job $job,
         JobProposal $proposal
     ): View {
@@ -26,23 +373,56 @@ class OfferController extends Controller
             403
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Proposal harus milik job
+        |--------------------------------------------------------------------------
+        */
+
         abort_unless(
             $proposal->job_id === $job->id,
             404
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Proposal harus milik freelancer login
+        |--------------------------------------------------------------------------
+        */
+
         abort_unless(
-            $proposal->freelancer_profile_id === $freelancerProfile->id,
+            $proposal->freelancer_profile_id ===
+                $freelancerProfile->id,
             403
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Status proposal
+        |--------------------------------------------------------------------------
+        */
+
         abort_unless(
-            in_array($proposal->status, ['pending', 'accepted']),
+            in_array(
+                $proposal->status,
+                ['pending', 'accepted'],
+                true
+            ),
             404
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Status job
+        |--------------------------------------------------------------------------
+        */
+
         abort_unless(
-            in_array($job->status, ['open', 'in_review']),
+            in_array(
+                $job->status,
+                ['open', 'in_review'],
+                true
+            ),
             404
         );
 
@@ -63,7 +443,10 @@ class OfferController extends Controller
         );
     }
 
-    public function store(
+    /**
+     * Simpan quotation Job Board.
+     */
+    public function storeJob(
         Request $request,
         Job $job,
         JobProposal $proposal
@@ -75,25 +458,64 @@ class OfferController extends Controller
             403
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Proposal harus milik job
+        |--------------------------------------------------------------------------
+        */
+
         abort_unless(
             $proposal->job_id === $job->id,
             404
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Proposal harus milik freelancer login
+        |--------------------------------------------------------------------------
+        */
+
         abort_unless(
-            $proposal->freelancer_profile_id === $freelancerProfile->id,
+            $proposal->freelancer_profile_id ===
+                $freelancerProfile->id,
             403
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Status proposal
+        |--------------------------------------------------------------------------
+        */
+
         abort_unless(
-            in_array($proposal->status, ['pending', 'accepted']),
+            in_array(
+                $proposal->status,
+                ['pending', 'accepted'],
+                true
+            ),
             404
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Status job
+        |--------------------------------------------------------------------------
+        */
+
         abort_unless(
-            in_array($job->status, ['open', 'in_review']),
+            in_array(
+                $job->status,
+                ['open', 'in_review'],
+                true
+            ),
             404
         );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validasi
+        |--------------------------------------------------------------------------
+        */
 
         $validated = $request->validate([
             'title' => [
@@ -139,10 +561,6 @@ class OfferController extends Controller
         |--------------------------------------------------------------------------
         | Cari conversation utama
         |--------------------------------------------------------------------------
-        |
-        | Job Board menggunakan conversation JASAIN yang sama dengan
-        | percakapan Client ↔ Freelancer.
-        |
         */
 
         $conversation = Conversation::query()
@@ -162,34 +580,48 @@ class OfferController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        if (!$conversation) {
+        if (! $conversation) {
+
             $conversation = Conversation::create([
-                'client_id' => $job->client_id,
+                'client_id' =>
+                    $job->client_id,
+
                 'freelancer_profile_id' =>
                     $freelancerProfile->id,
-                'service_id' => null,
-                'job_id' => $job->id,
-                'job_proposal_id' => $proposal->id,
-                'status' => 'active',
-                'last_message_at' => now(),
+
+                'service_id' =>
+                    null,
+
+                'job_id' =>
+                    $job->id,
+
+                'job_proposal_id' =>
+                    $proposal->id,
+
+                'status' =>
+                    'active',
+
+                'last_message_at' =>
+                    now(),
             ]);
+
         } else {
-            /*
-            |--------------------------------------------------------------------------
-            | Kaitkan conversation dengan Job Board
-            |--------------------------------------------------------------------------
-            */
 
             $conversation->update([
-                'job_id' => $job->id,
-                'job_proposal_id' => $proposal->id,
-                'last_message_at' => now(),
+                'job_id' =>
+                    $job->id,
+
+                'job_proposal_id' =>
+                    $proposal->id,
+
+                'last_message_at' =>
+                    now(),
             ]);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Pastikan tidak ada quotation aktif
+        | Cek quotation aktif
         |--------------------------------------------------------------------------
         */
 
@@ -214,6 +646,7 @@ class OfferController extends Controller
             ->exists();
 
         if ($hasActiveOffer) {
+
             return back()
                 ->withInput()
                 ->with(
@@ -224,30 +657,37 @@ class OfferController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Buat quotation
+        | Buat quotation Job Board
         |--------------------------------------------------------------------------
         */
 
         $offer = Offer::create([
-            'conversation_id' => $conversation->id,
+            'conversation_id' =>
+                $conversation->id,
 
-            'client_id' => $job->client_id,
+            'client_id' =>
+                $job->client_id,
 
             'freelancer_profile_id' =>
                 $freelancerProfile->id,
 
-            'service_id' => null,
+            'service_id' =>
+                null,
 
-            'job_id' => $job->id,
+            'job_id' =>
+                $job->id,
 
-            'job_proposal_id' => $proposal->id,
+            'job_proposal_id' =>
+                $proposal->id,
 
-            'title' => $validated['title'],
+            'title' =>
+                $validated['title'],
 
             'description' =>
                 $validated['description'] ?? null,
 
-            'price' => $validated['price'],
+            'price' =>
+                $validated['price'],
 
             'delivery_days' =>
                 $validated['delivery_days'],
@@ -255,7 +695,8 @@ class OfferController extends Controller
             'revision_count' =>
                 $validated['revision_count'],
 
-            'status' => 'sent',
+            'status' =>
+                'sent',
 
             'expires_at' =>
                 $validated['expires_at'] ?? null,
@@ -263,21 +704,26 @@ class OfferController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Buat message quotation
+        | Message quotation
         |--------------------------------------------------------------------------
-        |
-        | Ini yang membuat quotation muncul di timeline chat.
-        |
         */
 
         Message::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => Auth::id(),
+            'conversation_id' =>
+                $conversation->id,
+
+            'sender_id' =>
+                Auth::id(),
+
             'message' =>
                 'Freelancer mengirim quotation baru: ' .
                 $offer->title,
-            'type' => 'offer',
-            'is_read' => false,
+
+            'type' =>
+                'offer',
+
+            'is_read' =>
+                false,
         ]);
 
         /*
@@ -287,7 +733,8 @@ class OfferController extends Controller
         */
 
         $conversation->update([
-            'last_message_at' => now(),
+            'last_message_at' =>
+                now(),
         ]);
 
         return redirect()
