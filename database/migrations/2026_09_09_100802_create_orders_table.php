@@ -22,7 +22,8 @@ return new class extends Migration
                 ->constrained('freelancer_profiles')
                 ->restrictOnDelete();
 
-            $table->string('order_number')->unique();
+            $table->string('order_number')
+                ->unique();
 
             $table->string('status')
                 ->default('pending_payment');

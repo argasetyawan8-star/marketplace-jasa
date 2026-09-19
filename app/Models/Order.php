@@ -6,9 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use App\Models\Commission;
-use App\Models\Conversation;
-
 
 class Order extends Model
 {
@@ -44,12 +41,9 @@ class Order extends Model
         ];
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Client
-    |--------------------------------------------------------------------------
-    */
-
+    /**
+     * Client pemilik order.
+     */
     public function client(): BelongsTo
     {
         return $this->belongsTo(
@@ -58,13 +52,9 @@ class Order extends Model
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Freelancer
-    |--------------------------------------------------------------------------
-    */
-
+    /**
+     * Freelancer yang mengerjakan order.
+     */
     public function freelancerProfile(): BelongsTo
     {
         return $this->belongsTo(
@@ -73,13 +63,9 @@ class Order extends Model
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Order Items
-    |--------------------------------------------------------------------------
-    */
-
+    /**
+     * Item-item dalam order.
+     */
     public function items(): HasMany
     {
         return $this->hasMany(
@@ -88,13 +74,9 @@ class Order extends Model
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Payment
-    |--------------------------------------------------------------------------
-    */
-
+    /**
+     * Payment order.
+     */
     public function payment(): HasOne
     {
         return $this->hasOne(
@@ -103,24 +85,66 @@ class Order extends Model
         );
     }
 
+    /**
+     * Delivery order.
+     */
     public function deliveries(): HasMany
-{
-    return $this->hasMany(Delivery::class);
-}
+    {
+        return $this->hasMany(
+            Delivery::class,
+            'order_id'
+        );
+    }
 
-public function commission(): HasOne
-{
-    return $this->hasOne(Commission::class);
-}
+    /**
+     * Commission order.
+     */
+    public function commission(): HasOne
+    {
+        return $this->hasOne(
+            Commission::class
+        );
+    }
 
-public function review(): HasOne
-{
-    return $this->hasOne(Review::class);
-}
+    /**
+     * Review order.
+     */
+    public function review(): HasOne
+    {
+        return $this->hasOne(
+            Review::class
+        );
+    }
 
-public function conversation(): BelongsTo
-{
-    return $this->belongsTo(Conversation::class);
-}
-}
+    /**
+     * Conversation order.
+     */
+    public function conversation(): BelongsTo
+    {
+        return $this->belongsTo(
+            Conversation::class
+        );
+    }
 
+    /**
+     * Semua riwayat pengajuan cancellation.
+     */
+    public function cancellationRequests(): HasMany
+    {
+        return $this->hasMany(
+            CancellationRequest::class,
+            'order_id'
+        );
+    }
+
+    /**
+     * Pengajuan cancellation terbaru.
+     */
+    public function latestCancellationRequest(): HasOne
+    {
+        return $this->hasOne(
+            CancellationRequest::class,
+            'order_id'
+        )->latestOfMany();
+    }
+}

@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\WithdrawalController as AdminWithdrawalController;
 use App\Http\Controllers\Admin\VerificationController as AdminVerificationController;
 use App\Http\Controllers\Admin\ServiceModerationController as AdminServiceModerationController;
+use App\Http\Controllers\Admin\CancellationController as AdminCancellationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,7 +36,7 @@ use App\Http\Controllers\Client\DeliveryController as ClientDeliveryController;
 use App\Http\Controllers\Client\ReviewController as ClientReviewController;
 use App\Http\Controllers\Client\JobController as ClientJobController;
 use App\Http\Controllers\Client\InvoiceController as ClientInvoiceController;
-
+use App\Http\Controllers\Client\CancellationController as ClientCancellationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -65,6 +66,7 @@ use App\Http\Controllers\Freelancer\JobController as FreelancerJobController;
 use App\Http\Controllers\Freelancer\JobProposalController as FreelancerJobProposalController;
 use App\Http\Controllers\Freelancer\VerificationController as FreelancerVerificationController;
 use App\Http\Controllers\Freelancer\ServiceModerationController as FreelancerServiceModerationController;
+use App\Http\Controllers\Freelancer\CancellationController as FreelancerCancellationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -194,41 +196,41 @@ Route::middleware(['auth', 'role:client'])
         )->name('dashboard');
 
         /*
-|--------------------------------------------------------------------------
-| Orders
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        | Orders
+        |--------------------------------------------------------------------------
+        */
 
-Route::get(
-    '/orders',
-    [ClientOrderController::class, 'index']
-)->name('orders.index');
+        Route::get(
+            '/orders',
+            [ClientOrderController::class, 'index']
+        )->name('orders.index');
 
-Route::post(
-    '/orders',
-    [ClientOrderController::class, 'store']
-)->name('orders.store');
+        Route::post(
+            '/orders',
+            [ClientOrderController::class, 'store']
+        )->name('orders.store');
 
-Route::get(
-    '/orders/{order}/checkout',
-    [ClientOrderController::class, 'checkout']
-)->name('orders.checkout');
+        Route::get(
+            '/orders/{order}/checkout',
+            [ClientOrderController::class, 'checkout']
+        )->name('orders.checkout');
 
-/*
-|--------------------------------------------------------------------------
-| Invoice & Transaction Detail
-|--------------------------------------------------------------------------
-*/
+        /*
+        |--------------------------------------------------------------------------
+        | Invoice & Transaction Detail
+        |--------------------------------------------------------------------------
+        */
 
-Route::get(
-    '/orders/{order}/invoice',
-    [ClientInvoiceController::class, 'show']
-)->name('orders.invoice');
+        Route::get(
+            '/orders/{order}/invoice',
+            [ClientInvoiceController::class, 'show']
+        )->name('orders.invoice');
 
-Route::get(
-    '/orders/{order}',
-    [ClientOrderController::class, 'show']
-)->name('orders.show');
+        Route::get(
+            '/orders/{order}',
+            [ClientOrderController::class, 'show']
+        )->name('orders.show');
 
         /*
         |--------------------------------------------------------------------------
@@ -412,15 +414,33 @@ Route::get(
         |--------------------------------------------------------------------------
         | Job Board Chat
         |--------------------------------------------------------------------------
-        |
-        | Chat menggunakan Conversation utama JASAIN.
-        |
         */
 
         Route::get(
             '/jobs/{job}/proposals/{proposal}/chat',
             [JobBoardChatController::class, 'start']
         )->name('jobs.chat.start');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cancellation
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/orders/{order}/cancellation',
+            [ClientCancellationController::class, 'create']
+        )->name('orders.cancellation.create');
+
+        Route::post(
+            '/orders/{order}/cancellation',
+            [ClientCancellationController::class, 'store']
+        )->name('orders.cancellation.store');
+
+        Route::post(
+            '/orders/{order}/cancellation/mediation',
+            [ClientCancellationController::class, 'mediation']
+        )->name('orders.cancellation.mediation');
     });
 
 /*
@@ -672,37 +692,36 @@ Route::middleware(['auth', 'role:freelancer'])
         )->name('messages.store');
 
         /*
-|--------------------------------------------------------------------------
-| Offers / Quotations - Service Marketplace
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        | Offers / Quotations - Service Marketplace
+        |--------------------------------------------------------------------------
+        */
 
-Route::get(
-    '/messages/{conversation}/offer',
-    [FreelancerOfferController::class, 'createService']
-)->name('messages.offers.create');
+        Route::get(
+            '/messages/{conversation}/offer',
+            [FreelancerOfferController::class, 'createService']
+        )->name('messages.offers.create');
 
-Route::post(
-    '/messages/{conversation}/offer',
-    [FreelancerOfferController::class, 'storeService']
-)->name('messages.offers.store');
+        Route::post(
+            '/messages/{conversation}/offer',
+            [FreelancerOfferController::class, 'storeService']
+        )->name('messages.offers.store');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Job Board - Quotation
+        |--------------------------------------------------------------------------
+        */
 
-/*
-|--------------------------------------------------------------------------
-| Job Board - Quotation
-|--------------------------------------------------------------------------
-*/
+        Route::get(
+            '/jobs/{job}/proposals/{proposal}/offer',
+            [FreelancerOfferController::class, 'createJob']
+        )->name('jobs.proposals.offer.create');
 
-Route::get(
-    '/jobs/{job}/proposals/{proposal}/offer',
-    [FreelancerOfferController::class, 'createJob']
-)->name('jobs.proposals.offer.create');
-
-Route::post(
-    '/jobs/{job}/proposals/{proposal}/offer',
-    [FreelancerOfferController::class, 'storeJob']
-)->name('jobs.proposals.offer.store');
+        Route::post(
+            '/jobs/{job}/proposals/{proposal}/offer',
+            [FreelancerOfferController::class, 'storeJob']
+        )->name('jobs.proposals.offer.store');
 
         /*
         |--------------------------------------------------------------------------
@@ -761,9 +780,6 @@ Route::post(
         |--------------------------------------------------------------------------
         | Job Board Chat
         |--------------------------------------------------------------------------
-        |
-        | Menggunakan Conversation utama JASAIN.
-        |
         */
 
         Route::get(
@@ -802,6 +818,27 @@ Route::post(
             '/verification',
             [FreelancerVerificationController::class, 'store']
         )->name('verification.store');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cancellation
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/orders/{order}/cancellation',
+            [FreelancerCancellationController::class, 'create']
+        )->name('orders.cancellation.create');
+
+        Route::post(
+            '/orders/{order}/cancellation/approve',
+            [FreelancerCancellationController::class, 'approve']
+        )->name('orders.cancellation.approve');
+
+        Route::post(
+            '/orders/{order}/cancellation/reject',
+            [FreelancerCancellationController::class, 'reject']
+        )->name('orders.cancellation.reject');
     });
 
 /*
@@ -1071,6 +1108,32 @@ Route::middleware(['auth', 'role:admin'])
             '/service-moderation/{service}/reject',
             [AdminServiceModerationController::class, 'reject']
         )->name('service-moderation.reject');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cancellations
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/cancellations',
+            [AdminCancellationController::class, 'index']
+        )->name('cancellations.index');
+
+        Route::get(
+            '/cancellations/{cancellationRequest}',
+            [AdminCancellationController::class, 'show']
+        )->name('cancellations.show');
+
+        Route::post(
+            '/cancellations/{cancellationRequest}/approve',
+            [AdminCancellationController::class, 'approve']
+        )->name('cancellations.approve');
+
+        Route::post(
+            '/cancellations/{cancellationRequest}/reject',
+            [AdminCancellationController::class, 'reject']
+        )->name('cancellations.reject');
     });
 
 /*

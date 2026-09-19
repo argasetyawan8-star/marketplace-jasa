@@ -21,6 +21,7 @@ class OrderController extends Controller
             ->with([
                 'items.service',
                 'freelancerProfile.user',
+                'latestCancellationRequest',
             ])
             ->where(
                 'client_id',
@@ -50,6 +51,19 @@ class OrderController extends Controller
             'freelancerProfile.user',
             'payment',
             'conversation',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Cancellation
+            |--------------------------------------------------------------------------
+            |
+            | Ambil pengajuan cancellation terbaru beserta:
+            | - requester
+            | - reviewer/admin
+            |
+            */
+            'latestCancellationRequest.requester',
+            'latestCancellationRequest.reviewer',
         ]);
 
         return view(
@@ -176,7 +190,6 @@ class OrderController extends Controller
                 $total,
                 $freelancerAmount
             ) {
-
                 $orderNumber =
                     'ORD-' .
                     now()->format('YmdHis') .
