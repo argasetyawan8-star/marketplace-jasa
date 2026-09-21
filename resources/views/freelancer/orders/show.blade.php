@@ -32,6 +32,17 @@
 
     |--------------------------------------------------------------------------
 
+    | DISPUTE
+
+    |--------------------------------------------------------------------------
+ */
+    $activeDispute = $order->activeDispute;
+
+
+    /**
+
+    |--------------------------------------------------------------------------
+
     | ORDER STATUS
 
     |--------------------------------------------------------------------------
@@ -279,17 +290,6 @@
     |--------------------------------------------------------------------------
  */
     $deliveryCount = $order->deliveries?->count() ?? 0;
-
-    /**
-
-    |--------------------------------------------------------------------------
-
-    | CANCELLATION
-
-    |--------------------------------------------------------------------------
- */
-    $latestCancellationRequest = $order->latestCancellationRequest;
-    $cancellationStatus = $latestCancellationRequest?->status;
 
 @endphp
 
@@ -642,342 +642,124 @@
         </section>
 
         {{-- =========================================================
-            CANCELLATION STATUS
+
+            DISPUTE STATUS
+
         ========================================================== --}}
 
-        @if($latestCancellationRequest || $order->status === 'cancelled')
+        @if($activeDispute)
 
-            <section class="mt-5 overflow-hidden rounded-2xl border border-[#E1EAE5] bg-white shadow-[0_5px_18px_rgba(18,49,40,0.035)]">
+            <section class="mt-5 overflow-hidden rounded-2xl border border-[#D8D4EE] bg-[#F7F5FD]">
 
                 <div class="px-5 py-5 sm:px-6">
 
-                    @if($order->status === 'cancelled')
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="flex items-start gap-3">
 
-                            <div class="flex items-start gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#6D62A4] shadow-sm">
+                                <i class="bi bi-shield-exclamation text-[15px]"></i>
+                            </div>
 
-                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF1F1] text-[#C65353]">
+                            <div class="min-w-0">
 
-                                    <i class="bi bi-x-circle text-[15px]"></i>
+                                <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#6D62A4]">
+                                    Dispute Order
+                                </p>
 
-                                </div>
-
-                                <div class="min-w-0">
-
-                                    <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#B84E4E]">
-                                        Pembatalan order
-                                    </p>
+                                @if($activeDispute->opened_by_role === 'client')
 
                                     <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-                                        Order ini sudah dibatalkan
+                                        Client mengajukan dispute
                                     </h2>
 
-                                    <p class="mt-1 text-xs leading-5 text-[#7A6A6A]">
-                                        Pesanan tidak dapat dilanjutkan. Status pembayaran/refund diproses sesuai alur transaksi JASAIN.
+                                    <p class="mt-1 text-xs leading-5 text-[#726C91]">
+                                        Ada pengajuan sengketa yang perlu kamu tanggapi. Buka detail dispute untuk membaca alasan, memberikan tanggapan, dan mengirim bukti.
                                     </p>
 
-                                </div>
-
-                            </div>
-
-                            <span class="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full bg-[#FFF1F1] px-2.5 py-1 text-[9px] font-semibold text-[#B84E4E]">
-                                <span class="h-1.5 w-1.5 rounded-full bg-[#D16B6B]"></span>
-                                Dibatalkan
-                            </span>
-
-                        </div>
-
-                        @if($order->cancel_reason)
-
-                            <div class="mt-4 rounded-xl border border-[#F0DADA] bg-[#FFF8F8] px-4 py-4">
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#A66A6A]">
-                                    Alasan pembatalan
-                                </p>
-
-                                <p class="mt-2 whitespace-pre-line text-xs leading-6 text-[#6C5C5C]">
-                                    {{ $order->cancel_reason }}
-                                </p>
-
-                            </div>
-
-                        @endif
-
-                    @elseif($cancellationStatus === 'pending_freelancer')
-
-                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-
-                            <div class="flex items-start gap-3">
-
-                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF6DE] text-[#B7791F]">
-                                    <i class="bi bi-hourglass-split text-[15px]"></i>
-                                </div>
-
-                                <div class="min-w-0">
-
-                                    <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#B7791F]">
-                                        Permintaan pembatalan
-                                    </p>
+                                @else
 
                                     <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-                                        Client mengajukan pembatalan order
+                                        Dispute sedang diproses
                                     </h2>
 
-                                    <p class="mt-1 max-w-2xl text-xs leading-5 text-[#806A43]">
-                                        Tinjau alasan client lalu pilih apakah kamu menyetujui atau menolak permintaan pembatalan ini.
+                                    <p class="mt-1 text-xs leading-5 text-[#726C91]">
+                                        Buka detail dispute untuk melihat proses penyelesaian sengketa yang sedang berjalan.
                                     </p>
 
-                                </div>
+                                @endif
 
                             </div>
-
-                            <a
-                                href="{{ route('freelancer.orders.cancellation.create', $order) }}"
-                                class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#B7791F] px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-[#976217]"
-                            >
-                                <i class="bi bi-file-earmark-text text-[12px]"></i>
-                                Tinjau Pembatalan
-                            </a>
 
                         </div>
 
-                        @if($latestCancellationRequest->reason)
+                        <a
+                            href="{{ route('freelancer.disputes.show', $activeDispute) }}"
+                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-4 text-xs font-semibold text-[#6D62A4] shadow-sm ring-1 ring-[#DDD8EE] transition hover:bg-[#F2F0FA]"
+                        >
+                            <i class="bi bi-eye"></i>
+                            @if($activeDispute->opened_by_role === 'client')
+                                Tinjau Dispute
+                            @else
+                                Lihat Dispute
+                            @endif
+                            <i class="bi bi-arrow-right text-[10px]"></i>
+                        </a>
 
-                            <div class="mt-4 rounded-xl border border-[#EEDFC4] bg-[#FFF9EA] px-4 py-4">
+                    </div>
 
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#9A7B49]">
-                                    Alasan dari client
-                                </p>
+                </div>
 
-                                <p class="mt-2 whitespace-pre-line text-xs leading-6 text-[#665A48]">
-                                    {{ $latestCancellationRequest->reason }}
-                                </p>
+            </section>
 
-                            </div>
+        @elseif(
+            in_array(
+                $order->status,
+                ['paid', 'in_progress', 'delivered', 'revision'],
+                true
+            )
+        )
 
-                        @endif
+            <section class="mt-5 overflow-hidden rounded-2xl border border-[#E8D3B0] bg-[#FFF9EA]">
 
-                    @elseif($cancellationStatus === 'rejected_by_freelancer')
+                <div class="px-5 py-5 sm:px-6">
+
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
                         <div class="flex items-start gap-3">
 
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF1F1] text-[#C65353]">
-                                <i class="bi bi-x-circle text-[15px]"></i>
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#B7791F] shadow-sm">
+                                <i class="bi bi-shield-plus text-[15px]"></i>
                             </div>
 
-                            <div class="min-w-0">
+                            <div>
 
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#B84E4E]">
-                                    Permintaan pembatalan
+                                <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#B7791F]">
+                                    Bantuan Sengketa
                                 </p>
 
                                 <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-                                    Permintaan pembatalan ditolak
+                                    Ada masalah dengan order?
                                 </h2>
 
-                                <p class="mt-1 text-xs leading-5 text-[#7A6A6A]">
-                                    Kamu sudah menolak permintaan pembatalan dari client. Client dapat melanjutkan ke tahap mediasi admin.
+                                <p class="mt-1 text-xs leading-5 text-[#866F4A]">
+                                    Kamu dapat mengajukan dispute jika ada masalah yang perlu diselesaikan bersama client atau admin.
                                 </p>
 
                             </div>
 
                         </div>
 
-                        @if($latestCancellationRequest->freelancer_note)
-
-                            <div class="mt-4 rounded-xl border border-[#F0DADA] bg-[#FFF8F8] px-4 py-4">
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#A66A6A]">
-                                    Catatan kamu
-                                </p>
-
-                                <p class="mt-2 whitespace-pre-line text-xs leading-6 text-[#6C5C5C]">
-                                    {{ $latestCancellationRequest->freelancer_note }}
-                                </p>
-
-                            </div>
-
-                        @endif
-
-                    @elseif($cancellationStatus === 'mediation_pending')
-
-                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-
-                            <div class="flex items-start gap-3">
-
-                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF6FC] text-[#4D82AE]">
-                                    <i class="bi bi-shield-check text-[15px]"></i>
-                                </div>
-
-                                <div class="min-w-0">
-
-                                    <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#4D82AE]">
-                                        Mediasi
-                                    </p>
-
-                                    <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-                                        Pengajuan sedang ditinjau admin
-                                    </h2>
-
-                                    <p class="mt-1 max-w-2xl text-xs leading-5 text-[#637B8B]">
-                                        Client mengajukan mediasi setelah permintaan pembatalan ditolak. Tunggu keputusan admin.
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                            <span class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#CFE1EE] bg-[#F5FAFD] px-4 text-[10px] font-semibold text-[#4D82AE]">
-                                <i class="bi bi-hourglass-split"></i>
-                                Menunggu Admin
-                            </span>
-
-                        </div>
-
-                        @if($latestCancellationRequest->mediation_reason)
-
-                            <div class="mt-4 rounded-xl border border-[#D7E6F0] bg-[#F6FAFD] px-4 py-4">
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#66859A]">
-                                    Alasan mediasi dari client
-                                </p>
-
-                                <p class="mt-2 whitespace-pre-line text-xs leading-6 text-[#5D7180]">
-                                    {{ $latestCancellationRequest->mediation_reason }}
-                                </p>
-
-                            </div>
-
-                        @endif
-
-                    @elseif($cancellationStatus === 'approved_by_freelancer')
-
-                        <div class="flex items-start gap-3">
-
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A]">
-                                <i class="bi bi-check-circle text-[15px]"></i>
-                            </div>
-
-                            <div class="min-w-0">
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#1E9E5A]">
-                                    Pembatalan
-                                </p>
-
-                                <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-                                    Pembatalan disetujui
-                                </h2>
-
-                                <p class="mt-1 text-xs leading-5 text-[#61786D]">
-                                    Kamu menyetujui permintaan pembatalan dari client. Order sudah masuk status dibatalkan.
-                                </p>
-
-                            </div>
-
-                        </div>
-
-                        @if($latestCancellationRequest->freelancer_note)
-
-                            <div class="mt-4 rounded-xl border border-[#D8EBDD] bg-[#F4FBF6] px-4 py-4">
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#63836F]">
-                                    Catatan kamu
-                                </p>
-
-                                <p class="mt-2 whitespace-pre-line text-xs leading-6 text-[#557064]">
-                                    {{ $latestCancellationRequest->freelancer_note }}
-                                </p>
-
-                            </div>
-
-                        @endif
-
-                    @elseif($cancellationStatus === 'approved_by_admin')
-
-                        <div class="flex items-start gap-3">
-
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A]">
-                                <i class="bi bi-shield-check text-[15px]"></i>
-                            </div>
-
-                            <div class="min-w-0">
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#1E9E5A]">
-                                    Mediasi selesai
-                                </p>
-
-                                <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-                                    Pembatalan disetujui admin
-                                </h2>
-
-                                <p class="mt-1 text-xs leading-5 text-[#61786D]">
-                                    Admin menyetujui mediasi client dan order telah dibatalkan.
-                                </p>
-
-                            </div>
-
-                        </div>
-
-                        @if($latestCancellationRequest->admin_note)
-
-                            <div class="mt-4 rounded-xl border border-[#D8EBDD] bg-[#F4FBF6] px-4 py-4">
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#63836F]">
-                                    Catatan admin
-                                </p>
-
-                                <p class="mt-2 whitespace-pre-line text-xs leading-6 text-[#557064]">
-                                    {{ $latestCancellationRequest->admin_note }}
-                                </p>
-
-                            </div>
-
-                        @endif
-
-                    @elseif($cancellationStatus === 'rejected_by_admin')
-
-                        <div class="flex items-start gap-3">
-
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF0F5] text-[#5D7283]">
-                                <i class="bi bi-shield-x text-[15px]"></i>
-                            </div>
-
-                            <div class="min-w-0">
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#5D7283]">
-                                    Mediasi selesai
-                                </p>
-
-                                <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-                                    Mediasi ditolak admin
-                                </h2>
-
-                                <p class="mt-1 text-xs leading-5 text-[#71837B]">
-                                    Pengajuan pembatalan tidak disetujui admin, sehingga order tetap berjalan.
-                                </p>
-
-                            </div>
-
-                        </div>
-
-                        @if($latestCancellationRequest->admin_note)
-
-                            <div class="mt-4 rounded-xl border border-[#DCE6EC] bg-[#F7FAFC] px-4 py-4">
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#708899]">
-                                    Catatan admin
-                                </p>
-
-                                <p class="mt-2 whitespace-pre-line text-xs leading-6 text-[#5F6F7A]">
-                                    {{ $latestCancellationRequest->admin_note }}
-                                </p>
-
-                            </div>
-
-                        @endif
-
-                    @endif
+                        <a
+                            href="{{ route('freelancer.orders.dispute.create', $order) }}"
+                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D9B96E] bg-white px-4 text-xs font-semibold text-[#76520F] transition hover:bg-[#FFF3D6]"
+                        >
+                            <i class="bi bi-shield-exclamation"></i>
+                            Ajukan Dispute
+                            <i class="bi bi-arrow-right text-[10px]"></i>
+                        </a>
+
+                    </div>
 
                 </div>
 

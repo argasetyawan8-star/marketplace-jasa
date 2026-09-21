@@ -41,9 +41,12 @@ class Order extends Model
         ];
     }
 
-    /**
-     * Client pemilik order.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | CLIENT / FREELANCER
+    |--------------------------------------------------------------------------
+    */
+
     public function client(): BelongsTo
     {
         return $this->belongsTo(
@@ -52,9 +55,6 @@ class Order extends Model
         );
     }
 
-    /**
-     * Freelancer yang mengerjakan order.
-     */
     public function freelancerProfile(): BelongsTo
     {
         return $this->belongsTo(
@@ -63,9 +63,12 @@ class Order extends Model
         );
     }
 
-    /**
-     * Item-item dalam order.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | ORDER DATA
+    |--------------------------------------------------------------------------
+    */
+
     public function items(): HasMany
     {
         return $this->hasMany(
@@ -74,9 +77,6 @@ class Order extends Model
         );
     }
 
-    /**
-     * Payment order.
-     */
     public function payment(): HasOne
     {
         return $this->hasOne(
@@ -85,9 +85,6 @@ class Order extends Model
         );
     }
 
-    /**
-     * Delivery order.
-     */
     public function deliveries(): HasMany
     {
         return $this->hasMany(
@@ -96,9 +93,6 @@ class Order extends Model
         );
     }
 
-    /**
-     * Commission order.
-     */
     public function commission(): HasOne
     {
         return $this->hasOne(
@@ -106,9 +100,6 @@ class Order extends Model
         );
     }
 
-    /**
-     * Review order.
-     */
     public function review(): HasOne
     {
         return $this->hasOne(
@@ -116,9 +107,6 @@ class Order extends Model
         );
     }
 
-    /**
-     * Conversation order.
-     */
     public function conversation(): BelongsTo
     {
         return $this->belongsTo(
@@ -126,9 +114,12 @@ class Order extends Model
         );
     }
 
-    /**
-     * Semua riwayat pengajuan cancellation.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | CANCELLATION
+    |--------------------------------------------------------------------------
+    */
+
     public function cancellationRequests(): HasMany
     {
         return $this->hasMany(
@@ -137,14 +128,37 @@ class Order extends Model
         );
     }
 
-    /**
-     * Pengajuan cancellation terbaru.
-     */
     public function latestCancellationRequest(): HasOne
     {
         return $this->hasOne(
             CancellationRequest::class,
             'order_id'
         )->latestOfMany();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | DISPUTE
+    |--------------------------------------------------------------------------
+    */
+
+    public function disputes(): HasMany
+    {
+        return $this->hasMany(
+            Dispute::class,
+            'order_id'
+        );
+    }
+
+    public function activeDispute(): HasOne
+    {
+        return $this->hasOne(
+            Dispute::class,
+            'order_id'
+        )->whereIn('status', [
+            'open',
+            'pending_response',
+            'under_review',
+        ]);
     }
 }

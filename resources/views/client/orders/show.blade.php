@@ -162,6 +162,21 @@
         $cancellationStatus =
             $latestCancellationRequest?->status;
 
+        $activeDispute = $order->activeDispute;
+
+        $disputableStatuses = [
+            'paid',
+            'in_progress',
+            'delivered',
+            'revision',
+        ];
+
+        $canRequestDispute = in_array(
+            $order->status,
+            $disputableStatuses,
+            true
+        );
+
 
 
         $timeline = [
@@ -1751,6 +1766,61 @@
 
                                 <i class="bi bi-arrow-right text-[10px]"></i>
 
+                            </a>
+
+                        </section>
+
+                    @endif
+
+                    {{-- Dispute --}}
+                    @if($activeDispute)
+
+                        <section class="rounded-2xl border border-[#D8D4EE] bg-[#F7F5FD] p-5">
+
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#6D62A4] shadow-sm">
+                                <i class="bi bi-shield-exclamation text-[15px]"></i>
+                            </div>
+
+                            <h2 class="mt-4 text-sm font-semibold text-[#123128]">
+                                Dispute sedang berjalan
+                            </h2>
+
+                            <p class="mt-1.5 text-xs leading-5 text-[#6E6A82]">
+                                Order ini sedang dalam proses penyelesaian sengketa. Gunakan halaman dispute untuk memberikan informasi atau bukti tambahan.
+                            </p>
+
+                            <a
+                                href="{{ route('client.disputes.show', $activeDispute) }}"
+                                class="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white text-xs font-semibold text-[#6D62A4] shadow-sm transition hover:bg-[#F1EFFA]"
+                            >
+                                Lihat Dispute
+                                <i class="bi bi-arrow-right text-[10px]"></i>
+                            </a>
+
+                        </section>
+
+                    @elseif($canRequestDispute && !in_array($cancellationStatus, ['pending_freelancer', 'mediation_pending'], true))
+
+                        <section class="rounded-2xl border border-[#D8D4EE] bg-[#F7F5FD] p-5">
+
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#6D62A4] shadow-sm">
+                                <i class="bi bi-shield-exclamation text-[15px]"></i>
+                            </div>
+
+                            <h2 class="mt-4 text-sm font-semibold text-[#123128]">
+                                Ada masalah dengan order?
+                            </h2>
+
+                            <p class="mt-1.5 text-xs leading-5 text-[#6E6A82]">
+                                Ajukan dispute bila ada masalah yang perlu diselesaikan bersama freelancer atau admin.
+                            </p>
+
+                            <a
+                                href="{{ route('client.orders.dispute.create', $order) }}"
+                                class="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white text-xs font-semibold text-[#6D62A4] shadow-sm transition hover:bg-[#F1EFFA]"
+                            >
+                                Ajukan Dispute
+                                <i class="bi bi-arrow-right text-[10px]"></i>
                             </a>
 
                         </section>

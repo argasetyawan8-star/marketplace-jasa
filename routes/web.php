@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\WithdrawalController as AdminWithdrawalController
 use App\Http\Controllers\Admin\VerificationController as AdminVerificationController;
 use App\Http\Controllers\Admin\ServiceModerationController as AdminServiceModerationController;
 use App\Http\Controllers\Admin\CancellationController as AdminCancellationController;
+use App\Http\Controllers\Admin\DisputeController as AdminDisputeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,6 +38,7 @@ use App\Http\Controllers\Client\ReviewController as ClientReviewController;
 use App\Http\Controllers\Client\JobController as ClientJobController;
 use App\Http\Controllers\Client\InvoiceController as ClientInvoiceController;
 use App\Http\Controllers\Client\CancellationController as ClientCancellationController;
+use App\Http\Controllers\Client\DisputeController as ClientDisputeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -67,6 +69,8 @@ use App\Http\Controllers\Freelancer\JobProposalController as FreelancerJobPropos
 use App\Http\Controllers\Freelancer\VerificationController as FreelancerVerificationController;
 use App\Http\Controllers\Freelancer\ServiceModerationController as FreelancerServiceModerationController;
 use App\Http\Controllers\Freelancer\CancellationController as FreelancerCancellationController;
+use App\Http\Controllers\Freelancer\DisputeController as FreelancerDisputeController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -441,6 +445,37 @@ Route::middleware(['auth', 'role:client'])
             '/orders/{order}/cancellation/mediation',
             [ClientCancellationController::class, 'mediation']
         )->name('orders.cancellation.mediation');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Dispute
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/orders/{order}/dispute',
+            [ClientDisputeController::class, 'create']
+        )->name('orders.dispute.create');
+
+        Route::post(
+            '/orders/{order}/dispute',
+            [ClientDisputeController::class, 'store']
+        )->name('orders.dispute.store');
+
+        Route::get(
+            '/disputes/{dispute}',
+            [ClientDisputeController::class, 'show']
+        )->name('disputes.show');
+
+        Route::post(
+            '/disputes/{dispute}/message',
+            [ClientDisputeController::class, 'message']
+        )->name('disputes.message');
+
+        Route::post(
+            '/disputes/{dispute}/evidence',
+            [ClientDisputeController::class, 'evidence']
+        )->name('disputes.evidence');
     });
 
 /*
@@ -839,6 +874,37 @@ Route::middleware(['auth', 'role:freelancer'])
             '/orders/{order}/cancellation/reject',
             [FreelancerCancellationController::class, 'reject']
         )->name('orders.cancellation.reject');
+
+         /*
+        |--------------------------------------------------------------------------
+        | Dispute
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/orders/{order}/dispute',
+            [FreelancerDisputeController::class, 'create']
+        )->name('orders.dispute.create');
+
+        Route::post(
+            '/orders/{order}/dispute',
+            [FreelancerDisputeController::class, 'store']
+        )->name('orders.dispute.store');
+
+        Route::get(
+            '/disputes/{dispute}',
+            [FreelancerDisputeController::class, 'show']
+        )->name('disputes.show');
+
+        Route::post(
+            '/disputes/{dispute}/message',
+            [FreelancerDisputeController::class, 'message']
+        )->name('disputes.message');
+
+        Route::post(
+            '/disputes/{dispute}/evidence',
+            [FreelancerDisputeController::class, 'evidence']
+        )->name('disputes.evidence');
     });
 
 /*
@@ -1134,6 +1200,32 @@ Route::middleware(['auth', 'role:admin'])
             '/cancellations/{cancellationRequest}/reject',
             [AdminCancellationController::class, 'reject']
         )->name('cancellations.reject');
+
+         /*
+        |--------------------------------------------------------------------------
+        | Dispute
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/disputes',
+            [AdminDisputeController::class, 'index']
+        )->name('disputes.index');
+
+        Route::get(
+            '/disputes/{dispute}',
+            [AdminDisputeController::class, 'show']
+        )->name('disputes.show');
+
+        Route::post(
+            '/disputes/{dispute}/resolve',
+            [AdminDisputeController::class, 'resolve']
+        )->name('disputes.resolve');
+
+        Route::post(
+            '/disputes/{dispute}/close',
+            [AdminDisputeController::class, 'close']
+        )->name('disputes.close');
     });
 
 /*
