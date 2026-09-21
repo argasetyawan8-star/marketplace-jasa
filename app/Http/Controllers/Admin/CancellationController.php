@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CancellationRequest;
 use App\Models\Order;
+use App\Services\RefundService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -174,6 +175,12 @@ class CancellationController extends Controller
             $cancellationRequest,
             $validated
         ) {
+            /*
+            |--------------------------------------------------------------------------
+            | Lock Cancellation Request
+            |--------------------------------------------------------------------------
+            */
+
             $lockedRequest = CancellationRequest::query()
                 ->lockForUpdate()
                 ->findOrFail(
@@ -182,8 +189,15 @@ class CancellationController extends Controller
 
             abort_unless(
                 $lockedRequest->status === 'mediation_pending',
-                422
+                422,
+                'Pengajuan ini tidak lagi menunggu mediasi admin.'
             );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Lock Order
+            |--------------------------------------------------------------------------
+            */
 
             $order = Order::query()
                 ->with('payment')
@@ -194,9 +208,10 @@ class CancellationController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Pastikan order masih dapat dibatalkan
+            | Pastikan Order Masih Dapat Dibatalkan
             |--------------------------------------------------------------------------
             */
+
             if (
                 ! in_array(
                     $order->status,
@@ -207,7 +222,8 @@ class CancellationController extends Controller
                 $lockedRequest->update([
                     'status' => 'rejected_by_admin',
                     'reviewed_by' => Auth::id(),
-                    'admin_note' => 'Mediasi tidak dapat diproses karena status order sudah berubah.',
+                    'admin_note' =>
+                        'Mediasi tidak dapat diproses karena status order sudah berubah.',
                     'reviewed_at' => now(),
                 ]);
 
@@ -219,6 +235,7 @@ class CancellationController extends Controller
             | Batalkan Order
             |--------------------------------------------------------------------------
             */
+
             $order->update([
                 'status' => 'cancelled',
                 'cancel_reason' => $lockedRequest->reason,
@@ -229,27 +246,59 @@ class CancellationController extends Controller
             | Payment
             |--------------------------------------------------------------------------
             */
+
             if ($order->payment) {
-                if ($order->payment->status === 'pending') {
+                /*
+                |--------------------------------------------------------------------------
+                | Belum Dibayar
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $order->payment->status === 'pending'
+                ) {
                     $order->payment->update([
                         'status' => 'cancelled',
                     ]);
-                } elseif ($order->payment->status === 'paid') {
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Sudah Dibayar
+                |--------------------------------------------------------------------------
+                |
+                | Tandai payment sebagai refund_pending.
+                | Kemudian otomatis buat record Refund.
+                |
+                */
+
+                elseif (
+                    $order->payment->status === 'paid'
+                ) {
                     $order->payment->update([
                         'status' => 'refund_pending',
                     ]);
+
+                    app(RefundService::class)->createPending(
+                        $order,
+                        'cancellation',
+                        $lockedRequest->id,
+                        $lockedRequest->reason
+                    );
                 }
             }
 
             /*
             |--------------------------------------------------------------------------
-            | Update Cancellation
+            | Update Cancellation Request
             |--------------------------------------------------------------------------
             */
+
             $lockedRequest->update([
                 'status' => 'approved_by_admin',
                 'reviewed_by' => Auth::id(),
-                'admin_note' => $validated['admin_note'] ?? null,
+                'admin_note' =>
+                    $validated['admin_note'] ?? null,
                 'reviewed_at' => now(),
             ]);
         });
@@ -297,16 +346,39 @@ class CancellationController extends Controller
             $cancellationRequest,
             $validated
         ) {
+            /*
+            |--------------------------------------------------------------------------
+            | Lock Cancellation Request
+            |--------------------------------------------------------------------------
+            */
+
             $lockedRequest = CancellationRequest::query()
                 ->lockForUpdate()
                 ->findOrFail(
                     $cancellationRequest->id
                 );
 
+            /*
+            |--------------------------------------------------------------------------
+            | Pastikan Masih Menunggu Mediasi
+            |--------------------------------------------------------------------------
+            */
+
             abort_unless(
                 $lockedRequest->status === 'mediation_pending',
-                422
+                422,
+                'Pengajuan ini tidak lagi menunggu mediasi admin.'
             );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Tolak Mediasi
+            |--------------------------------------------------------------------------
+            |
+            | Order tetap berjalan.
+            | Tidak ada Refund yang dibuat.
+            |
+            */
 
             $lockedRequest->update([
                 'status' => 'rejected_by_admin',

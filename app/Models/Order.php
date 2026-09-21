@@ -161,4 +161,24 @@ class Order extends Model
             'under_review',
         ]);
     }
+
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class, 'order_id');
+    }
+
+    public function latestRefund(): HasOne
+    {
+        return $this->hasOne(Refund::class, 'order_id')
+            ->latestOfMany();
+    }
+
+    public function activeRefund(): HasOne
+    {
+        return $this->hasOne(Refund::class, 'order_id')
+            ->whereIn('status', [
+                'pending',
+                'processing',
+            ]);
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Freelancer;
 use App\Http\Controllers\Controller;
 use App\Models\CancellationRequest;
 use App\Models\Order;
+use App\Services\RefundService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -50,7 +51,10 @@ class CancellationController extends Controller
         );
 
         $cancellationRequest = CancellationRequest::query()
-            ->where('order_id', $order->id)
+            ->where(
+                'order_id',
+                $order->id
+            )
             ->latest('id')
             ->first();
 
@@ -105,10 +109,18 @@ class CancellationController extends Controller
             $freelancerProfile,
             $validated
         ) {
+            /*
+            |--------------------------------------------------------------------------
+            | Lock Order
+            |--------------------------------------------------------------------------
+            */
+
             $lockedOrder = Order::query()
                 ->with('payment')
                 ->lockForUpdate()
-                ->findOrFail($order->id);
+                ->findOrFail(
+                    $order->id
+                );
 
             abort_unless(
                 $lockedOrder->freelancer_profile_id === $freelancerProfile->id,
@@ -124,9 +136,18 @@ class CancellationController extends Controller
                 422
             );
 
+            /*
+            |--------------------------------------------------------------------------
+            | Lock Cancellation Request
+            |--------------------------------------------------------------------------
+            */
+
             $cancellationRequest = CancellationRequest::query()
                 ->lockForUpdate()
-                ->where('order_id', $lockedOrder->id)
+                ->where(
+                    'order_id',
+                    $lockedOrder->id
+                )
                 ->latest('id')
                 ->first();
 
@@ -150,6 +171,7 @@ class CancellationController extends Controller
             | Batalkan Order
             |--------------------------------------------------------------------------
             */
+
             $lockedOrder->update([
                 'status' => 'cancelled',
                 'cancel_reason' => $cancellationRequest->reason,
@@ -159,16 +181,41 @@ class CancellationController extends Controller
             |--------------------------------------------------------------------------
             | Payment
             |--------------------------------------------------------------------------
+            |
+            | Pending:
+            | langsung cancelled.
+            |
+            | Paid:
+            | menjadi refund_pending dan dibuatkan record Refund.
+            |
             */
+
             if ($lockedOrder->payment) {
-                if ($lockedOrder->payment->status === 'pending') {
+                if (
+                    $lockedOrder->payment->status === 'pending'
+                ) {
                     $lockedOrder->payment->update([
                         'status' => 'cancelled',
                     ]);
-                } elseif ($lockedOrder->payment->status === 'paid') {
+                } elseif (
+                    $lockedOrder->payment->status === 'paid'
+                ) {
                     $lockedOrder->payment->update([
                         'status' => 'refund_pending',
                     ]);
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Create Pending Refund
+                    |--------------------------------------------------------------------------
+                    */
+
+                    app(RefundService::class)->createPending(
+                        $lockedOrder,
+                        'cancellation',
+                        $cancellationRequest->id,
+                        $cancellationRequest->reason
+                    );
                 }
             }
 
@@ -177,9 +224,11 @@ class CancellationController extends Controller
             | Update Cancellation Request
             |--------------------------------------------------------------------------
             */
+
             $cancellationRequest->update([
                 'status' => 'approved_by_freelancer',
-                'freelancer_note' => $validated['freelancer_note'] ?? null,
+                'freelancer_note' =>
+                    $validated['freelancer_note'] ?? null,
                 'freelancer_reviewed_at' => now(),
             ]);
         });
@@ -228,9 +277,17 @@ class CancellationController extends Controller
             $freelancerProfile,
             $validated
         ) {
+            /*
+            |--------------------------------------------------------------------------
+            | Lock Order
+            |--------------------------------------------------------------------------
+            */
+
             $lockedOrder = Order::query()
                 ->lockForUpdate()
-                ->findOrFail($order->id);
+                ->findOrFail(
+                    $order->id
+                );
 
             abort_unless(
                 $lockedOrder->freelancer_profile_id === $freelancerProfile->id,
@@ -246,9 +303,18 @@ class CancellationController extends Controller
                 422
             );
 
+            /*
+            |--------------------------------------------------------------------------
+            | Lock Cancellation Request
+            |--------------------------------------------------------------------------
+            */
+
             $cancellationRequest = CancellationRequest::query()
                 ->lockForUpdate()
-                ->where('order_id', $lockedOrder->id)
+                ->where(
+                    'order_id',
+                    $lockedOrder->id
+                )
                 ->latest('id')
                 ->first();
 
@@ -272,9 +338,11 @@ class CancellationController extends Controller
             | Order tetap berjalan
             |--------------------------------------------------------------------------
             */
+
             $cancellationRequest->update([
                 'status' => 'rejected_by_freelancer',
-                'freelancer_note' => $validated['freelancer_note'],
+                'freelancer_note' =>
+                    $validated['freelancer_note'],
                 'freelancer_reviewed_at' => now(),
             ]);
         });

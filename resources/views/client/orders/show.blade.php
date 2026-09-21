@@ -156,145 +156,61 @@
 
         );
 
-        $latestCancellationRequest =
-            $order->latestCancellationRequest;
 
-        $cancellationStatus =
-            $latestCancellationRequest?->status;
-
-        $activeDispute = $order->activeDispute;
-
-        $disputableStatuses = [
-            'paid',
-            'in_progress',
-            'delivered',
-            'revision',
-        ];
-
-        $canRequestDispute = in_array(
-            $order->status,
-            $disputableStatuses,
-            true
-        );
-
-
+        $latestRefund = $order->latestRefund;
+        $refundStatus = $latestRefund?->status;
+        $refundAmount = (float) ($latestRefund?->amount ?? $order->total);
 
         $timeline = [
-
             [
-
                 'label' => 'Pembayaran',
-
-                'description' =>
-
-                    'Pesanan berhasil dibuat dan menunggu proses pembayaran.',
-
+                'description' => $order->status === 'cancelled' && $order->payment?->status === 'refunded'
+                    ? 'Pembayaran sebelumnya berhasil dilakukan dan dana telah dikembalikan.'
+                    : 'Pesanan berhasil dibuat dan menunggu proses pembayaran.',
                 'icon' => 'bi-credit-card',
-
-                'active' => in_array(
-
-                    $order->status,
-
-                    [
-
-                        'pending_payment',
-
-                        'paid',
-
-                        'in_progress',
-
-                        'delivered',
-
-                        'revision',
-
-                        'completed',
-
-                    ],
-
-                    true
-
-                ),
-
+                'active' => in_array($order->status, ['pending_payment', 'paid', 'in_progress', 'delivered', 'revision', 'completed'], true)
+                    || in_array($order->payment?->status, ['paid', 'refund_pending', 'refunded'], true),
             ],
-
             [
-
                 'label' => 'Pengerjaan',
-
-                'description' =>
-
-                    'Freelancer mulai mengerjakan kebutuhan pesananmu.',
-
+                'description' => 'Freelancer mulai mengerjakan kebutuhan pesananmu.',
                 'icon' => 'bi-briefcase',
-
-                'active' => in_array(
-
-                    $order->status,
-
-                    [
-
-                        'in_progress',
-
-                        'delivered',
-
-                        'revision',
-
-                        'completed',
-
-                    ],
-
-                    true
-
-                ),
-
+                'active' => in_array($order->status, ['in_progress', 'delivered', 'revision', 'completed'], true),
             ],
-
             [
-
                 'label' => 'Hasil pekerjaan',
-
-                'description' =>
-
-                    'Freelancer mengirimkan hasil pekerjaan untuk diperiksa.',
-
+                'description' => 'Freelancer mengirimkan hasil pekerjaan untuk diperiksa.',
                 'icon' => 'bi-file-earmark-check',
-
-                'active' => in_array(
-
-                    $order->status,
-
-                    [
-
-                        'delivered',
-
-                        'revision',
-
-                        'completed',
-
-                    ],
-
-                    true
-
-                ),
-
+                'active' => in_array($order->status, ['delivered', 'revision', 'completed'], true),
             ],
-
             [
-
                 'label' => 'Pesanan selesai',
-
-                'description' =>
-
-                    'Pekerjaan telah disetujui dan pesanan selesai.',
-
+                'description' => 'Pekerjaan telah disetujui dan pesanan selesai.',
                 'icon' => 'bi-check-lg',
-
                 'active' => $order->status === 'completed',
-
             ],
-
         ];
 
+        if ($order->status === 'cancelled') {
+            $timeline[] = [
+                'label' => 'Pembatalan',
+                'description' => 'Pesanan telah dibatalkan dan tidak dapat diproses kembali.',
+                'icon' => 'bi-x-circle',
+                'active' => true,
+            ];
+
+            $timeline[] = [
+                'label' => 'Refund',
+                'description' => match ($refundStatus) {
+                    'refunded' => 'Dana pembayaran telah berhasil dikembalikan kepada client.',
+                    'pending', 'processing' => 'Pengembalian dana sedang diproses oleh admin.',
+                    'rejected' => 'Pengembalian dana belum berhasil diselesaikan.',
+                    default => 'Belum ada proses refund yang tercatat.',
+                },
+                'icon' => 'bi-arrow-counterclockwise',
+                'active' => in_array($refundStatus, ['pending', 'processing', 'refunded', 'rejected'], true),
+            ];
+        }
 
         $hasReview = $order->review !== null;
 
@@ -568,9 +484,10 @@
 
             </section>
 
-
             {{-- =========================================================
+
                 CANCELLATION STATUS / ACTION
+
             ========================================================== --}}
 
             @if($order->status === 'cancelled')
@@ -585,41 +502,75 @@
                                 <i class="bi bi-x-circle text-lg"></i>
                             </div>
 
-                            <div class="min-w-0">
-
-                                <p class="text-sm font-semibold text-[#8E4141]">
-                                    Pesanan dibatalkan
-                                </p>
-
-                                <p class="mt-1 text-xs leading-5 text-[#A26767]">
-                                    Order ini sudah dibatalkan dan tidak dapat diproses kembali.
-                                </p>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-semibold text-[#8E4141]">Pesanan dibatalkan</p>
+                                <p class="mt-1 text-xs leading-5 text-[#A26767]">Order ini sudah dibatalkan dan tidak dapat diproses kembali.</p>
 
                                 @if($order->cancel_reason)
-
                                     <div class="mt-3 rounded-xl bg-white/80 px-4 py-3">
-
-                                        <p class="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#A26767]">
-                                            Alasan pembatalan
-                                        </p>
-
-                                        <p class="mt-1 whitespace-pre-line text-xs leading-6 text-[#7D5A5A]">
-                                            {{ $order->cancel_reason }}
-                                        </p>
-
+                                        <p class="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#A26767]">Alasan pembatalan</p>
+                                        <p class="mt-1 whitespace-pre-line text-xs leading-6 text-[#7D5A5A]">{{ $order->cancel_reason }}</p>
                                     </div>
-
                                 @endif
-
                             </div>
-
                         </div>
 
-                    </div>
+                        @if($refundStatus === 'refunded')
+                            <div class="mt-5 rounded-2xl border border-[#CDE7D7] bg-white px-4 py-4 sm:px-5">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A]">
+                                        <i class="bi bi-arrow-counterclockwise text-[15px]"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-[#123128]">Refund selesai</p>
+                                        <p class="mt-1 text-xs leading-5 text-[#527066]">
+                                            Dana sebesar <span class="font-semibold text-[#168A4D]">Rp {{ number_format($refundAmount, 0, ',', '.') }}</span> telah berhasil dikembalikan.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="mt-4 grid grid-cols-1 gap-3 rounded-xl bg-[#F8FBF9] px-4 py-3 sm:grid-cols-2">
+                                    <div>
+                                        <p class="text-[9px] uppercase tracking-[0.14em] text-[#97A39E]">Nomor refund</p>
+                                        <p class="mt-1 break-all text-[10px] font-semibold text-[#355248]">{{ $latestRefund?->refund_number ?? '-' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[9px] uppercase tracking-[0.14em] text-[#97A39E]">Refund selesai</p>
+                                        <p class="mt-1 text-[10px] font-semibold text-[#355248]">{{ $latestRefund?->completed_at?->format('d M Y, H:i') ?? '-' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif(in_array($refundStatus, ['pending', 'processing'], true))
+                            <div class="mt-5 rounded-2xl border border-[#D6E3F2] bg-white px-4 py-4 sm:px-5">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF5FF] text-[#315A91]">
+                                        <i class="bi bi-arrow-repeat text-[15px]"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-semibold text-[#123128]">Refund sedang diproses</p>
+                                        <p class="mt-1 text-xs leading-5 text-[#62766D]">
+                                            Pengembalian dana sebesar <span class="font-semibold text-[#315A91]">Rp {{ number_format($refundAmount, 0, ',', '.') }}</span> sedang diproses oleh admin.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        @elseif($refundStatus === 'rejected')
+                            <div class="mt-5 rounded-2xl border border-red-100 bg-white px-4 py-4 sm:px-5">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500">
+                                        <i class="bi bi-exclamation-circle text-[15px]"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-semibold text-[#8E4141]">Refund belum selesai</p>
+                                        <p class="mt-1 text-xs leading-5 text-[#7D5A5A]">Pengajuan refund belum berhasil diselesaikan. Periksa informasi refund untuk detail lebih lanjut.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
 
+                    </div>
                 </section>
 
-            @elseif($cancellationStatus === 'pending_freelancer')
+            @elseif($canRequestCancellation)
 
                 <section class="mt-5 overflow-hidden rounded-2xl border border-[#E9DCC4] bg-[#FFF9EA]">
 
@@ -628,269 +579,23 @@
                         <div class="flex items-start gap-4">
 
                             <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#B37A21] shadow-sm">
-                                <i class="bi bi-hourglass-split text-lg"></i>
-                            </div>
 
-                            <div>
-
-                                <p class="text-sm font-semibold text-[#76520F]">
-                                    Menunggu tanggapan freelancer
-                                </p>
-
-                                <p class="mt-1 max-w-xl text-xs leading-5 text-[#987544]">
-                                    Pengajuan pembatalan sudah dikirim dan sedang menunggu keputusan freelancer.
-                                </p>
-
-                            </div>
-
-                        </div>
-
-                        <a
-                            href="{{ route('client.orders.cancellation.create', $order) }}"
-                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D9B96E] bg-white px-4 text-xs font-semibold text-[#76520F] transition hover:border-[#C89F42] hover:bg-[#FFF4D8]"
-                        >
-                            <i class="bi bi-eye text-[12px]"></i>
-                            Lihat Pengajuan
-                        </a>
-
-                    </div>
-
-                </section>
-
-            @elseif($cancellationStatus === 'rejected_by_freelancer')
-
-                <section class="mt-5 overflow-hidden rounded-2xl border border-red-100 bg-red-50">
-
-                    <div class="px-5 py-5 sm:px-6">
-
-                        <div class="flex flex-col gap-5">
-
-                            <div class="flex items-start gap-4">
-
-                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm">
-                                    <i class="bi bi-x-circle text-lg"></i>
-                                </div>
-
-                                <div class="min-w-0">
-
-                                    <p class="text-sm font-semibold text-red-700">
-                                        Pembatalan ditolak freelancer
-                                    </p>
-
-                                    <p class="mt-1 text-xs leading-5 text-red-600/80">
-                                        Freelancer tidak menyetujui pembatalan. Kamu dapat meneruskan pengajuan ini melalui mediasi Admin.
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                            @if($latestCancellationRequest?->freelancer_note)
-
-                                <div class="rounded-xl bg-white/80 px-4 py-3">
-
-                                    <p class="text-[9px] font-semibold uppercase tracking-[0.15em] text-red-500">
-                                        Tanggapan freelancer
-                                    </p>
-
-                                    <p class="mt-1 whitespace-pre-line text-xs leading-6 text-red-700">
-                                        {{ $latestCancellationRequest->freelancer_note }}
-                                    </p>
-
-                                </div>
-
-                            @endif
-
-                            <div class="flex justify-end">
-
-                                <a
-                                    href="{{ route('client.orders.cancellation.create', $order) }}"
-                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-xs font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
-                                >
-                                    <i class="bi bi-shield-check text-[12px]"></i>
-                                    Ajukan Mediasi ke Admin
-                                </a>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-            @elseif($cancellationStatus === 'mediation_pending')
-
-                <section class="mt-5 overflow-hidden rounded-2xl border border-[#CFE0F1] bg-[#F3F8FC]">
-
-                    <div class="flex flex-col gap-4 px-5 py-5 sm:px-6">
-
-                        <div class="flex items-start gap-4">
-
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#3C6F9F] shadow-sm">
-                                <i class="bi bi-shield-check text-lg"></i>
-                            </div>
-
-                            <div>
-
-                                <p class="text-sm font-semibold text-[#315D87]">
-                                    Mediasi sedang ditinjau Admin
-                                </p>
-
-                                <p class="mt-1 text-xs leading-5 text-[#587593]">
-                                    Pengajuan pembatalan sudah diteruskan ke Admin dan sedang menunggu keputusan mediasi.
-                                </p>
-
-                            </div>
-
-                        </div>
-
-                        @if($latestCancellationRequest?->mediation_reason)
-
-                            <div class="rounded-xl bg-white/80 px-4 py-3">
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#6D8498]">
-                                    Alasan mediasi
-                                </p>
-
-                                <p class="mt-1 whitespace-pre-line text-xs leading-6 text-[#4F6678]">
-                                    {{ $latestCancellationRequest->mediation_reason }}
-                                </p>
-
-                            </div>
-
-                        @endif
-
-                    </div>
-
-                </section>
-
-            @elseif($cancellationStatus === 'rejected_by_admin')
-
-                <section class="mt-5 overflow-hidden rounded-2xl border border-red-100 bg-red-50">
-
-                    <div class="px-5 py-5 sm:px-6">
-
-                        <div class="flex items-start gap-4">
-
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm">
-                                <i class="bi bi-shield-x text-lg"></i>
-                            </div>
-
-                            <div class="min-w-0">
-
-                                <p class="text-sm font-semibold text-red-700">
-                                    Mediasi ditolak Admin
-                                </p>
-
-                                <p class="mt-1 text-xs leading-5 text-red-600/80">
-                                    Admin tidak menyetujui pembatalan. Order tetap berjalan.
-                                </p>
-
-                                @if($latestCancellationRequest?->admin_note)
-
-                                    <div class="mt-3 rounded-xl bg-white/80 px-4 py-3">
-
-                                        <p class="text-[9px] font-semibold uppercase tracking-[0.15em] text-red-500">
-                                            Catatan Admin
-                                        </p>
-
-                                        <p class="mt-1 whitespace-pre-line text-xs leading-6 text-[#7D5A5A]">
-                                            {{ $latestCancellationRequest->admin_note }}
-                                        </p>
-
-                                    </div>
-
-                                @endif
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-            @elseif($cancellationStatus === 'approved_by_freelancer')
-
-                <section class="mt-5 overflow-hidden rounded-2xl border border-[#CDE7D7] bg-[#EAF7EF]">
-
-                    <div class="px-5 py-5 sm:px-6">
-
-                        <div class="flex items-start gap-4">
-
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#168A4D] shadow-sm">
-                                <i class="bi bi-check-circle text-lg"></i>
-                            </div>
-
-                            <div>
-
-                                <p class="text-sm font-semibold text-[#168A4D]">
-                                    Pembatalan disetujui freelancer
-                                </p>
-
-                                <p class="mt-1 text-xs leading-5 text-[#587C68]">
-                                    Freelancer menyetujui pembatalan dan order telah dibatalkan.
-                                </p>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-            @elseif($cancellationStatus === 'approved_by_admin')
-
-                <section class="mt-5 overflow-hidden rounded-2xl border border-[#CDE7D7] bg-[#EAF7EF]">
-
-                    <div class="px-5 py-5 sm:px-6">
-
-                        <div class="flex items-start gap-4">
-
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#168A4D] shadow-sm">
-                                <i class="bi bi-shield-check text-lg"></i>
-                            </div>
-
-                            <div>
-
-                                <p class="text-sm font-semibold text-[#168A4D]">
-                                    Mediasi disetujui Admin
-                                </p>
-
-                                <p class="mt-1 text-xs leading-5 text-[#587C68]">
-                                    Admin menyetujui pembatalan melalui proses mediasi dan order telah dibatalkan.
-                                </p>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </section>
-
-            @elseif($canRequestCancellation)
-
-                <section class="mt-5 overflow-hidden rounded-2xl border border-[#E7DDC8] bg-[#FFF9EA]">
-
-                    <div class="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-
-                        <div class="flex items-start gap-4">
-
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#B37A21] shadow-sm">
                                 <i class="bi bi-x-circle text-lg"></i>
+
                             </div>
 
                             <div>
 
                                 <p class="text-sm font-semibold text-[#76520F]">
+
                                     Ingin membatalkan pesanan?
+
                                 </p>
 
                                 <p class="mt-1 max-w-xl text-xs leading-5 text-[#987544]">
-                                    Kamu dapat mengajukan pembatalan kepada freelancer terlebih dahulu.
+
+                                    Kamu dapat mengajukan pembatalan dan menjelaskan alasannya. Pengajuan akan ditinjau oleh admin.
+
                                 </p>
 
                             </div>
@@ -898,11 +603,17 @@
                         </div>
 
                         <a
+
                             href="{{ route('client.orders.cancellation.create', $order) }}"
+
                             class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D9B96E] bg-white px-4 text-xs font-semibold text-[#76520F] transition hover:border-[#C89F42] hover:bg-[#FFF4D8]"
+
                         >
+
                             <i class="bi bi-x-circle text-[12px]"></i>
+
                             Ajukan Pembatalan
+
                         </a>
 
                     </div>
@@ -910,6 +621,7 @@
                 </section>
 
             @endif
+
             {{-- =========================================================
 
                 DELIVERY
@@ -1614,6 +1326,13 @@
 
                                         </span>
 
+                                    @elseif($order->payment->status === 'refunded')
+
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#EAF7EF] px-2.5 py-1 text-[9px] font-semibold text-[#168A4D]">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-[#35C978]"></span>
+                                            Dana dikembalikan
+                                        </span>
+
                                     @elseif($order->payment->status === 'cancelled')
 
                                         <span class="inline-flex items-center gap-1.5 rounded-full bg-[#F4F6F5] px-2.5 py-1 text-[9px] font-semibold text-[#66766E]">
@@ -1692,6 +1411,37 @@
 
                                 @endif
 
+                                @if($latestRefund)
+
+                                    <div class="mt-4 overflow-hidden rounded-xl border border-[#DCE9E1] bg-[#F8FBF9]">
+                                        <div class="px-4 py-3">
+                                            <div class="flex items-center justify-between gap-3">
+                                                <span class="text-xs text-[#7D8D86]">Refund</span>
+                                                <span class="text-[10px] font-semibold text-[#355248]">
+                                                    {{ match($refundStatus) {
+                                                        'pending' => 'Menunggu diproses',
+                                                        'processing' => 'Sedang diproses',
+                                                        'refunded' => 'Selesai',
+                                                        'rejected' => 'Ditolak',
+                                                        default => ucfirst(str_replace('_', ' ', $refundStatus ?? 'Belum tersedia')),
+                                                    } }}
+                                                </span>
+                                            </div>
+                                            <div class="mt-2 flex items-center justify-between gap-3">
+                                                <span class="text-xs text-[#7D8D86]">Nominal</span>
+                                                <span class="text-xs font-semibold text-[#168A4D]">Rp {{ number_format($refundAmount, 0, ',', '.') }}</span>
+                                            </div>
+                                            @if($refundStatus === 'refunded' && $latestRefund->completed_at)
+                                                <div class="mt-2 flex items-start justify-between gap-3">
+                                                    <span class="text-xs text-[#7D8D86]">Selesai pada</span>
+                                                    <span class="text-right text-[10px] font-semibold text-[#355248]">{{ $latestRefund->completed_at->format('d M Y, H:i') }}</span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                @endif
+
                                 @if($order->status === 'pending_payment')
 
                                     <a
@@ -1766,61 +1516,6 @@
 
                                 <i class="bi bi-arrow-right text-[10px]"></i>
 
-                            </a>
-
-                        </section>
-
-                    @endif
-
-                    {{-- Dispute --}}
-                    @if($activeDispute)
-
-                        <section class="rounded-2xl border border-[#D8D4EE] bg-[#F7F5FD] p-5">
-
-                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#6D62A4] shadow-sm">
-                                <i class="bi bi-shield-exclamation text-[15px]"></i>
-                            </div>
-
-                            <h2 class="mt-4 text-sm font-semibold text-[#123128]">
-                                Dispute sedang berjalan
-                            </h2>
-
-                            <p class="mt-1.5 text-xs leading-5 text-[#6E6A82]">
-                                Order ini sedang dalam proses penyelesaian sengketa. Gunakan halaman dispute untuk memberikan informasi atau bukti tambahan.
-                            </p>
-
-                            <a
-                                href="{{ route('client.disputes.show', $activeDispute) }}"
-                                class="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white text-xs font-semibold text-[#6D62A4] shadow-sm transition hover:bg-[#F1EFFA]"
-                            >
-                                Lihat Dispute
-                                <i class="bi bi-arrow-right text-[10px]"></i>
-                            </a>
-
-                        </section>
-
-                    @elseif($canRequestDispute && !in_array($cancellationStatus, ['pending_freelancer', 'mediation_pending'], true))
-
-                        <section class="rounded-2xl border border-[#D8D4EE] bg-[#F7F5FD] p-5">
-
-                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#6D62A4] shadow-sm">
-                                <i class="bi bi-shield-exclamation text-[15px]"></i>
-                            </div>
-
-                            <h2 class="mt-4 text-sm font-semibold text-[#123128]">
-                                Ada masalah dengan order?
-                            </h2>
-
-                            <p class="mt-1.5 text-xs leading-5 text-[#6E6A82]">
-                                Ajukan dispute bila ada masalah yang perlu diselesaikan bersama freelancer atau admin.
-                            </p>
-
-                            <a
-                                href="{{ route('client.orders.dispute.create', $order) }}"
-                                class="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white text-xs font-semibold text-[#6D62A4] shadow-sm transition hover:bg-[#F1EFFA]"
-                            >
-                                Ajukan Dispute
-                                <i class="bi bi-arrow-right text-[10px]"></i>
                             </a>
 
                         </section>
@@ -1921,13 +1616,24 @@
 
                         </h2>
 
-                        <p class="mt-1.5 text-xs leading-5 text-[#63786E]">
+                        @if($order->status === 'cancelled')
 
-                            Hubungi freelancer melalui pesan untuk membahas detail pekerjaanmu.
+                            <p class="mt-1.5 text-xs leading-5 text-[#63786E]">
 
-                        </p>
+                                Pesanan ini sudah ditutup. Untuk informasi terkait pembatalan atau refund, gunakan nomor order sebagai referensi.
 
-                        @if($freelancer)
+                            </p>
+
+                        @else
+
+                            <p class="mt-1.5 text-xs leading-5 text-[#63786E]">
+
+                                Hubungi freelancer melalui pesan untuk membahas detail pekerjaanmu.
+
+                            </p>
+
+                            @if($freelancer)
+
 
                             <a
 
@@ -1942,6 +1648,8 @@
                                 <i class="bi bi-arrow-right text-[10px]"></i>
 
                             </a>
+
+                            @endif
 
                         @endif
 

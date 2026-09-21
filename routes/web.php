@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\VerificationController as AdminVerificationContro
 use App\Http\Controllers\Admin\ServiceModerationController as AdminServiceModerationController;
 use App\Http\Controllers\Admin\CancellationController as AdminCancellationController;
 use App\Http\Controllers\Admin\DisputeController as AdminDisputeController;
+use App\Http\Controllers\Admin\RefundController as AdminRefundController;
 
 /*
 |--------------------------------------------------------------------------
@@ -1226,6 +1227,37 @@ Route::middleware(['auth', 'role:admin'])
             '/disputes/{dispute}/close',
             [AdminDisputeController::class, 'close']
         )->name('disputes.close');
+
+                /* 
+        |--------------------------------------------------------------------------
+        | Refunds
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/refunds',
+            [AdminRefundController::class, 'index']
+        )->name('refunds.index');
+
+        Route::get(
+            '/refunds/{refund}',
+            [AdminRefundController::class, 'show']
+        )->name('refunds.show');
+
+        Route::post(
+            '/refunds/{refund}/process',
+            [AdminRefundController::class, 'process']
+        )->name('refunds.process');
+
+        Route::post(
+            '/refunds/{refund}/complete',
+            [AdminRefundController::class, 'complete']
+        )->name('refunds.complete');
+
+        Route::post(
+            '/refunds/{refund}/reject',
+            [AdminRefundController::class, 'reject']
+        )->name('refunds.reject');
     });
 
 /*
