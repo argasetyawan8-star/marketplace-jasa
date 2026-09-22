@@ -283,7 +283,7 @@
             <div class="px-6 py-6">
 
                 <p class="text-xs font-semibold uppercase tracking-wide text-[#52675D]">
-                    Alasan Pembatalan Client
+                    Alasan Pembatalan {{ ucfirst($cancellationRequest->requester_role ?? 'Pengguna') }}
                 </p>
 
                 <div class="mt-3 rounded-xl bg-[#F8FCF9] p-5">

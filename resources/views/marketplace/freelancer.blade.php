@@ -29,13 +29,15 @@
             transition:
                 transform .22s ease,
                 border-color .22s ease,
-                background-color .22s ease;
+                background-color .22s ease,
+                box-shadow .22s ease;
         }
 
         .jasain-service-card:hover {
             transform: translateY(-1px);
             border-color: #C6DFCF;
             background-color: #FCFEFD;
+            box-shadow: 0 10px 28px rgba(18, 49, 40, 0.04);
         }
 
         .jasain-service-image {
@@ -57,6 +59,20 @@
             background-color: #F5F9F6;
         }
 
+        .jasain-filter-input {
+            transition:
+                border-color .2s ease,
+                background-color .2s ease,
+                box-shadow .2s ease;
+        }
+
+        .jasain-filter-input:focus {
+            border-color: #9BCDB0;
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(234, 247, 239, 0.9);
+            outline: none;
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .jasain-public-profile-in {
                 animation: none;
@@ -64,14 +80,21 @@
 
             .jasain-service-card,
             .jasain-service-image,
-            .jasain-profile-tab {
+            .jasain-profile-tab,
+            .jasain-filter-input {
                 transition: none;
             }
         }
     </style>
 
-
     @php
+
+        /*
+        |--------------------------------------------------------------------------
+        | Basic Freelancer Data
+        |--------------------------------------------------------------------------
+        */
+
         $user = $freelancerProfile->user;
 
         $freelancerName = $user?->name
@@ -90,7 +113,15 @@
             ? asset('storage/' . $freelancerProfile->cover_image)
             : null;
 
-        $services = $freelancerProfile->services ?? collect();
+        /*
+        |--------------------------------------------------------------------------
+        | Relations / Collections
+        |--------------------------------------------------------------------------
+        */
+
+        $services = $services ?? (
+            $freelancerProfile->services ?? collect()
+        );
 
         $reviews = $freelancerProfile->reviews ?? collect();
 
@@ -104,11 +135,53 @@
 
         $languages = $freelancerProfile->languages ?? collect();
 
-        $rating = (float) ($freelancerProfile->rating ?? 0);
+        /*
+        |--------------------------------------------------------------------------
+        | Statistics
+        |--------------------------------------------------------------------------
+        */
 
-        $completedOrders = (int) ($freelancerProfile->completed_orders ?? 0);
+        $rating = (float) (
+            $freelancerProfile->rating ?? 0
+        );
 
-        $isAvailable = (bool) ($freelancerProfile->is_available ?? false);
+        $completedOrders = (int) (
+            $freelancerProfile->completed_orders ?? 0
+        );
+
+        $customerCount = (int) (
+            $freelancerProfile->customer_count ?? 0
+        );
+
+        $rehiredCount = (int) (
+            $freelancerProfile->rehired_count ?? 0
+        );
+
+        $serviceCount = isset($serviceCount)
+            ? (int) $serviceCount
+            : $services->count();
+
+        $reviewCount = isset($reviewCount)
+            ? (int) $reviewCount
+            : $reviews->count();
+
+        $totalOrders = isset($totalOrders)
+            ? (int) $totalOrders
+            : $services->sum('orders_count');
+
+        $minimumPrice = isset($minimumPrice)
+            ? $minimumPrice
+            : $services->min('starting_price');
+
+        /*
+        |--------------------------------------------------------------------------
+        | State
+        |--------------------------------------------------------------------------
+        */
+
+        $isAvailable = (bool) (
+            $freelancerProfile->is_available ?? false
+        );
 
         $isClient = auth()->check()
             && auth()->user()->role === 'client';
@@ -116,21 +189,43 @@
         $isOwner = auth()->check()
             && $freelancerProfile->user_id === auth()->id();
 
-        $customerCount = (int) ($freelancerProfile->customer_count ?? 0);
+        /*
+        |--------------------------------------------------------------------------
+        | Contact Service
+        |--------------------------------------------------------------------------
+        */
 
-        $rehiredCount = (int) ($freelancerProfile->rehired_count ?? 0);
+        $contactService = $contactService
+            ?? $services->first();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Search / Filter State
+        |--------------------------------------------------------------------------
+        */
+
+        $search = $search ?? '';
+
+        $selectedCategorySlug = $selectedCategorySlug ?? '';
+
+        $selectedCategory = $selectedCategory ?? null;
+
+        $sort = $sort ?? 'relevance';
+
     @endphp
 
 
     {{-- =========================================================
         BREADCRUMB
     ========================================================== --}}
-
-    <section class="border-b border-[#E5ECE8] bg-[#F8FCF9] pt-[92px] sm:pt-[100px]">
-
+    <section
+        class="border-b border-[#E5ECE8] bg-[#F8FCF9] pt-[92px] sm:pt-[100px]"
+    >
         <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
 
-            <div class="flex flex-wrap items-center gap-2 text-[11px] text-[#8C9A94] sm:text-xs">
+            <div
+                class="flex flex-wrap items-center gap-2 text-[11px] text-[#8C9A94] sm:text-xs"
+            >
 
                 <a
                     href="{{ route('marketplace.home') }}"
@@ -157,26 +252,28 @@
             </div>
 
         </div>
-
     </section>
 
 
     {{-- =========================================================
         MAIN PROFILE WRAPPER
     ========================================================== --}}
-
     <main class="bg-[#F8FCF9]">
 
-        <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div
+            class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8"
+        >
 
-            <div class="jasain-public-profile-in overflow-hidden rounded-[26px] border border-[#DDE9E2] bg-white">
-
+            <div
+                class="jasain-public-profile-in overflow-hidden rounded-[26px] border border-[#DDE9E2] bg-white"
+            >
 
                 {{-- =================================================
                     COVER
                 ================================================== --}}
-
-                <div class="relative h-48 overflow-hidden bg-[#EAF7EF] sm:h-60">
+                <div
+                    class="relative h-48 overflow-hidden bg-[#EAF7EF] sm:h-60"
+                >
 
                     @if ($coverUrl)
 
@@ -190,9 +287,13 @@
 
                         <div class="relative h-full w-full bg-[#EAF7EF]">
 
-                            <div class="absolute inset-0 bg-[radial-gradient(circle_at_12%_24%,rgba(34,197,94,.12),transparent_26%),radial-gradient(circle_at_82%_20%,rgba(15,107,58,.09),transparent_25%),radial-gradient(circle_at_56%_100%,rgba(122,216,181,.14),transparent_29%)]"></div>
+                            <div
+                                class="absolute inset-0 bg-[radial-gradient(circle_at_12%_24%,rgba(34,197,94,.12),transparent_26%),radial-gradient(circle_at_82%_20%,rgba(15,107,58,.09),transparent_25%),radial-gradient(circle_at_56%_100%,rgba(122,216,181,.14),transparent_29%)]"
+                            ></div>
 
-                            <div class="absolute bottom-5 left-5 text-[10px] font-semibold uppercase tracking-[.16em] text-[#0F6B3A]/35 sm:left-8">
+                            <div
+                                class="absolute bottom-5 left-5 text-[10px] font-semibold uppercase tracking-[.16em] text-[#0F6B3A]/35 sm:left-8"
+                            >
                                 JASAIN
                             </div>
 
@@ -206,13 +307,16 @@
                 {{-- =================================================
                     PROFILE HEADER
                 ================================================== --}}
+                <div
+                    class="relative px-5 pb-7 sm:px-8 sm:pb-8 lg:px-10"
+                >
 
-                <div class="relative px-5 pb-7 sm:px-8 sm:pb-8 lg:px-10">
-
+                    {{-- Avatar --}}
                     <div class="-mt-16 sm:-mt-16">
 
-                        {{-- Avatar --}}
-                        <div class="flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#EAF7EF] shadow-sm sm:h-36 sm:w-36">
+                        <div
+                            class="flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#EAF7EF] shadow-sm sm:h-36 sm:w-36"
+                        >
 
                             @if ($avatarUrl)
 
@@ -224,7 +328,9 @@
 
                             @else
 
-                                <span class="text-4xl font-semibold text-[#0F6B3A]">
+                                <span
+                                    class="text-4xl font-semibold text-[#0F6B3A]"
+                                >
                                     {{ $initial }}
                                 </span>
 
@@ -235,20 +341,29 @@
                     </div>
 
 
-                    <div class="mt-5 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                    {{-- Identity + CTA --}}
+                    <div
+                        class="mt-5 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
+                    >
 
                         {{-- Identity --}}
                         <div class="min-w-0">
 
-                            <div class="flex flex-wrap items-center gap-2">
+                            <div
+                                class="flex flex-wrap items-center gap-2"
+                            >
 
-                                <h1 class="text-2xl font-semibold tracking-tight text-[#123128] sm:text-3xl">
+                                <h1
+                                    class="text-2xl font-semibold tracking-tight text-[#123128] sm:text-3xl"
+                                >
                                     {{ $freelancerName }}
                                 </h1>
 
                                 @if ($freelancerProfile->is_verified)
 
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-[#EAF7EF] px-2.5 py-1 text-[10px] font-semibold text-[#0F6B3A]">
+                                    <span
+                                        class="inline-flex items-center gap-1 rounded-full bg-[#EAF7EF] px-2.5 py-1 text-[10px] font-semibold text-[#0F6B3A]"
+                                    >
                                         <i class="bi bi-patch-check-fill"></i>
                                         Terverifikasi
                                     </span>
@@ -258,6 +373,7 @@
                             </div>
 
 
+                            {{-- Username --}}
                             @if ($freelancerProfile->username)
 
                                 <p class="mt-1 text-sm text-[#8A9B94]">
@@ -267,45 +383,60 @@
                             @endif
 
 
-                            <p class="mt-3 max-w-3xl text-sm leading-6 text-[#667D73] sm:text-[15px]">
+                            {{-- Headline --}}
+                            <p
+                                class="mt-3 max-w-3xl text-sm leading-6 text-[#667D73] sm:text-[15px]"
+                            >
                                 {{ $freelancerProfile->headline ?: 'Freelancer profesional siap membantu kebutuhanmu.' }}
                             </p>
 
 
-                            <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[#71837B]">
+                            {{-- Meta --}}
+                            <div
+                                class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[#71837B]"
+                            >
 
-                                <span class="inline-flex items-center gap-1.5">
+                                <span
+                                    class="inline-flex items-center gap-1.5"
+                                >
+                                    <i
+                                        class="bi bi-star-fill text-[#F2B93B]"
+                                    ></i>
 
-                                    <i class="bi bi-star-fill text-[#F2B93B]"></i>
-
-                                    <span class="font-semibold text-[#40564C]">
+                                    <span
+                                        class="font-semibold text-[#40564C]"
+                                    >
                                         {{ number_format($rating, 1) }}
                                     </span>
 
                                     <span>
-                                        ({{ $reviews->count() }} review)
+                                        ({{ $reviewCount }} review)
                                     </span>
-
                                 </span>
 
 
-                                <span class="inline-flex items-center gap-1.5">
+                                <span
+                                    class="inline-flex items-center gap-1.5"
+                                >
+                                    <i
+                                        class="bi bi-check2-circle text-[#1E9E5A]"
+                                    ></i>
 
-                                    <i class="bi bi-check2-circle text-[#1E9E5A]"></i>
-
-                                    {{ number_format($completedOrders) }} pesanan selesai
-
+                                    {{ number_format($completedOrders) }}
+                                    pesanan selesai
                                 </span>
 
 
                                 @if ($freelancerProfile->location)
 
-                                    <span class="inline-flex items-center gap-1.5">
-
-                                        <i class="bi bi-geo-alt text-[#1E9E5A]"></i>
+                                    <span
+                                        class="inline-flex items-center gap-1.5"
+                                    >
+                                        <i
+                                            class="bi bi-geo-alt text-[#1E9E5A]"
+                                        ></i>
 
                                         {{ $freelancerProfile->location }}
-
                                     </span>
 
                                 @endif
@@ -328,17 +459,24 @@
                                     Edit profil
                                 </a>
 
-                            @elseif ($isClient)
+                            @elseif ($isClient && $contactService)
 
-                                <a
-                                    href="{{ route('client.messages.start', $freelancerProfile->id) }}"
-                                    class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0F6B3A] px-5 text-sm font-semibold text-white transition hover:bg-[#1E9E5A] sm:w-auto"
+                                <form
+                                    method="POST"
+                                    action="{{ route('client.messages.start', $contactService) }}"
                                 >
-                                    <i class="bi bi-chat-dots"></i>
-                                    Hubungi freelancer
-                                </a>
+                                    @csrf
 
-                            @else
+                                    <button
+                                        type="submit"
+                                        class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0F6B3A] px-5 text-sm font-semibold text-white transition hover:bg-[#1E9E5A] sm:w-auto"
+                                    >
+                                        <i class="bi bi-chat-dots"></i>
+                                        Hubungi freelancer
+                                    </button>
+                                </form>
+
+                            @elseif (!auth()->check())
 
                                 <a
                                     href="{{ route('login') }}"
@@ -356,26 +494,32 @@
 
 
                     {{-- Availability --}}
-                    <div class="mt-6 border-t border-[#E7EFEB] pt-5">
+                    <div
+                        class="mt-6 border-t border-[#E7EFEB] pt-5"
+                    >
 
                         @if ($isAvailable)
 
-                            <span class="inline-flex items-center gap-2 text-xs font-medium text-[#0F6B3A]">
-
-                                <span class="h-2 w-2 rounded-full bg-[#1E9E5A]"></span>
+                            <span
+                                class="inline-flex items-center gap-2 text-xs font-medium text-[#0F6B3A]"
+                            >
+                                <span
+                                    class="h-2 w-2 rounded-full bg-[#1E9E5A]"
+                                ></span>
 
                                 Freelancer sedang tersedia
-
                             </span>
 
                         @else
 
-                            <span class="inline-flex items-center gap-2 text-xs font-medium text-[#899892]">
-
-                                <span class="h-2 w-2 rounded-full bg-[#AAB7B0]"></span>
+                            <span
+                                class="inline-flex items-center gap-2 text-xs font-medium text-[#899892]"
+                            >
+                                <span
+                                    class="h-2 w-2 rounded-full bg-[#AAB7B0]"
+                                ></span>
 
                                 Freelancer sedang offline
-
                             </span>
 
                         @endif
@@ -386,64 +530,107 @@
 
 
                 {{-- =================================================
-                    STATS
+                    PROFILE STATS
                 ================================================== --}}
-
                 <div class="border-t border-[#E7EFEB]">
 
                     <div class="grid grid-cols-2 sm:grid-cols-4">
 
-                        <div class="border-b border-r border-[#EDF2EF] px-5 py-5 sm:border-b-0">
+                        {{-- Orders --}}
+                        <div
+                            class="border-b border-r border-[#EDF2EF] px-5 py-5 sm:border-b-0"
+                        >
 
-                            <div class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]">
+                            <div
+                                class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]"
+                            >
                                 Pesanan
                             </div>
 
-                            <div class="mt-1.5 text-xl font-semibold text-[#123128]">
+                            <div
+                                class="mt-1.5 text-xl font-semibold text-[#123128]"
+                            >
                                 {{ number_format($completedOrders) }}
                             </div>
 
+                            <div class="mt-1 text-[10px] text-[#94A19C]">
+                                selesai
+                            </div>
+
                         </div>
 
 
-                        <div class="border-b border-[#EDF2EF] px-5 py-5 sm:border-b-0 sm:border-r">
+                        {{-- Customers --}}
+                        <div
+                            class="border-b border-[#EDF2EF] px-5 py-5 sm:border-b-0 sm:border-r"
+                        >
 
-                            <div class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]">
+                            <div
+                                class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]"
+                            >
                                 Pelanggan
                             </div>
 
-                            <div class="mt-1.5 text-xl font-semibold text-[#123128]">
+                            <div
+                                class="mt-1.5 text-xl font-semibold text-[#123128]"
+                            >
                                 {{ number_format($customerCount) }}
                             </div>
 
+                            <div class="mt-1 text-[10px] text-[#94A19C]">
+                                pelanggan
+                            </div>
+
                         </div>
 
 
-                        <div class="border-r border-[#EDF2EF] px-5 py-5">
+                        {{-- Rehired --}}
+                        <div
+                            class="border-r border-[#EDF2EF] px-5 py-5"
+                        >
 
-                            <div class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]">
+                            <div
+                                class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]"
+                            >
                                 Dipekerjakan ulang
                             </div>
 
-                            <div class="mt-1.5 text-xl font-semibold text-[#123128]">
+                            <div
+                                class="mt-1.5 text-xl font-semibold text-[#123128]"
+                            >
                                 {{ number_format($rehiredCount) }}
+                            </div>
+
+                            <div class="mt-1 text-[10px] text-[#94A19C]">
+                                repeat client
                             </div>
 
                         </div>
 
 
+                        {{-- Rating --}}
                         <div class="px-5 py-5">
 
-                            <div class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]">
+                            <div
+                                class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]"
+                            >
                                 Rating
                             </div>
 
-                            <div class="mt-1.5 flex items-center gap-1.5 text-xl font-semibold text-[#123128]">
+                            <div
+                                class="mt-1.5 flex items-center gap-1.5 text-xl font-semibold text-[#123128]"
+                            >
 
                                 {{ number_format($rating, 1) }}
 
-                                <i class="bi bi-star-fill text-sm text-[#F2B93B]"></i>
+                                <i
+                                    class="bi bi-star-fill text-sm text-[#F2B93B]"
+                                ></i>
 
+                            </div>
+
+                            <div class="mt-1 text-[10px] text-[#94A19C]">
+                                dari 5.0
                             </div>
 
                         </div>
@@ -456,10 +643,11 @@
                 {{-- =================================================
                     TABS
                 ================================================== --}}
-
                 <div class="border-y border-[#E7EFEB] bg-white">
 
-                    <div class="flex items-center gap-1 overflow-x-auto px-4 sm:px-7 lg:px-9">
+                    <div
+                        class="flex items-center gap-1 overflow-x-auto px-4 sm:px-7 lg:px-9"
+                    >
 
                         <a
                             href="#layanan"
@@ -511,7 +699,6 @@
                 {{-- =================================================
                     CONTENT
                 ================================================== --}}
-
                 <div class="px-5 py-8 sm:px-8 lg:px-10">
 
                     <div class="max-w-5xl space-y-10">
@@ -520,41 +707,288 @@
                         {{-- =================================================
                             SERVICES
                         ================================================== --}}
-
                         <section
                             id="layanan"
                             class="scroll-mt-24"
                         >
 
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                            {{-- Section Header --}}
+                            <div
+                                class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+                            >
 
                                 <div>
 
-                                    <p class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]">
+                                    <p
+                                        class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]"
+                                    >
                                         Layanan
                                     </p>
 
-                                    <h2 class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128] sm:text-2xl">
+                                    <h2
+                                        class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128] sm:text-2xl"
+                                    >
                                         Jasa yang ditawarkan
                                     </h2>
 
+                                    <p
+                                        class="mt-1.5 text-sm text-[#8A9A93]"
+                                    >
+                                        {{ $serviceCount }} layanan tersedia
+                                    </p>
+
                                 </div>
 
-                                <span class="text-xs text-[#8A9A93]">
-                                    {{ $services->count() }} layanan tersedia
-                                </span>
+                                <a
+                                    href="{{ route('marketplace.search') }}"
+                                    class="inline-flex items-center gap-2 text-sm font-semibold text-[#0F6B3A] transition hover:text-[#1E9E5A]"
+                                >
+                                    Cari jasa lain
+                                    <i class="bi bi-arrow-right"></i>
+                                </a>
 
                             </div>
 
 
-                            {{-- SERVICE LIST --}}
+                            {{-- =================================================
+                                SERVICE FILTER
+                            ================================================== --}}
+                            <div
+                                class="mt-5 rounded-2xl border border-[#E0EBE4] bg-[#F8FCF9] p-4 sm:p-5"
+                            >
+
+                                <form
+                                    method="GET"
+                                    action="{{ route('marketplace.freelancer', $freelancerProfile->username) }}"
+                                    class="space-y-3"
+                                >
+
+                                    {{-- Search --}}
+                                    <div class="relative">
+
+                                        <i
+                                            class="bi bi-search pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-[#95A39C]"
+                                        ></i>
+
+                                        <input
+                                            type="text"
+                                            name="q"
+                                            value="{{ $search }}"
+                                            placeholder="Cari jasa dari freelancer ini..."
+                                            class="jasain-filter-input h-11 w-full rounded-xl border border-[#DCE7E1] bg-white pl-11 pr-4 text-sm text-[#123128] placeholder:text-[#9AA8A1]"
+                                        >
+
+                                    </div>
+
+
+                                    <div
+                                        class="flex flex-col gap-3 sm:flex-row"
+                                    >
+
+                                        {{-- Category --}}
+                                        <div class="min-w-0 flex-1">
+
+                                            <select
+                                                name="category"
+                                                class="jasain-filter-input h-11 w-full rounded-xl border border-[#DCE7E1] bg-white px-4 text-sm text-[#40564C]"
+                                            >
+
+                                                <option value="">
+                                                    Semua kategori
+                                                </option>
+
+                                                @foreach ($serviceCategories as $category)
+
+                                                    <option
+                                                        value="{{ $category->slug }}"
+                                                        @selected($selectedCategorySlug === $category->slug)
+                                                    >
+                                                        {{ $category->name }}
+                                                    </option>
+
+                                                @endforeach
+
+                                            </select>
+
+                                        </div>
+
+
+                                        {{-- Sort --}}
+                                        <div class="min-w-0 flex-1">
+
+                                            <select
+                                                name="sort"
+                                                class="jasain-filter-input h-11 w-full rounded-xl border border-[#DCE7E1] bg-white px-4 text-sm text-[#40564C]"
+                                            >
+
+                                                <option
+                                                    value="relevance"
+                                                    @selected($sort === 'relevance')
+                                                >
+                                                    Paling relevan
+                                                </option>
+
+                                                <option
+                                                    value="popular"
+                                                    @selected($sort === 'popular')
+                                                >
+                                                    Paling populer
+                                                </option>
+
+                                                <option
+                                                    value="rating"
+                                                    @selected($sort === 'rating')
+                                                >
+                                                    Rating tertinggi
+                                                </option>
+
+                                                <option
+                                                    value="price_low"
+                                                    @selected($sort === 'price_low')
+                                                >
+                                                    Harga terendah
+                                                </option>
+
+                                                <option
+                                                    value="price_high"
+                                                    @selected($sort === 'price_high')
+                                                >
+                                                    Harga tertinggi
+                                                </option>
+
+                                                <option
+                                                    value="newest"
+                                                    @selected($sort === 'newest')
+                                                >
+                                                    Terbaru
+                                                </option>
+
+                                            </select>
+
+                                        </div>
+
+
+                                        {{-- Filter Button --}}
+                                        <button
+                                            type="submit"
+                                            class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0F6B3A] px-5 text-sm font-semibold text-white transition hover:bg-[#1E9E5A]"
+                                        >
+                                            <i class="bi bi-funnel"></i>
+                                            Filter
+                                        </button>
+
+                                    </div>
+
+                                </form>
+
+
+                                {{-- Category Pills --}}
+                                @if ($serviceCategories->isNotEmpty())
+
+                                    <div
+                                        class="mt-4 flex gap-2 overflow-x-auto pb-1"
+                                    >
+
+                                        <a
+                                            href="{{ route('marketplace.freelancer', $freelancerProfile->username) }}"
+                                            class="shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-semibold transition
+                                                {{ $selectedCategorySlug === ''
+                                                    ? 'border-[#0F6B3A] bg-[#EAF7EF] text-[#0F6B3A]'
+                                                    : 'border-[#DCE7E1] bg-white text-[#73837B] hover:border-[#BFD8C9] hover:text-[#0F6B3A]' }}"
+                                        >
+                                            Semua
+                                        </a>
+
+
+                                        @foreach ($serviceCategories as $category)
+
+                                            <a
+                                                href="{{ route('marketplace.freelancer', [
+                                                    'username' => $freelancerProfile->username,
+                                                    'category' => $category->slug,
+                                                ]) }}"
+                                                class="shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-semibold transition
+                                                    {{ $selectedCategorySlug === $category->slug
+                                                        ? 'border-[#0F6B3A] bg-[#EAF7EF] text-[#0F6B3A]'
+                                                        : 'border-[#DCE7E1] bg-white text-[#73837B] hover:border-[#BFD8C9] hover:text-[#0F6B3A]' }}"
+                                            >
+                                                {{ $category->name }}
+                                            </a>
+
+                                        @endforeach
+
+                                    </div>
+
+                                @endif
+
+                            </div>
+
+
+                            {{-- Active Filters --}}
+                            @if ($search || $selectedCategorySlug)
+
+                                <div
+                                    class="mt-4 flex flex-wrap items-center gap-2"
+                                >
+
+                                    <span
+                                        class="text-[10px] font-medium text-[#8A9A93]"
+                                    >
+                                        Filter aktif:
+                                    </span>
+
+
+                                    @if ($search)
+
+                                        <span
+                                            class="inline-flex items-center gap-1.5 rounded-full bg-[#EAF7EF] px-3 py-1.5 text-[10px] font-medium text-[#0F6B3A]"
+                                        >
+                                            <i class="bi bi-search"></i>
+
+                                            "{{ $search }}"
+                                        </span>
+
+                                    @endif
+
+
+                                    @if ($selectedCategory)
+
+                                        <span
+                                            class="inline-flex items-center gap-1.5 rounded-full bg-[#F3F7F4] px-3 py-1.5 text-[10px] font-medium text-[#556960]"
+                                        >
+                                            <i class="bi bi-grid"></i>
+
+                                            {{ $selectedCategory->name }}
+                                        </span>
+
+                                    @endif
+
+
+                                    <a
+                                        href="{{ route('marketplace.freelancer', $freelancerProfile->username) }}"
+                                        class="text-[10px] font-semibold text-[#0F6B3A] transition hover:text-[#1E9E5A]"
+                                    >
+                                        Reset filter
+                                    </a>
+
+                                </div>
+
+                            @endif
+
+
+                            {{-- =================================================
+                                SERVICE LIST
+                            ================================================== --}}
                             @if ($services->count())
 
-                                <div class="mt-5 divide-y divide-[#EDF2EF] border-y border-[#EDF2EF]">
+                                <div
+                                    class="mt-5 divide-y divide-[#EDF2EF] border-y border-[#EDF2EF]"
+                                >
 
                                     @foreach ($services as $service)
 
                                         @php
+
                                             $serviceThumbnail = $service->thumbnail
                                                 ? asset('storage/' . $service->thumbnail)
                                                 : null;
@@ -562,6 +996,19 @@
                                             $servicePrice = $service->starting_price
                                                 ?? $service->price
                                                 ?? 0;
+
+                                            $serviceRating = (float) (
+                                                $service->rating ?? 0
+                                            );
+
+                                            $serviceReviews = (int) (
+                                                $service->reviews_count ?? 0
+                                            );
+
+                                            $serviceOrders = (int) (
+                                                $service->orders_count ?? 0
+                                            );
+
                                         @endphp
 
 
@@ -570,8 +1017,10 @@
                                             class="jasain-service-card group flex gap-4 py-4 sm:gap-5 sm:py-5"
                                         >
 
-                                            {{-- SMALL BANNER --}}
-                                            <div class="relative h-[82px] w-[116px] shrink-0 overflow-hidden rounded-xl bg-[#EAF7EF] sm:h-[92px] sm:w-[132px]">
+                                            {{-- Thumbnail --}}
+                                            <div
+                                                class="relative h-[82px] w-[116px] shrink-0 overflow-hidden rounded-xl bg-[#EAF7EF] sm:h-[104px] sm:w-[148px]"
+                                            >
 
                                                 @if ($serviceThumbnail)
 
@@ -584,14 +1033,16 @@
 
                                                 @else
 
-                                                    <div class="flex h-full w-full items-center justify-center">
-
-                                                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#0F6B3A]">
-
-                                                            <i class="bi bi-briefcase text-base"></i>
-
+                                                    <div
+                                                        class="flex h-full w-full items-center justify-center bg-[#EAF7EF]"
+                                                    >
+                                                        <div
+                                                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#0F6B3A]"
+                                                        >
+                                                            <i
+                                                                class="bi bi-briefcase text-base"
+                                                            ></i>
                                                         </div>
-
                                                     </div>
 
                                                 @endif
@@ -599,12 +1050,11 @@
 
                                                 @if ($service->is_featured)
 
-                                                    <span class="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-[#0F6B3A] px-2 py-1 text-[8px] font-semibold text-white">
-
+                                                    <span
+                                                        class="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-[#0F6B3A] px-2 py-1 text-[8px] font-semibold text-white"
+                                                    >
                                                         <i class="bi bi-stars"></i>
-
                                                         Pilihan
-
                                                     </span>
 
                                                 @endif
@@ -612,23 +1062,29 @@
                                             </div>
 
 
-                                            {{-- SERVICE INFORMATION --}}
+                                            {{-- Service Information --}}
                                             <div class="min-w-0 flex-1">
 
-                                                <div class="flex items-start justify-between gap-4">
+                                                <div
+                                                    class="flex items-start justify-between gap-4"
+                                                >
 
                                                     <div class="min-w-0">
 
-                                                        <div class="flex flex-wrap items-center gap-2 text-[10px] text-[#899892]">
+                                                        {{-- Category --}}
+                                                        <div
+                                                            class="flex flex-wrap items-center gap-2 text-[10px] text-[#899892]"
+                                                        >
 
                                                             @if ($service->category)
 
-                                                                <span class="truncate">
+                                                                <span
+                                                                    class="truncate"
+                                                                >
                                                                     {{ $service->category->name }}
                                                                 </span>
 
                                                             @endif
-
 
                                                             @if ($service->subcategory)
 
@@ -636,7 +1092,9 @@
                                                                     •
                                                                 </span>
 
-                                                                <span class="truncate">
+                                                                <span
+                                                                    class="truncate"
+                                                                >
                                                                     {{ $service->subcategory->name }}
                                                                 </span>
 
@@ -645,23 +1103,30 @@
                                                         </div>
 
 
-                                                        <h3 class="mt-1.5 line-clamp-2 text-sm font-semibold leading-5 text-[#123128] transition group-hover:text-[#0F6B3A] sm:text-[15px]">
-
+                                                        {{-- Title --}}
+                                                        <h3
+                                                            class="mt-1.5 line-clamp-2 text-sm font-semibold leading-5 text-[#123128] transition group-hover:text-[#0F6B3A] sm:text-[15px]"
+                                                        >
                                                             {{ $service->title }}
-
                                                         </h3>
 
                                                     </div>
 
 
-                                                    {{-- PRICE --}}
-                                                    <div class="hidden shrink-0 text-right sm:block">
+                                                    {{-- Price Desktop --}}
+                                                    <div
+                                                        class="hidden shrink-0 text-right sm:block"
+                                                    >
 
-                                                        <div class="text-[9px] text-[#96A39E]">
+                                                        <div
+                                                            class="text-[9px] text-[#96A39E]"
+                                                        >
                                                             Mulai dari
                                                         </div>
 
-                                                        <div class="mt-1 text-sm font-semibold text-[#0F6B3A]">
+                                                        <div
+                                                            class="mt-1 text-sm font-semibold text-[#0F6B3A]"
+                                                        >
                                                             Rp {{ number_format((float) $servicePrice, 0, ',', '.') }}
                                                         </div>
 
@@ -670,30 +1135,49 @@
                                                 </div>
 
 
-                                                {{-- META --}}
-                                                <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] text-[#8A9B94]">
+                                                {{-- Meta --}}
+                                                <div
+                                                    class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-[#8A9B94]"
+                                                >
+
+                                                    <span
+                                                        class="inline-flex items-center gap-1"
+                                                    >
+                                                        <i
+                                                            class="bi bi-star-fill text-[#F2B93B]"
+                                                        ></i>
+
+                                                        {{ number_format($serviceRating, 1) }}
+                                                    </span>
+
+
+                                                    <span
+                                                        class="inline-flex items-center gap-1"
+                                                    >
+                                                        {{ $serviceReviews }}
+                                                        ulasan
+                                                    </span>
+
+
+                                                    <span
+                                                        class="inline-flex items-center gap-1"
+                                                    >
+                                                        {{ $serviceOrders }}
+                                                        pesanan
+                                                    </span>
+
 
                                                     @if ($service->delivery_days)
 
-                                                        <span class="inline-flex items-center gap-1">
+                                                        <span
+                                                            class="inline-flex items-center gap-1"
+                                                        >
+                                                            <i
+                                                                class="bi bi-calendar3"
+                                                            ></i>
 
-                                                            <i class="bi bi-clock"></i>
-
-                                                            {{ $service->delivery_days }} hari
-
-                                                        </span>
-
-                                                    @endif
-
-
-                                                    @if ($service->orders_count ?? false)
-
-                                                        <span class="inline-flex items-center gap-1">
-
-                                                            <i class="bi bi-bag-check"></i>
-
-                                                            {{ $service->orders_count }} pesanan
-
+                                                            {{ $service->delivery_days }}
+                                                            hari
                                                         </span>
 
                                                     @endif
@@ -701,26 +1185,34 @@
                                                 </div>
 
 
-                                                {{-- MOBILE PRICE --}}
-                                                <div class="mt-3 flex items-center justify-between sm:hidden">
+                                                {{-- Mobile Price --}}
+                                                <div
+                                                    class="mt-3 flex items-center justify-between sm:hidden"
+                                                >
 
                                                     <div>
 
-                                                        <div class="text-[9px] text-[#96A39E]">
+                                                        <div
+                                                            class="text-[9px] text-[#96A39E]"
+                                                        >
                                                             Mulai dari
                                                         </div>
 
-                                                        <div class="mt-0.5 text-xs font-semibold text-[#0F6B3A]">
+                                                        <div
+                                                            class="mt-0.5 text-xs font-semibold text-[#0F6B3A]"
+                                                        >
                                                             Rp {{ number_format((float) $servicePrice, 0, ',', '.') }}
                                                         </div>
 
                                                     </div>
 
 
-                                                    <div class="flex h-7 w-7 items-center justify-center rounded-full bg-[#EAF7EF] text-[#0F6B3A]">
-
-                                                        <i class="bi bi-arrow-up-right text-[10px]"></i>
-
+                                                    <div
+                                                        class="flex h-7 w-7 items-center justify-center rounded-full bg-[#EAF7EF] text-[#0F6B3A]"
+                                                    >
+                                                        <i
+                                                            class="bi bi-arrow-up-right text-[10px]"
+                                                        ></i>
                                                     </div>
 
                                                 </div>
@@ -728,13 +1220,17 @@
                                             </div>
 
 
-                                            {{-- DESKTOP ARROW --}}
-                                            <div class="hidden shrink-0 items-center sm:flex">
+                                            {{-- Desktop Arrow --}}
+                                            <div
+                                                class="hidden shrink-0 items-center sm:flex"
+                                            >
 
-                                                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#F2F8F4] text-[#0F6B3A] transition group-hover:bg-[#EAF7EF]">
-
-                                                    <i class="bi bi-chevron-right text-[11px]"></i>
-
+                                                <div
+                                                    class="flex h-8 w-8 items-center justify-center rounded-full bg-[#F2F8F4] text-[#0F6B3A] transition group-hover:bg-[#EAF7EF]"
+                                                >
+                                                    <i
+                                                        class="bi bi-chevron-right text-[11px]"
+                                                    ></i>
                                                 </div>
 
                                             </div>
@@ -747,21 +1243,50 @@
 
                             @else
 
-                                <div class="mt-5 rounded-2xl border border-dashed border-[#CFDFD5] px-6 py-12 text-center">
+                                <div
+                                    class="mt-5 rounded-2xl border border-dashed border-[#CFDFD5] px-6 py-12 text-center"
+                                >
 
-                                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F2F7F4] text-lg text-[#80958A]">
-
-                                        <i class="bi bi-briefcase"></i>
-
+                                    <div
+                                        class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F2F7F4] text-lg text-[#80958A]"
+                                    >
+                                        <i class="bi bi-search"></i>
                                     </div>
 
-                                    <h3 class="mt-3 text-sm font-semibold text-[#123128]">
-                                        Belum ada layanan
+                                    <h3
+                                        class="mt-3 text-sm font-semibold text-[#123128]"
+                                    >
+                                        @if ($search || $selectedCategorySlug)
+                                            Jasa tidak ditemukan
+                                        @else
+                                            Belum ada layanan
+                                        @endif
                                     </h3>
 
-                                    <p class="mt-1.5 text-xs text-[#81918B]">
-                                        Freelancer ini belum mempublikasikan layanan.
+                                    <p
+                                        class="mt-1.5 text-xs leading-5 text-[#81918B]"
+                                    >
+                                        @if ($search || $selectedCategorySlug)
+                                            Coba gunakan kata kunci atau kategori yang berbeda.
+                                        @else
+                                            Freelancer ini belum mempublikasikan layanan.
+                                        @endif
                                     </p>
+
+                                    @if ($search || $selectedCategorySlug)
+
+                                        <a
+                                            href="{{ route('marketplace.freelancer', $freelancerProfile->username) }}"
+                                            class="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#0F6B3A] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#1E9E5A]"
+                                        >
+                                            <i
+                                                class="bi bi-arrow-counterclockwise"
+                                            ></i>
+
+                                            Tampilkan semua jasa
+                                        </a>
+
+                                    @endif
 
                                 </div>
 
@@ -773,46 +1298,88 @@
                         {{-- =================================================
                             REVIEW
                         ================================================== --}}
-
                         <section
                             id="review"
                             class="scroll-mt-24 border-t border-[#E8EFEB] pt-10"
                         >
 
-                            <p class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]">
+                            <p
+                                class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]"
+                            >
                                 Review
                             </p>
 
-                            <h2 class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128] sm:text-2xl">
-                                Pengalaman pelanggan
-                            </h2>
+                            <div
+                                class="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
+                            >
+
+                                <div>
+
+                                    <h2
+                                        class="text-xl font-semibold tracking-tight text-[#123128] sm:text-2xl"
+                                    >
+                                        Pengalaman pelanggan
+                                    </h2>
+
+                                    <p
+                                        class="mt-1 text-sm text-[#8A9B94]"
+                                    >
+                                        {{ $reviewCount }} review dari pelanggan
+                                    </p>
+
+                                </div>
+
+                                <div
+                                    class="inline-flex items-center gap-1.5 text-sm font-semibold text-[#40564C]"
+                                >
+                                    <i
+                                        class="bi bi-star-fill text-[#F2B93B]"
+                                    ></i>
+
+                                    {{ number_format($rating, 1) }}
+                                </div>
+
+                            </div>
 
 
                             @if ($reviews->count())
 
-                                <div class="mt-5 divide-y divide-[#EDF2EF] border-y border-[#EDF2EF]">
+                                <div
+                                    class="mt-5 divide-y divide-[#EDF2EF] border-y border-[#EDF2EF]"
+                                >
 
                                     @foreach ($reviews as $review)
 
                                         @php
+
                                             $reviewClient = $review->client;
 
-                                            $reviewName = $reviewClient?->name ?? 'Client';
+                                            $reviewName = $reviewClient?->name
+                                                ?? 'Client';
 
                                             $reviewAvatar = $reviewClient?->profile?->avatar
-                                                ? asset('storage/' . $reviewClient->profile->avatar)
+                                                ? asset(
+                                                    'storage/' . $reviewClient->profile->avatar
+                                                )
                                                 : null;
 
                                             $reviewInitial = strtoupper(
-                                                mb_substr($reviewName, 0, 1)
+                                                mb_substr(
+                                                    $reviewName,
+                                                    0,
+                                                    1
+                                                )
                                             );
+
                                         @endphp
 
                                         <article class="py-5">
 
                                             <div class="flex items-start gap-3">
 
-                                                <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EAF7EF] text-sm font-semibold text-[#0F6B3A]">
+                                                <div
+                                                    class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EAF7EF] text-sm font-semibold text-[#0F6B3A]"
+                                                >
 
                                                     @if ($reviewAvatar)
 
@@ -820,6 +1387,7 @@
                                                             src="{{ $reviewAvatar }}"
                                                             alt="{{ $reviewName }}"
                                                             class="h-full w-full object-cover"
+                                                            loading="lazy"
                                                         >
 
                                                     @else
@@ -833,26 +1401,36 @@
 
                                                 <div class="min-w-0 flex-1">
 
-                                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                    <div
+                                                        class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
+                                                    >
 
                                                         <div>
 
-                                                            <p class="text-sm font-semibold text-[#123128]">
+                                                            <p
+                                                                class="text-sm font-semibold text-[#123128]"
+                                                            >
                                                                 {{ $reviewName }}
                                                             </p>
 
-                                                            <p class="mt-1 text-[11px] text-[#8A9B94]">
+                                                            <p
+                                                                class="mt-1 text-[11px] text-[#8A9B94]"
+                                                            >
                                                                 {{ optional($review->created_at)->translatedFormat('d M Y') }}
                                                             </p>
 
                                                         </div>
 
 
-                                                        <div class="flex items-center gap-1">
+                                                        <div
+                                                            class="flex items-center gap-1"
+                                                        >
 
                                                             @for ($star = 1; $star <= 5; $star++)
 
-                                                                <i class="bi bi-star-fill text-[11px] {{ $star <= (int) $review->rating ? 'text-[#F2B93B]' : 'text-[#DDE5DF]' }}"></i>
+                                                                <i
+                                                                    class="bi bi-star-fill text-[11px] {{ $star <= (int) $review->rating ? 'text-[#F2B93B]' : 'text-[#DDE5DF]' }}"
+                                                                ></i>
 
                                                             @endfor
 
@@ -863,7 +1441,9 @@
 
                                                     @if ($review->comment)
 
-                                                        <p class="mt-3 max-w-3xl text-sm leading-6 text-[#60746B]">
+                                                        <p
+                                                            class="mt-3 max-w-3xl text-sm leading-6 text-[#60746B]"
+                                                        >
                                                             {{ $review->comment }}
                                                         </p>
 
@@ -881,9 +1461,19 @@
 
                             @else
 
-                                <div class="mt-5 rounded-2xl border border-dashed border-[#CFDFD5] px-6 py-10 text-center">
+                                <div
+                                    class="mt-5 rounded-2xl border border-dashed border-[#CFDFD5] px-6 py-10 text-center"
+                                >
 
-                                    <p class="text-sm text-[#81918B]">
+                                    <div
+                                        class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[#F2F7F4] text-[#84968E]"
+                                    >
+                                        <i class="bi bi-chat-square-text"></i>
+                                    </div>
+
+                                    <p
+                                        class="mt-3 text-sm text-[#81918B]"
+                                    >
                                         Belum ada review dari pelanggan.
                                     </p>
 
@@ -897,64 +1487,86 @@
                         {{-- =================================================
                             ABOUT
                         ================================================== --}}
-
                         <section
                             id="tentang"
                             class="scroll-mt-24 border-t border-[#E8EFEB] pt-10"
                         >
 
-                            <p class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]">
+                            <p
+                                class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]"
+                            >
                                 Tentang freelancer
                             </p>
 
-                            <h2 class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128] sm:text-2xl">
+                            <h2
+                                class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128] sm:text-2xl"
+                            >
                                 Tentang
                             </h2>
 
 
                             @if ($freelancerProfile->bio)
 
-                                <div class="mt-5 max-w-4xl text-sm leading-7 text-[#60746B] sm:text-[15px]">
+                                <div
+                                    class="mt-5 max-w-4xl text-sm leading-7 text-[#60746B] sm:text-[15px]"
+                                >
                                     {!! nl2br(e($freelancerProfile->bio)) !!}
                                 </div>
 
                             @else
 
-                                <p class="mt-5 text-sm text-[#81918B]">
-                                    Freelancer ini belum menambahkan deskripsi profil.
+                                <p
+                                    class="mt-5 text-sm text-[#81918B]"
+                                >
+                                    Freelancer ini belum menambahkan
+                                    deskripsi profil.
                                 </p>
 
                             @endif
 
 
-                            <div class="mt-6 grid gap-5 border-t border-[#EDF2EF] pt-6 sm:grid-cols-2">
+                            <div
+                                class="mt-6 grid gap-5 border-t border-[#EDF2EF] pt-6 sm:grid-cols-2"
+                            >
 
+                                {{-- Location --}}
                                 <div>
 
-                                    <p class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]">
+                                    <p
+                                        class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]"
+                                    >
                                         Lokasi
                                     </p>
 
-                                    <p class="mt-1.5 flex items-center gap-2 text-sm font-medium text-[#40564C]">
-
-                                        <i class="bi bi-geo-alt text-[#1E9E5A]"></i>
+                                    <p
+                                        class="mt-1.5 flex items-center gap-2 text-sm font-medium text-[#40564C]"
+                                    >
+                                        <i
+                                            class="bi bi-geo-alt text-[#1E9E5A]"
+                                        ></i>
 
                                         {{ $freelancerProfile->location ?: 'Indonesia' }}
-
                                     </p>
 
                                 </div>
 
 
+                                {{-- Status --}}
                                 <div>
 
-                                    <p class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]">
+                                    <p
+                                        class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]"
+                                    >
                                         Status
                                     </p>
 
-                                    <p class="mt-1.5 flex items-center gap-2 text-sm font-medium {{ $isAvailable ? 'text-[#0F6B3A]' : 'text-[#7E8C86]' }}">
+                                    <p
+                                        class="mt-1.5 flex items-center gap-2 text-sm font-medium {{ $isAvailable ? 'text-[#0F6B3A]' : 'text-[#7E8C86]' }}"
+                                    >
 
-                                        <span class="h-2 w-2 rounded-full {{ $isAvailable ? 'bg-[#1E9E5A]' : 'bg-[#AAB6B0]' }}"></span>
+                                        <span
+                                            class="h-2 w-2 rounded-full {{ $isAvailable ? 'bg-[#1E9E5A]' : 'bg-[#AAB6B0]' }}"
+                                        ></span>
 
                                         {{ $isAvailable ? 'Sedang menerima pekerjaan' : 'Sedang tidak menerima pekerjaan' }}
 
@@ -963,11 +1575,14 @@
                                 </div>
 
 
+                                {{-- Website --}}
                                 @if ($freelancerProfile->website)
 
                                     <div class="sm:col-span-2">
 
-                                        <p class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]">
+                                        <p
+                                            class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]"
+                                        >
                                             Website
                                         </p>
 
@@ -978,12 +1593,58 @@
                                             class="mt-1.5 inline-flex items-center gap-2 break-all text-sm font-medium text-[#0F6B3A] hover:text-[#1E9E5A]"
                                         >
                                             <i class="bi bi-globe2"></i>
+
                                             {{ $freelancerProfile->website }}
                                         </a>
 
                                     </div>
 
                                 @endif
+
+
+                                {{-- Services --}}
+                                <div>
+
+                                    <p
+                                        class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]"
+                                    >
+                                        Layanan aktif
+                                    </p>
+
+                                    <p
+                                        class="mt-1.5 flex items-center gap-2 text-sm font-medium text-[#40564C]"
+                                    >
+                                        <i
+                                            class="bi bi-briefcase text-[#1E9E5A]"
+                                        ></i>
+
+                                        {{ $serviceCount }} layanan
+                                    </p>
+
+                                </div>
+
+
+                                {{-- Total Orders --}}
+                                <div>
+
+                                    <p
+                                        class="text-[10px] font-medium uppercase tracking-[.08em] text-[#96A39E]"
+                                    >
+                                        Total pesanan
+                                    </p>
+
+                                    <p
+                                        class="mt-1.5 flex items-center gap-2 text-sm font-medium text-[#40564C]"
+                                    >
+                                        <i
+                                            class="bi bi-bag-check text-[#1E9E5A]"
+                                        ></i>
+
+                                        {{ number_format($totalOrders) }}
+                                        pesanan
+                                    </p>
+
+                                </div>
 
                             </div>
 
@@ -993,28 +1654,36 @@
                         {{-- =================================================
                             EXPERIENCE
                         ================================================== --}}
-
                         <section
                             id="pengalaman"
                             class="scroll-mt-24 border-t border-[#E8EFEB] pt-10"
                         >
 
-                            <p class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]">
+                            <p
+                                class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]"
+                            >
                                 Riwayat profesional
                             </p>
 
-                            <h2 class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128] sm:text-2xl">
+                            <h2
+                                class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128] sm:text-2xl"
+                            >
                                 Pengalaman
                             </h2>
 
-                            <p class="mt-1.5 text-sm text-[#8A9B94]">
-                                Pengalaman kerja dan aktivitas profesional freelancer.
+                            <p
+                                class="mt-1.5 text-sm text-[#8A9B94]"
+                            >
+                                Pengalaman kerja dan aktivitas profesional
+                                freelancer.
                             </p>
 
 
                             @if ($experiences->count())
 
-                                <div class="mt-6 divide-y divide-[#EDF2EF] border-y border-[#EDF2EF]">
+                                <div
+                                    class="mt-6 divide-y divide-[#EDF2EF] border-y border-[#EDF2EF]"
+                                >
 
                                     @foreach ($experiences as $experience)
 
@@ -1022,27 +1691,34 @@
 
                                             <div class="flex gap-4">
 
-                                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#0F6B3A]">
-
+                                                <div
+                                                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#0F6B3A]"
+                                                >
                                                     <i class="bi bi-briefcase"></i>
-
                                                 </div>
 
 
-                                                <div class="min-w-0 flex-1">
+                                                <div
+                                                    class="min-w-0 flex-1"
+                                                >
 
-                                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                    <div
+                                                        class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"
+                                                    >
 
                                                         <div>
 
-                                                            <h3 class="text-base font-semibold text-[#123128]">
+                                                            <h3
+                                                                class="text-base font-semibold text-[#123128]"
+                                                            >
                                                                 {{ $experience->position }}
                                                             </h3>
 
-
                                                             @if ($experience->company)
 
-                                                                <p class="mt-1 text-sm font-medium text-[#5D7269]">
+                                                                <p
+                                                                    class="mt-1 text-sm font-medium text-[#5D7269]"
+                                                                >
                                                                     {{ $experience->company }}
                                                                 </p>
 
@@ -1051,16 +1727,17 @@
                                                         </div>
 
 
-                                                        @if ($experience->start_year || $experience->end_year)
+                                                        @if (
+                                                            $experience->start_year
+                                                            || $experience->end_year
+                                                        )
 
-                                                            <span class="shrink-0 text-xs font-medium text-[#8A9B94]">
-
+                                                            <span
+                                                                class="shrink-0 text-xs font-medium text-[#8A9B94]"
+                                                            >
                                                                 {{ $experience->start_year ?: '—' }}
-
                                                                 -
-
                                                                 {{ $experience->end_year ?: 'Sekarang' }}
-
                                                             </span>
 
                                                         @endif
@@ -1070,7 +1747,9 @@
 
                                                     @if ($experience->description)
 
-                                                        <p class="mt-3 max-w-3xl text-sm leading-6 text-[#667D73]">
+                                                        <p
+                                                            class="mt-3 max-w-3xl text-sm leading-6 text-[#667D73]"
+                                                        >
                                                             {!! nl2br(e($experience->description)) !!}
                                                         </p>
 
@@ -1088,12 +1767,14 @@
 
                             @else
 
-                                <div class="mt-5 rounded-2xl border border-dashed border-[#CFDFD5] px-6 py-10 text-center">
-
-                                    <p class="text-sm text-[#81918B]">
+                                <div
+                                    class="mt-5 rounded-2xl border border-dashed border-[#CFDFD5] px-6 py-10 text-center"
+                                >
+                                    <p
+                                        class="text-sm text-[#81918B]"
+                                    >
                                         Belum ada pengalaman yang ditambahkan.
                                     </p>
-
                                 </div>
 
                             @endif
@@ -1104,24 +1785,29 @@
                         {{-- =================================================
                             EDUCATION
                         ================================================== --}}
-
                         <section
                             id="pendidikan"
                             class="scroll-mt-24 border-t border-[#E8EFEB] pt-10"
                         >
 
-                            <p class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]">
+                            <p
+                                class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]"
+                            >
                                 Pendidikan
                             </p>
 
-                            <h2 class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128] sm:text-2xl">
+                            <h2
+                                class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128] sm:text-2xl"
+                            >
                                 Pendidikan
                             </h2>
 
 
                             @if ($educations->count())
 
-                                <div class="mt-5 divide-y divide-[#EDF2EF] border-y border-[#EDF2EF]">
+                                <div
+                                    class="mt-5 divide-y divide-[#EDF2EF] border-y border-[#EDF2EF]"
+                                >
 
                                     @foreach ($educations as $education)
 
@@ -1129,30 +1815,41 @@
 
                                             <div class="flex gap-4">
 
-                                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#0F6B3A]">
+                                                <div
+                                                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#0F6B3A]"
+                                                >
                                                     <i class="bi bi-mortarboard-fill"></i>
                                                 </div>
 
 
                                                 <div>
 
-                                                    <h3 class="text-base font-semibold text-[#123128]">
+                                                    <h3
+                                                        class="text-base font-semibold text-[#123128]"
+                                                    >
                                                         {{ $education->institution }}
                                                     </h3>
 
 
                                                     @if ($education->field_of_study)
 
-                                                        <p class="mt-1 text-sm text-[#60746B]">
+                                                        <p
+                                                            class="mt-1 text-sm text-[#60746B]"
+                                                        >
                                                             {{ $education->field_of_study }}
                                                         </p>
 
                                                     @endif
 
 
-                                                    @if ($education->start_year || $education->end_year)
+                                                    @if (
+                                                        $education->start_year
+                                                        || $education->end_year
+                                                    )
 
-                                                        <p class="mt-2 text-xs text-[#8A9B94]">
+                                                        <p
+                                                            class="mt-2 text-xs text-[#8A9B94]"
+                                                        >
                                                             {{ $education->start_year ?: '—' }}
                                                             -
                                                             {{ $education->end_year ?: 'Sekarang' }}
@@ -1172,7 +1869,9 @@
 
                             @else
 
-                                <p class="mt-5 text-sm text-[#81918B]">
+                                <p
+                                    class="mt-5 text-sm text-[#81918B]"
+                                >
                                     Belum ada pendidikan yang ditambahkan.
                                 </p>
 
@@ -1184,46 +1883,59 @@
                         {{-- =================================================
                             CERTIFICATES
                         ================================================== --}}
-
                         <section
                             id="sertifikat"
                             class="scroll-mt-24 border-t border-[#E8EFEB] pt-10"
                         >
 
-                            <p class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]">
+                            <p
+                                class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]"
+                            >
                                 Kredensial
                             </p>
 
-                            <h2 class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128] sm:text-2xl">
+                            <h2
+                                class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128] sm:text-2xl"
+                            >
                                 Sertifikat
                             </h2>
 
 
                             @if ($certificates->count())
 
-                                <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                                <div
+                                    class="mt-5 grid gap-4 sm:grid-cols-2"
+                                >
 
                                     @foreach ($certificates as $certificate)
 
-                                        <article class="border-b border-[#EDF2EF] pb-5 sm:border-b-0 sm:pb-0">
+                                        <article
+                                            class="border-b border-[#EDF2EF] pb-5 sm:border-b-0 sm:pb-0"
+                                        >
 
                                             <div class="flex gap-4">
 
-                                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#0F6B3A]">
+                                                <div
+                                                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#0F6B3A]"
+                                                >
                                                     <i class="bi bi-award-fill"></i>
                                                 </div>
 
 
                                                 <div class="min-w-0">
 
-                                                    <h3 class="text-sm font-semibold leading-5 text-[#123128]">
+                                                    <h3
+                                                        class="text-sm font-semibold leading-5 text-[#123128]"
+                                                    >
                                                         {{ $certificate->name }}
                                                     </h3>
 
 
                                                     @if ($certificate->issuer)
 
-                                                        <p class="mt-1 text-xs text-[#667D73]">
+                                                        <p
+                                                            class="mt-1 text-xs text-[#667D73]"
+                                                        >
                                                             {{ $certificate->issuer }}
                                                         </p>
 
@@ -1232,7 +1944,9 @@
 
                                                     @if ($certificate->year)
 
-                                                        <p class="mt-2 text-[11px] text-[#8A9B94]">
+                                                        <p
+                                                            class="mt-2 text-[11px] text-[#8A9B94]"
+                                                        >
                                                             {{ $certificate->year }}
                                                         </p>
 
@@ -1248,7 +1962,10 @@
                                                             class="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#0F6B3A] hover:text-[#1E9E5A]"
                                                         >
                                                             Lihat kredensial
-                                                            <i class="bi bi-box-arrow-up-right"></i>
+
+                                                            <i
+                                                                class="bi bi-box-arrow-up-right"
+                                                            ></i>
                                                         </a>
 
                                                     @endif
@@ -1265,7 +1982,9 @@
 
                             @else
 
-                                <p class="mt-5 text-sm text-[#81918B]">
+                                <p
+                                    class="mt-5 text-sm text-[#81918B]"
+                                >
                                     Belum ada sertifikat yang ditambahkan.
                                 </p>
 
@@ -1277,32 +1996,43 @@
                         {{-- =================================================
                             SKILLS & LANGUAGES
                         ================================================== --}}
-
-                        <section class="border-t border-[#E8EFEB] pt-10">
+                        <section
+                            class="border-t border-[#E8EFEB] pt-10"
+                        >
 
                             <div class="grid gap-8 lg:grid-cols-2">
 
                                 {{-- Skills --}}
                                 <div>
 
-                                    <p class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]">
+                                    <p
+                                        class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]"
+                                    >
                                         Keahlian
                                     </p>
 
-                                    <h2 class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128]">
+                                    <h2
+                                        class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128]"
+                                    >
                                         Keahlian
                                     </h2>
 
 
                                     @if ($skills->count())
 
-                                        <div class="mt-5 flex flex-wrap gap-2">
+                                        <div
+                                            class="mt-5 flex flex-wrap gap-2"
+                                        >
 
                                             @foreach ($skills as $skill)
 
-                                                <span class="inline-flex items-center gap-2 rounded-full border border-[#CEE2D6] bg-[#F8FCF9] px-3.5 py-2 text-xs font-medium text-[#355A4A]">
+                                                <span
+                                                    class="inline-flex items-center gap-2 rounded-full border border-[#CEE2D6] bg-[#F8FCF9] px-3.5 py-2 text-xs font-medium text-[#355A4A]"
+                                                >
 
-                                                    <span class="h-1.5 w-1.5 rounded-full bg-[#22C55E]"></span>
+                                                    <span
+                                                        class="h-1.5 w-1.5 rounded-full bg-[#22C55E]"
+                                                    ></span>
 
                                                     {{ $skill->name }}
 
@@ -1314,7 +2044,9 @@
 
                                     @else
 
-                                        <p class="mt-5 text-sm text-[#81918B]">
+                                        <p
+                                            class="mt-5 text-sm text-[#81918B]"
+                                        >
                                             Belum ada keahlian yang ditambahkan.
                                         </p>
 
@@ -1326,11 +2058,15 @@
                                 {{-- Languages --}}
                                 <div>
 
-                                    <p class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]">
+                                    <p
+                                        class="text-[10px] font-semibold uppercase tracking-[.15em] text-[#1E9E5A]"
+                                    >
                                         Bahasa
                                     </p>
 
-                                    <h2 class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128]">
+                                    <h2
+                                        class="mt-1.5 text-xl font-semibold tracking-tight text-[#123128]"
+                                    >
                                         Bahasa
                                     </h2>
 
@@ -1341,15 +2077,23 @@
 
                                             @foreach ($languages as $language)
 
-                                                <div class="flex items-center justify-between gap-4 border-b border-[#EDF2EF] pb-3 last:border-b-0">
+                                                <div
+                                                    class="flex items-center justify-between gap-4 border-b border-[#EDF2EF] pb-3 last:border-b-0"
+                                                >
 
-                                                    <div class="flex items-center gap-3">
+                                                    <div
+                                                        class="flex items-center gap-3"
+                                                    >
 
-                                                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EAF7EF] text-[#0F6B3A]">
+                                                        <div
+                                                            class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EAF7EF] text-[#0F6B3A]"
+                                                        >
                                                             <i class="bi bi-translate"></i>
                                                         </div>
 
-                                                        <span class="text-sm font-medium text-[#40564C]">
+                                                        <span
+                                                            class="text-sm font-medium text-[#40564C]"
+                                                        >
                                                             {{ $language->language }}
                                                         </span>
 
@@ -1358,7 +2102,9 @@
 
                                                     @if ($language->level)
 
-                                                        <span class="text-xs text-[#81918B]">
+                                                        <span
+                                                            class="text-xs text-[#81918B]"
+                                                        >
                                                             {{ $language->level }}
                                                         </span>
 
@@ -1372,7 +2118,9 @@
 
                                     @else
 
-                                        <p class="mt-5 text-sm text-[#81918B]">
+                                        <p
+                                            class="mt-5 text-sm text-[#81918B]"
+                                        >
                                             Belum ada bahasa yang ditambahkan.
                                         </p>
 
@@ -1383,6 +2131,7 @@
                             </div>
 
                         </section>
+
 
                     </div>
 
@@ -1396,12 +2145,57 @@
 
 
     {{-- =========================================================
+        MOBILE CONTACT CTA
+    ========================================================== --}}
+    @if (!$isOwner && ($isClient || !auth()->check()) && $contactService)
+
+        <div
+            class="sticky bottom-0 z-40 border-t border-[#DDE9E2] bg-white/95 p-3 backdrop-blur-xl sm:hidden"
+        >
+
+            @if ($isClient)
+
+                <form
+                    method="POST"
+                    action="{{ route('client.messages.start', $contactService) }}"
+                >
+                    @csrf
+
+                    <button
+                        type="submit"
+                        class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0F6B3A] text-sm font-semibold text-white shadow-[0_8px_22px_rgba(15,107,58,0.18)] transition hover:bg-[#1E9E5A]"
+                    >
+                        <i class="bi bi-chat-dots text-[16px]"></i>
+                        Hubungi freelancer
+                    </button>
+
+                </form>
+
+            @else
+
+                <a
+                    href="{{ route('login') }}"
+                    class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0F6B3A] text-sm font-semibold text-white shadow-[0_8px_22px_rgba(15,107,58,0.18)] transition hover:bg-[#1E9E5A]"
+                >
+                    <i class="bi bi-chat-dots text-[16px]"></i>
+                    Masuk untuk menghubungi
+                </a>
+
+            @endif
+
+        </div>
+
+    @endif
+
+
+    {{-- =========================================================
         FOOTER
     ========================================================== --}}
-
     <footer class="border-t border-[#E3ECE7] bg-white">
 
-        <div class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-xs text-[#81918B] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div
+            class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-xs text-[#81918B] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8"
+        >
 
             <span>
                 © {{ date('Y') }} JASAIN
