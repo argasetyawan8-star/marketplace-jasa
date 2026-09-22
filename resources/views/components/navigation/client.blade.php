@@ -29,6 +29,8 @@
     $isMessages = request()->routeIs('client.messages.*');
 
     $isProfile = request()->routeIs('profile.*');
+
+    $isNotifications = request()->routeIs('notifications.*');
 @endphp
 
 
@@ -177,6 +179,7 @@
                     href="{{ route('marketplace.search') }}"
                     class="flex h-9 w-9 items-center justify-center rounded-lg text-[#71837B] transition duration-200 hover:bg-[#F3F8F5] hover:text-[#1E9E5A]"
                     title="Cari jasa"
+                    aria-label="Cari jasa"
                 >
                     <i class="bi bi-search text-[14px]"></i>
                 </a>
@@ -192,16 +195,25 @@
                             : 'text-[#71837B] hover:bg-[#F3F8F5] hover:text-[#1E9E5A]' }}
                     "
                     title="Pesan"
+                    aria-label="Pesan"
                 >
                     <i
                         class="bi bi-chat-dots{{ $isMessages ? '-fill' : '' }} text-[15px]"
                     ></i>
-
-                    {{-- Notification dot --}}
-                    <span
-                        class="absolute right-[7px] top-[6px] h-1.5 w-1.5 rounded-full bg-[#35C978]"
-                    ></span>
                 </a>
+
+
+                {{-- Notification --}}
+                <div
+                    class="
+                        rounded-lg
+                        {{ $isNotifications
+                            ? 'bg-[#EAF7EF] text-[#1E9E5A]'
+                            : 'text-[#71837B]' }}
+                    "
+                >
+                    <x-notification-bell />
+                </div>
 
 
                 {{-- Divider --}}
@@ -403,8 +415,34 @@
                     ></i>
 
                     <span>Pesan</span>
+                </a>
 
-                    <span class="ml-auto h-1.5 w-1.5 rounded-full bg-[#35C978]"></span>
+
+                {{-- Notifikasi --}}
+                <a
+                    href="{{ route('notifications.index') }}"
+                    class="
+                        flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition
+                        {{ $isNotifications
+                            ? 'bg-[#EAF7EF] text-[#0F6B3A]'
+                            : 'text-[#355248] hover:bg-[#F5F9F7]' }}
+                    "
+                >
+                    <i
+                        class="bi bi-bell{{ $isNotifications ? '-fill' : '' }} w-5 text-center text-[15px] {{ $isNotifications ? 'text-[#1E9E5A]' : 'text-[#899A92]' }}"
+                    ></i>
+
+                    <span>Notifikasi</span>
+
+                    @php
+                        $mobileUnreadCount = $user?->unreadNotifications()->count() ?? 0;
+                    @endphp
+
+                    @if($mobileUnreadCount > 0)
+                        <span class="ml-auto inline-flex min-w-[20px] items-center justify-center rounded-full bg-[#E5484D] px-1.5 py-0.5 text-[8px] font-bold leading-none text-white">
+                            {{ $mobileUnreadCount > 99 ? '99+' : $mobileUnreadCount }}
+                        </span>
+                    @endif
                 </a>
 
 

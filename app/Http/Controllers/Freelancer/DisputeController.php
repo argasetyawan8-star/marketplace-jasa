@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Dispute;
 use App\Models\DisputeEvidence;
 use App\Models\Order;
+use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -30,12 +32,11 @@ class DisputeController extends Controller
         'other',
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | CREATE
-    |--------------------------------------------------------------------------
-    */
-
+    /**
+     * --------------------------------------------------------------------------
+     * CREATE
+     * --------------------------------------------------------------------------
+     */
     public function create(
         Order $order
     ): View|RedirectResponse {
@@ -57,13 +58,10 @@ class DisputeController extends Controller
             422
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Jika sudah ada dispute aktif, jangan membuat dispute baru.
-        | Arahkan Freelancer ke dispute yang sedang berjalan.
-        |--------------------------------------------------------------------------
-        */
-
+        /**
+         * Jika sudah ada dispute aktif, jangan membuat dispute baru.
+         * Arahkan Freelancer ke dispute yang sedang berjalan.
+         */
         $activeDispute = $order->activeDispute;
 
         if ($activeDispute) {
@@ -91,12 +89,11 @@ class DisputeController extends Controller
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | STORE
-    |--------------------------------------------------------------------------
-    */
-
+    /**
+     * --------------------------------------------------------------------------
+     * STORE
+     * --------------------------------------------------------------------------
+     */
     public function store(
         Request $request,
         Order $order
@@ -157,6 +154,94 @@ class DisputeController extends Controller
             'status' => 'pending_response',
         ]);
 
+        /**
+         * ----------------------------------------------------------------------
+         * NOTIFICATION
+         * ----------------------------------------------------------------------
+         *
+         * Freelancer membuka dispute:
+         * 1. Client diberi tahu bahwa ada dispute dan perlu memberikan tanggapan.
+         * 2. Admin diberi tahu agar dispute dapat dipantau.
+         */
+        $order->loadMissing([
+            'client',
+        ]);
+
+        $client = $order->client;
+        $freelancer = Auth::user();
+
+        if ($client) {
+            app(NotificationService::class)->send(
+                recipient: $client,
+                event: NotificationService::DISPUTE_OPENED,
+                title: 'Dispute baru dari freelancer',
+                message:
+                    'Freelancer membuka dispute untuk order "' .
+                    $order->order_number .
+                    '". Silakan baca alasan dispute dan berikan tanggapan.',
+                actionUrl: route(
+                    'client.disputes.show',
+                    $dispute
+                ),
+                priority: 'action',
+                actor: $freelancer,
+                relatedType: 'dispute',
+                relatedId: $dispute->id,
+                extra: [
+                    'dispute_id' => $dispute->id,
+                    'dispute_number' => $dispute->dispute_number,
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'category' => $dispute->category,
+                    'status' => $dispute->status,
+                    'opened_by_role' => $dispute->opened_by_role,
+                ],
+                dedupeKey:
+                    'dispute_opened:client:' . $dispute->id
+            );
+        }
+
+        /**
+         * Kirim notifikasi ke seluruh Admin.
+         */
+        $admins = User::query()
+            ->where('role', 'admin')
+            ->get();
+
+        foreach ($admins as $admin) {
+            app(NotificationService::class)->send(
+                recipient: $admin,
+                event: NotificationService::DISPUTE_OPENED,
+                title: 'Dispute baru perlu ditinjau',
+                message:
+                    'Freelancer membuka dispute untuk order "' .
+                    $order->order_number .
+                    '". Sengketa menunggu tanggapan dari Client.',
+                actionUrl: route(
+                    'admin.disputes.show',
+                    $dispute
+                ),
+                priority: 'action',
+                actor: $freelancer,
+                relatedType: 'dispute',
+                relatedId: $dispute->id,
+                extra: [
+                    'dispute_id' => $dispute->id,
+                    'dispute_number' => $dispute->dispute_number,
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'category' => $dispute->category,
+                    'status' => $dispute->status,
+                    'opened_by_role' => $dispute->opened_by_role,
+                ],
+                dedupeKey:
+                    'dispute_opened:admin:' .
+                    $admin->id .
+                    ':' .
+                    $dispute->id
+            );
+        }
+
         return redirect()
             ->route(
                 'freelancer.disputes.show',
@@ -168,12 +253,11 @@ class DisputeController extends Controller
             );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | SHOW
-    |--------------------------------------------------------------------------
-    */
-
+    /**
+     * --------------------------------------------------------------------------
+     * SHOW
+     * --------------------------------------------------------------------------
+     */
     public function show(
         Dispute $dispute
     ): View {
@@ -197,17 +281,18 @@ class DisputeController extends Controller
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | MESSAGE
-    |--------------------------------------------------------------------------
-    */
-
+    /**
+     * --------------------------------------------------------------------------
+     * MESSAGE
+     * --------------------------------------------------------------------------
+     */
     public function message(
         Request $request,
         Dispute $dispute
     ): RedirectResponse {
-        $dispute->load('order');
+        $dispute->load([
+            'order.client',
+        ]);
 
         $this->authorizeDispute($dispute);
 
@@ -239,12 +324,13 @@ class DisputeController extends Controller
             'message' => $validated['message'],
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Client membuka dispute → Freelancer membalas
-        | → masuk tahap review Admin.
-        |--------------------------------------------------------------------------
-        */
+        /**
+         * ----------------------------------------------------------------------
+         * Client membuka dispute → Freelancer membalas
+         * → masuk tahap review Admin.
+         * ----------------------------------------------------------------------
+         */
+        $statusChangedToReview = false;
 
         if (
             $dispute->opened_by_role === 'client' &&
@@ -254,6 +340,55 @@ class DisputeController extends Controller
             $dispute->update([
                 'status' => 'under_review',
             ]);
+
+            $statusChangedToReview = true;
+        }
+
+        /**
+         * ----------------------------------------------------------------------
+         * NOTIFICATION KE CLIENT
+         * ----------------------------------------------------------------------
+         *
+         * Freelancer memberikan tanggapan terhadap dispute yang dibuka Client.
+         */
+        $client = $dispute->order->client;
+
+        if (
+            $client &&
+            $dispute->opened_by_role === 'client'
+        ) {
+            app(NotificationService::class)->send(
+                recipient: $client,
+                event: NotificationService::DISPUTE_RESPONSE,
+                title: 'Freelancer memberikan tanggapan',
+                message:
+                    'Freelancer telah memberikan tanggapan pada dispute "' .
+                    $dispute->dispute_number .
+                    '" untuk order "' .
+                    $dispute->order->order_number .
+                    '".',
+                actionUrl: route(
+                    'client.disputes.show',
+                    $dispute
+                ),
+                priority: 'action',
+                actor: Auth::user(),
+                relatedType: 'dispute',
+                relatedId: $dispute->id,
+                extra: [
+                    'dispute_id' => $dispute->id,
+                    'dispute_number' => $dispute->dispute_number,
+                    'order_id' => $dispute->order->id,
+                    'order_number' => $dispute->order->order_number,
+                    'status' => $dispute->status,
+                    'status_changed_to_review' => $statusChangedToReview,
+                ],
+                dedupeKey:
+                    'dispute_response:client:' .
+                    $dispute->id .
+                    ':' .
+                    sha1($validated['message'])
+            );
         }
 
         return back()->with(
@@ -262,12 +397,11 @@ class DisputeController extends Controller
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | EVIDENCE
-    |--------------------------------------------------------------------------
-    */
-
+    /**
+     * --------------------------------------------------------------------------
+     * EVIDENCE
+     * --------------------------------------------------------------------------
+     */
     public function evidence(
         Request $request,
         Dispute $dispute
@@ -328,12 +462,11 @@ class DisputeController extends Controller
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | PRIVATE
-    |--------------------------------------------------------------------------
-    */
-
+    /**
+     * --------------------------------------------------------------------------
+     * PRIVATE
+     * --------------------------------------------------------------------------
+     */
     private function authorizeDispute(
         Dispute $dispute
     ): void {

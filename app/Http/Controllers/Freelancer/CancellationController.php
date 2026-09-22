@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Freelancer;
 use App\Http\Controllers\Controller;
 use App\Models\CancellationRequest;
 use App\Models\Order;
-use App\Services\RefundService;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,7 +15,7 @@ use Illuminate\View\View;
 class CancellationController extends Controller
 {
     /**
-     * Status order yang masih dapat diproses untuk cancellation.
+     * Status order yang masih dapat diajukan pembatalannya.
      */
     private const CANCELABLE_STATUSES = [
         'pending_payment',
@@ -25,7 +25,17 @@ class CancellationController extends Controller
     ];
 
     /**
-     * Menampilkan detail pengajuan cancellation kepada freelancer.
+     * Event notifikasi.
+     */
+    private const NOTIFICATION_CANCELLATION_APPROVED =
+        'cancellation.approved_by_freelancer';
+
+    private const NOTIFICATION_CANCELLATION_REJECTED =
+        'cancellation.rejected_by_freelancer';
+
+    /**
+     * Menampilkan detail pengajuan pembatalan
+     * yang perlu ditinjau freelancer.
      */
     public function create(Order $order): View
     {
@@ -33,52 +43,75 @@ class CancellationController extends Controller
 
         abort_unless(
             $freelancerProfile,
-            403
+            403,
+            'Profil freelancer tidak ditemukan.'
         );
 
         abort_unless(
             $order->freelancer_profile_id === $freelancerProfile->id,
-            403
+            403,
+            'Kamu tidak memiliki akses ke order ini.'
         );
 
-        abort_unless(
-            in_array(
-                $order->status,
-                self::CANCELABLE_STATUSES,
-                true
-            ),
-            422
-        );
-
-        $cancellationRequest = CancellationRequest::query()
-            ->where(
-                'order_id',
-                $order->id
-            )
+        /*
+        |--------------------------------------------------------------------------
+        | Ambil pengajuan terbaru
+        |--------------------------------------------------------------------------
+        */
+        $latestRequest = CancellationRequest::query()
+            ->where('order_id', $order->id)
             ->latest('id')
             ->first();
 
-        abort_unless(
-            $cancellationRequest,
-            404
-        );
+        /*
+        |--------------------------------------------------------------------------
+        | Pengajuan yang masih menunggu keputusan freelancer
+        |--------------------------------------------------------------------------
+        */
+        $pendingRequest = CancellationRequest::query()
+            ->where('order_id', $order->id)
+            ->where('status', 'pending_freelancer')
+            ->latest('id')
+            ->first();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Halaman ini tetap dapat dibuka untuk melihat hasil
+        | pengajuan yang sudah diproses.
+        |--------------------------------------------------------------------------
+        */
         abort_unless(
-            $cancellationRequest->requester_role === 'client',
-            403
+            $pendingRequest ||
+            (
+                $latestRequest &&
+                in_array(
+                    $latestRequest->status,
+                    [
+                        'rejected_by_freelancer',
+                        'mediation_pending',
+                        'approved_by_freelancer',
+                        'approved_by_admin',
+                        'rejected_by_admin',
+                    ],
+                    true
+                )
+            ),
+            404,
+            'Pengajuan pembatalan tidak ditemukan.'
         );
 
         return view(
             'freelancer.orders.cancellation',
             compact(
                 'order',
-                'cancellationRequest'
+                'latestRequest',
+                'pendingRequest'
             )
         );
     }
 
     /**
-     * Freelancer menyetujui cancellation.
+     * Freelancer menyetujui pembatalan.
      */
     public function approve(
         Request $request,
@@ -88,12 +121,14 @@ class CancellationController extends Controller
 
         abort_unless(
             $freelancerProfile,
-            403
+            403,
+            'Profil freelancer tidak ditemukan.'
         );
 
         abort_unless(
             $order->freelancer_profile_id === $freelancerProfile->id,
-            403
+            403,
+            'Kamu tidak memiliki akses ke order ini.'
         );
 
         $validated = $request->validate([
@@ -106,72 +141,56 @@ class CancellationController extends Controller
 
         DB::transaction(function () use (
             $order,
-            $freelancerProfile,
             $validated
         ) {
             /*
             |--------------------------------------------------------------------------
-            | Lock Order
+            | Kunci cancellation request agar tidak diproses dua kali
             |--------------------------------------------------------------------------
             */
+            $cancellationRequest = CancellationRequest::query()
+                ->where('order_id', $order->id)
+                ->where('status', 'pending_freelancer')
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
 
+            abort_unless(
+                $cancellationRequest,
+                422,
+                'Tidak ada pengajuan pembatalan yang sedang menunggu keputusan freelancer.'
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Kunci order
+            |--------------------------------------------------------------------------
+            */
             $lockedOrder = Order::query()
                 ->with('payment')
                 ->lockForUpdate()
-                ->findOrFail(
-                    $order->id
-                );
+                ->findOrFail($order->id);
 
-            abort_unless(
-                $lockedOrder->freelancer_profile_id === $freelancerProfile->id,
-                403
-            );
-
+            /*
+            |--------------------------------------------------------------------------
+            | Pastikan order masih dapat dibatalkan
+            |--------------------------------------------------------------------------
+            */
             abort_unless(
                 in_array(
                     $lockedOrder->status,
                     self::CANCELABLE_STATUSES,
                     true
                 ),
-                422
+                422,
+                'Order sudah tidak dapat dibatalkan.'
             );
 
             /*
             |--------------------------------------------------------------------------
-            | Lock Cancellation Request
+            | Batalkan order
             |--------------------------------------------------------------------------
             */
-
-            $cancellationRequest = CancellationRequest::query()
-                ->lockForUpdate()
-                ->where(
-                    'order_id',
-                    $lockedOrder->id
-                )
-                ->latest('id')
-                ->first();
-
-            abort_unless(
-                $cancellationRequest,
-                404
-            );
-
-            abort_unless(
-                $cancellationRequest->requester_role === 'client',
-                403
-            );
-
-            abort_unless(
-                $cancellationRequest->status === 'pending_freelancer',
-                422
-            );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Batalkan Order
-            |--------------------------------------------------------------------------
-            */
-
             $lockedOrder->update([
                 'status' => 'cancelled',
                 'cancel_reason' => $cancellationRequest->reason,
@@ -179,73 +198,105 @@ class CancellationController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Payment
+            | Update payment
             |--------------------------------------------------------------------------
-            |
-            | Pending:
-            | langsung cancelled.
-            |
-            | Paid:
-            | menjadi refund_pending dan dibuatkan record Refund.
-            |
             */
-
             if ($lockedOrder->payment) {
-                if (
-                    $lockedOrder->payment->status === 'pending'
-                ) {
+                if ($lockedOrder->payment->status === 'pending') {
                     $lockedOrder->payment->update([
                         'status' => 'cancelled',
                     ]);
-                } elseif (
-                    $lockedOrder->payment->status === 'paid'
-                ) {
+                } elseif ($lockedOrder->payment->status === 'paid') {
+                    /*
+                    | Refund aktual diproses pada modul Refund/Xendit
+                    | di tahap payment final.
+                    */
                     $lockedOrder->payment->update([
                         'status' => 'refund_pending',
                     ]);
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Create Pending Refund
-                    |--------------------------------------------------------------------------
-                    */
-
-                    app(RefundService::class)->createPending(
-                        $lockedOrder,
-                        'cancellation',
-                        $cancellationRequest->id,
-                        $cancellationRequest->reason
-                    );
                 }
             }
 
             /*
             |--------------------------------------------------------------------------
-            | Update Cancellation Request
+            | Update cancellation request
             |--------------------------------------------------------------------------
             */
-
             $cancellationRequest->update([
                 'status' => 'approved_by_freelancer',
-                'freelancer_note' =>
-                    $validated['freelancer_note'] ?? null,
+                'freelancer_note' => $validated['freelancer_note'] ?? null,
                 'freelancer_reviewed_at' => now(),
             ]);
         });
 
+        /*
+        |--------------------------------------------------------------------------
+        | Ambil data terbaru untuk notifikasi
+        |--------------------------------------------------------------------------
+        */
+        $freshRequest = CancellationRequest::query()
+            ->with([
+                'order.client',
+            ])
+            ->findOrFail(
+                CancellationRequest::query()
+                    ->where('order_id', $order->id)
+                    ->where('status', 'approved_by_freelancer')
+                    ->latest('id')
+                    ->value('id')
+            );
+
+        $freshOrder = $freshRequest->order;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Notifikasi ke Client
+        |--------------------------------------------------------------------------
+        */
+        if ($freshOrder?->client) {
+            app(NotificationService::class)->send(
+                recipient: $freshOrder->client,
+                event: self::NOTIFICATION_CANCELLATION_APPROVED,
+                title: 'Pembatalan pesanan disetujui',
+                message:
+                    'Freelancer menyetujui pembatalan order ' .
+                    ($freshOrder->order_number ?? '#' . $freshOrder->id) .
+                    '. Order telah dibatalkan.',
+                actionUrl: route(
+                    'client.orders.show',
+                    $freshOrder
+                ),
+                priority: 'action',
+                actor: Auth::user(),
+                relatedType: 'cancellation_request',
+                relatedId: $freshRequest->id,
+                extra: [
+                    'order_id' => $freshOrder->id,
+                    'order_number' => $freshOrder->order_number,
+                    'cancellation_request_id' => $freshRequest->id,
+                    'status' => $freshRequest->status,
+                    'decision' => 'approved',
+                ],
+                dedupeKey:
+                    'cancellation_freelancer_decision:client:' .
+                    $freshRequest->id .
+                    ':approved'
+            );
+        }
+
         return redirect()
             ->route(
                 'freelancer.orders.show',
-                $order
+                $freshOrder
             )
             ->with(
                 'success',
-                'Pembatalan disetujui. Order telah dibatalkan.'
+                'Pembatalan berhasil disetujui. Order telah dibatalkan.'
             );
     }
 
     /**
-     * Freelancer menolak cancellation.
+     * Freelancer menolak pembatalan.
      */
     public function reject(
         Request $request,
@@ -255,12 +306,14 @@ class CancellationController extends Controller
 
         abort_unless(
             $freelancerProfile,
-            403
+            403,
+            'Profil freelancer tidak ditemukan.'
         );
 
         abort_unless(
             $order->freelancer_profile_id === $freelancerProfile->id,
-            403
+            403,
+            'Kamu tidak memiliki akses ke order ini.'
         );
 
         $validated = $request->validate([
@@ -272,89 +325,113 @@ class CancellationController extends Controller
             ],
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Simpan penolakan
+        |--------------------------------------------------------------------------
+        */
         DB::transaction(function () use (
             $order,
-            $freelancerProfile,
             $validated
         ) {
-            /*
-            |--------------------------------------------------------------------------
-            | Lock Order
-            |--------------------------------------------------------------------------
-            */
-
-            $lockedOrder = Order::query()
-                ->lockForUpdate()
-                ->findOrFail(
-                    $order->id
-                );
-
-            abort_unless(
-                $lockedOrder->freelancer_profile_id === $freelancerProfile->id,
-                403
-            );
-
-            abort_unless(
-                in_array(
-                    $lockedOrder->status,
-                    self::CANCELABLE_STATUSES,
-                    true
-                ),
-                422
-            );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Lock Cancellation Request
-            |--------------------------------------------------------------------------
-            */
-
             $cancellationRequest = CancellationRequest::query()
-                ->lockForUpdate()
-                ->where(
-                    'order_id',
-                    $lockedOrder->id
-                )
+                ->where('order_id', $order->id)
+                ->where('status', 'pending_freelancer')
                 ->latest('id')
+                ->lockForUpdate()
                 ->first();
 
             abort_unless(
                 $cancellationRequest,
-                404
-            );
-
-            abort_unless(
-                $cancellationRequest->requester_role === 'client',
-                403
-            );
-
-            abort_unless(
-                $cancellationRequest->status === 'pending_freelancer',
-                422
+                422,
+                'Tidak ada pengajuan pembatalan yang sedang menunggu keputusan freelancer.'
             );
 
             /*
             |--------------------------------------------------------------------------
-            | Order tetap berjalan
+            | Pastikan order masih dalam status yang relevan
             |--------------------------------------------------------------------------
             */
+            abort_unless(
+                in_array(
+                    $order->status,
+                    self::CANCELABLE_STATUSES,
+                    true
+                ),
+                422,
+                'Order sudah tidak dapat diproses.'
+            );
 
             $cancellationRequest->update([
                 'status' => 'rejected_by_freelancer',
-                'freelancer_note' =>
-                    $validated['freelancer_note'],
+                'freelancer_note' => $validated['freelancer_note'],
                 'freelancer_reviewed_at' => now(),
             ]);
         });
 
+        /*
+        |--------------------------------------------------------------------------
+        | Ambil data terbaru
+        |--------------------------------------------------------------------------
+        */
+        $freshRequest = CancellationRequest::query()
+            ->with([
+                'order.client',
+            ])
+            ->findOrFail(
+                CancellationRequest::query()
+                    ->where('order_id', $order->id)
+                    ->where('status', 'rejected_by_freelancer')
+                    ->latest('id')
+                    ->value('id')
+            );
+
+        $freshOrder = $freshRequest->order;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Notifikasi ke Client
+        |--------------------------------------------------------------------------
+        */
+        if ($freshOrder?->client) {
+            app(NotificationService::class)->send(
+                recipient: $freshOrder->client,
+                event: self::NOTIFICATION_CANCELLATION_REJECTED,
+                title: 'Pembatalan pesanan ditolak',
+                message:
+                    'Freelancer menolak pembatalan order ' .
+                    ($freshOrder->order_number ?? '#' . $freshOrder->id) .
+                    '. Kamu dapat meneruskan pengajuan melalui mediasi Admin.',
+                actionUrl: route(
+                    'client.orders.cancellation.create',
+                    $freshOrder
+                ),
+                priority: 'info',
+                actor: Auth::user(),
+                relatedType: 'cancellation_request',
+                relatedId: $freshRequest->id,
+                extra: [
+                    'order_id' => $freshOrder->id,
+                    'order_number' => $freshOrder->order_number,
+                    'cancellation_request_id' => $freshRequest->id,
+                    'status' => $freshRequest->status,
+                    'decision' => 'rejected',
+                ],
+                dedupeKey:
+                    'cancellation_freelancer_decision:client:' .
+                    $freshRequest->id .
+                    ':rejected'
+            );
+        }
+
         return redirect()
             ->route(
                 'freelancer.orders.show',
-                $order
+                $freshOrder
             )
             ->with(
                 'success',
-                'Pengajuan pembatalan ditolak. Client dapat mengajukan mediasi kepada admin.'
+                'Pembatalan ditolak. Client dapat mengajukan mediasi Admin.'
             );
     }
 }

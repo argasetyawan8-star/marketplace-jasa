@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Service;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -110,7 +111,7 @@ class MessageController extends Controller
             ],
         ]);
 
-        Message::create([
+        $message = Message::create([
             'conversation_id' => $conversation->id,
             'sender_id' => Auth::id(),
             'message' => $validated['message'],
@@ -121,6 +122,54 @@ class MessageController extends Controller
         $conversation->update([
             'last_message_at' => now(),
         ]);
+
+        /*
+         * =========================================================
+         * NOTIFICATION
+         * Client mengirim pesan -> Freelancer menerima notifikasi.
+         * =========================================================
+         */
+        $conversation->loadMissing(
+            'freelancerProfile.user'
+        );
+
+        $freelancer = $conversation
+            ->freelancerProfile
+            ?->user;
+
+        if ($freelancer) {
+            $preview = trim(
+                preg_replace(
+                    '/\s+/',
+                    ' ',
+                    (string) $message->message
+                )
+            );
+
+            if (mb_strlen($preview) > 120) {
+                $preview = mb_substr($preview, 0, 117) . '...';
+            }
+
+            app(NotificationService::class)->send(
+                recipient: $freelancer,
+                event: NotificationService::MESSAGE_RECEIVED,
+                title: 'Pesan baru dari client',
+                message: $preview,
+                actionUrl: route(
+                    'freelancer.messages.show',
+                    $conversation
+                ),
+                priority: 'action',
+                actor: Auth::user(),
+                relatedType: 'conversation',
+                relatedId: $conversation->id,
+                extra: [
+                    'message_id' => $message->id,
+                    'conversation_id' => $conversation->id,
+                ],
+                dedupeKey: 'message_received:' . $message->id,
+            );
+        }
 
         return back()->with(
             'success',
@@ -178,7 +227,7 @@ class MessageController extends Controller
                 'last_message_at' => now(),
             ]);
 
-            Message::create([
+            $message = Message::create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => Auth::id(),
                 'message' =>
@@ -196,6 +245,39 @@ class MessageController extends Controller
             $conversation->update([
                 'last_message_at' => now(),
             ]);
+
+            /*
+             * =====================================================
+             * NOTIFICATION
+             * Pesan pembuka dari Client -> Freelancer.
+             * =====================================================
+             */
+            $freelancer = $freelancerProfile->user;
+
+            if ($freelancer) {
+                app(NotificationService::class)->send(
+                    recipient: $freelancer,
+                    event: NotificationService::MESSAGE_RECEIVED,
+                    title: 'Pesan baru dari client',
+                    message: 'Client tertarik dengan jasa "' .
+                        $service->title .
+                        '" dan mengirim pesan baru.',
+                    actionUrl: route(
+                        'freelancer.messages.show',
+                        $conversation
+                    ),
+                    priority: 'action',
+                    actor: Auth::user(),
+                    relatedType: 'conversation',
+                    relatedId: $conversation->id,
+                    extra: [
+                        'message_id' => $message->id,
+                        'conversation_id' => $conversation->id,
+                        'service_id' => $service->id,
+                    ],
+                    dedupeKey: 'message_received:' . $message->id,
+                );
+            }
         }
 
         return redirect()->route(

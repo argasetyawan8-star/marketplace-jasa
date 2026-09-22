@@ -97,18 +97,31 @@
 
 
                     {{-- Right --}}
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 sm:gap-3">
 
                         {{-- Messages --}}
                         <a
                             href="{{ route('freelancer.messages.index') }}"
-                            class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-gray-50"
+                            class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-gray-50 hover:text-green-600"
                             title="Pesan"
+                            aria-label="Pesan"
                         >
 
                             <i class="bi bi-chat text-lg"></i>
 
                         </a>
+
+
+                        {{-- Notifications --}}
+                        <div class="relative">
+
+                            <x-notification-bell />
+
+                        </div>
+
+
+                        {{-- Divider --}}
+                        <div class="hidden h-8 w-px bg-gray-200 sm:block"></div>
 
 
                         {{-- Avatar --}}
@@ -128,7 +141,7 @@
 
                         <a
                             href="{{ route('freelancer.profile.show') }}"
-                            class="block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-green-100 ring-1 ring-green-100"
+                            class="block h-10 w-10 shrink-0 overflow-hidden rounded-full bg-green-100 ring-1 ring-green-100 transition hover:ring-2 hover:ring-green-200"
                             title="Profil"
                         >
 

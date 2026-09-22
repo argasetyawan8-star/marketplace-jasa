@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Dispute;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -100,18 +101,22 @@ class DisputeController extends Controller
 
         $counts = [
             'all' => Dispute::count(),
+
             'open' => Dispute::where(
                 'status',
                 'open'
             )->count(),
+
             'pending_response' => Dispute::where(
                 'status',
                 'pending_response'
             )->count(),
+
             'under_review' => Dispute::where(
                 'status',
                 'under_review'
             )->count(),
+
             'resolved' => Dispute::whereIn(
                 'status',
                 [
@@ -149,6 +154,9 @@ class DisputeController extends Controller
         );
     }
 
+    /**
+     * Admin menyelesaikan dispute.
+     */
     public function resolve(
         Request $request,
         Dispute $dispute
@@ -159,6 +167,7 @@ class DisputeController extends Controller
                 'string',
                 'in:client,freelancer,partial',
             ],
+
             'resolution_note' => [
                 'required',
                 'string',
@@ -173,7 +182,9 @@ class DisputeController extends Controller
         ) {
             $lockedDispute = Dispute::query()
                 ->lockForUpdate()
-                ->findOrFail($dispute->id);
+                ->findOrFail(
+                    $dispute->id
+                );
 
             abort_unless(
                 $lockedDispute->status === self::REVIEWABLE_STATUS,
@@ -181,34 +192,237 @@ class DisputeController extends Controller
                 'Dispute ini belum berada pada tahap peninjauan admin.'
             );
 
-            $status = match ($validated['resolution']) {
-                'client' => 'resolved_client',
-                'freelancer' => 'resolved_freelancer',
-                'partial' => 'resolved_partial',
+            $status = match (
+                $validated['resolution']
+            ) {
+                'client' =>
+                    'resolved_client',
+
+                'freelancer' =>
+                    'resolved_freelancer',
+
+                'partial' =>
+                    'resolved_partial',
             };
 
             $lockedDispute->update([
-                'status' => $status,
-                'resolution' => $validated['resolution'],
-                'resolution_note' => $validated['resolution_note'],
-                'resolved_by' => Auth::id(),
-                'resolved_at' => now(),
+                'status' =>
+                    $status,
+
+                'resolution' =>
+                    $validated['resolution'],
+
+                'resolution_note' =>
+                    $validated['resolution_note'],
+
+                'resolved_by' =>
+                    Auth::id(),
+
+                'resolved_at' =>
+                    now(),
             ]);
         });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ambil data terbaru untuk notifikasi
+        |--------------------------------------------------------------------------
+        */
+
+        $freshDispute = Dispute::query()
+            ->with([
+                'order.client',
+                'order.freelancerProfile.user',
+                'resolver',
+            ])
+            ->findOrFail(
+                $dispute->id
+            );
+
+        $order = $freshDispute->order;
+
+        $resolutionLabel = match (
+            $freshDispute->resolution
+        ) {
+            'client' =>
+                'Client',
+
+            'freelancer' =>
+                'Freelancer',
+
+            'partial' =>
+                'Partial Settlement',
+
+            default =>
+                'Dispute diselesaikan',
+        };
+
+        $notificationService =
+            app(NotificationService::class);
+
+        $actor = Auth::user();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Notification: Client
+        |--------------------------------------------------------------------------
+        */
+
+        $client = $order?->client;
+
+        if ($client) {
+            $notificationService->send(
+                recipient:
+                    $client,
+
+                event:
+                    NotificationService::DISPUTE_RESOLVED,
+
+                title:
+                    'Dispute telah diputuskan',
+
+                message:
+                    'Admin telah memutuskan dispute untuk order "' .
+                    ($order->order_number ?? '-') .
+                    '" dengan hasil: ' .
+                    $resolutionLabel .
+                    '.',
+
+                actionUrl:
+                    route(
+                        'client.disputes.show',
+                        $freshDispute
+                    ),
+
+                priority:
+                    NotificationService::PRIORITY_CRITICAL,
+
+                actor:
+                    $actor,
+
+                relatedType:
+                    'dispute',
+
+                relatedId:
+                    $freshDispute->id,
+
+                extra: [
+                    'dispute_id' =>
+                        $freshDispute->id,
+
+                    'dispute_number' =>
+                        $freshDispute->dispute_number,
+
+                    'order_id' =>
+                        $order?->id,
+
+                    'order_number' =>
+                        $order?->order_number,
+
+                    'resolution' =>
+                        $freshDispute->resolution,
+
+                    'resolution_label' =>
+                        $resolutionLabel,
+
+                    'status' =>
+                        $freshDispute->status,
+                ],
+
+                dedupeKey:
+                    'dispute_resolved:client:' .
+                    $freshDispute->id
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Notification: Freelancer
+        |--------------------------------------------------------------------------
+        */
+
+        $freelancer =
+            $order?->freelancerProfile?->user;
+
+        if ($freelancer) {
+            $notificationService->send(
+                recipient:
+                    $freelancer,
+
+                event:
+                    NotificationService::DISPUTE_RESOLVED,
+
+                title:
+                    'Dispute telah diputuskan',
+
+                message:
+                    'Admin telah memutuskan dispute untuk order "' .
+                    ($order->order_number ?? '-') .
+                    '" dengan hasil: ' .
+                    $resolutionLabel .
+                    '.',
+
+                actionUrl:
+                    route(
+                        'freelancer.disputes.show',
+                        $freshDispute
+                    ),
+
+                priority:
+                    NotificationService::PRIORITY_CRITICAL,
+
+                actor:
+                    $actor,
+
+                relatedType:
+                    'dispute',
+
+                relatedId:
+                    $freshDispute->id,
+
+                extra: [
+                    'dispute_id' =>
+                        $freshDispute->id,
+
+                    'dispute_number' =>
+                        $freshDispute->dispute_number,
+
+                    'order_id' =>
+                        $order?->id,
+
+                    'order_number' =>
+                        $order?->order_number,
+
+                    'resolution' =>
+                        $freshDispute->resolution,
+
+                    'resolution_label' =>
+                        $resolutionLabel,
+
+                    'status' =>
+                        $freshDispute->status,
+                ],
+
+                dedupeKey:
+                    'dispute_resolved:freelancer:' .
+                    $freshDispute->id
+            );
+        }
 
         return redirect()
             ->route(
                 'admin.disputes.show',
-                $dispute
+                $freshDispute
             )
             ->with(
                 'success',
-                'Dispute berhasil diselesaikan. Jika keputusan menimbulkan refund, proses uangnya akan ditangani pada modul Refund.'
+                'Dispute berhasil diselesaikan. Client dan Freelancer telah menerima notifikasi keputusan.'
             );
     }
 
-    public function close(Dispute $dispute): RedirectResponse
-    {
+    public function close(
+        Dispute $dispute
+    ): RedirectResponse {
         abort_unless(
             $dispute->status !== 'under_review',
             422,

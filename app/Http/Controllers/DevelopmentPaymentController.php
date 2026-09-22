@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -49,9 +50,14 @@ class DevelopmentPaymentController extends Controller
             );
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Simpan pembayaran + ubah status order
+        |--------------------------------------------------------------------------
+        */
         DB::transaction(function () use ($order, $payment) {
-
-            $transactionId = 'DEV-' .
+            $transactionId =
+                'DEV-' .
                 now()->format('YmdHis') .
                 '-' .
                 Str::upper(Str::random(6));
@@ -75,8 +81,105 @@ class DevelopmentPaymentController extends Controller
             ]);
         });
 
+        /*
+        |--------------------------------------------------------------------------
+        | Load recipient notification
+        |--------------------------------------------------------------------------
+        */
+        $order->loadMissing([
+            'client',
+            'freelancerProfile.user',
+            'items.service',
+        ]);
+
+        $client = $order->client;
+
+        $freelancer =
+            $order->freelancerProfile?->user;
+
+        $serviceTitle =
+            $order->items->first()?->service_title
+            ?? 'Jasa JASAIN';
+
+        /*
+        |--------------------------------------------------------------------------
+        | Notification: Client
+        |--------------------------------------------------------------------------
+        */
+        if ($client) {
+            app(NotificationService::class)->send(
+                recipient: $client,
+                event: 'payment.success',
+                title: 'Pembayaran berhasil',
+                message:
+                    'Pembayaran untuk order "' .
+                    $order->order_number .
+                    '" berhasil. Order sekarang diproses dan siap dikerjakan freelancer.',
+                actionUrl: route(
+                    'client.orders.show',
+                    $order
+                ),
+                priority: 'normal',
+                actor: $client,
+                relatedType: 'order',
+                relatedId: $order->id,
+                extra: [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'payment_id' => $payment->id,
+                    'transaction_id' => $payment->transaction_id,
+                    'payment_type' => $payment->payment_type,
+                    'amount' => $order->total,
+                    'service_title' => $serviceTitle,
+                ],
+                dedupeKey:
+                    'payment_success_client:' .
+                    $payment->id
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Notification: Freelancer
+        |--------------------------------------------------------------------------
+        */
+        if ($freelancer) {
+            app(NotificationService::class)->send(
+                recipient: $freelancer,
+                event: 'payment.success',
+                title: 'Pembayaran order diterima',
+                message:
+                    'Pembayaran order "' .
+                    $order->order_number .
+                    '" dari client sudah berhasil. Order siap dikerjakan.',
+                actionUrl: route(
+                    'freelancer.orders.show',
+                    $order
+                ),
+                priority: 'action',
+                actor: $client,
+                relatedType: 'order',
+                relatedId: $order->id,
+                extra: [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'payment_id' => $payment->id,
+                    'transaction_id' => $payment->transaction_id,
+                    'payment_type' => $payment->payment_type,
+                    'amount' => $order->total,
+                    'service_title' => $serviceTitle,
+                ],
+                dedupeKey:
+                    'payment_success_freelancer:' .
+                    $payment->id
+            );
+        }
+
         return redirect()
-            ->route('client.orders.show', $order)
+            ->route(
+                'client.orders.show',
+                $order
+            )
             ->with(
                 'success',
                 'Pembayaran simulasi berhasil. Order sekarang siap dikerjakan freelancer.'

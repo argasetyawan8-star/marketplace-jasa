@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,7 @@ class ServiceModerationController extends Controller
     public function index(Request $request)
     {
         $search = trim((string) $request->input('search'));
+
         $status = $request->input('status', 'pending');
 
         $allowedStatuses = [
@@ -35,7 +37,11 @@ class ServiceModerationController extends Controller
             ])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
-                    $q->where('title', 'like', '%' . $search . '%')
+                    $q->where(
+                        'title',
+                        'like',
+                        '%' . $search . '%'
+                    )
                         ->orWhereHas(
                             'freelancerProfile',
                             function ($profileQuery) use ($search) {
@@ -142,7 +148,12 @@ class ServiceModerationController extends Controller
      */
     public function publish(Service $service)
     {
-        DB::transaction(function () use ($service) {
+        $reviewedAt = null;
+
+        DB::transaction(function () use (
+            $service,
+            &$reviewedAt
+        ) {
             $lockedService = Service::query()
                 ->whereKey($service->id)
                 ->lockForUpdate()
@@ -159,13 +170,54 @@ class ServiceModerationController extends Controller
                 ]);
             }
 
+            $reviewedAt = now();
+
             $lockedService->update([
                 'status' => 'published',
                 'rejection_reason' => null,
-                'reviewed_at' => now(),
+                'reviewed_at' => $reviewedAt,
                 'reviewed_by' => Auth::id(),
             ]);
         });
+
+        /*
+         * Notifikasi dikirim setelah transaksi database berhasil.
+         */
+        $service->load([
+            'freelancerProfile.user',
+            'category',
+            'subcategory',
+        ]);
+
+        $freelancerUser = $service->freelancerProfile?->user;
+
+        if ($freelancerUser) {
+            NotificationService::send(
+                recipient: $freelancerUser,
+                event: NotificationService::SERVICE_APPROVED,
+                title: 'Jasa berhasil disetujui',
+                message: 'Jasa "' . $service->title . '" telah disetujui Admin dan sudah dipublikasikan di marketplace.',
+                actionUrl: route(
+                    'freelancer.services.show',
+                    $service
+                ),
+                priority: NotificationService::PRIORITY_INFO,
+                actor: Auth::user(),
+                relatedType: 'service',
+                relatedId: $service->id,
+                extra: [
+                    'service_id' => $service->id,
+                    'status' => 'published',
+                ],
+                dedupeKey:
+                    'service_approved:freelancer:' .
+                    $freelancerUser->id .
+                    ':' .
+                    $service->id .
+                    ':' .
+                    ($reviewedAt?->timestamp ?? time()),
+            );
+        }
 
         return redirect()
             ->route(
@@ -194,9 +246,12 @@ class ServiceModerationController extends Controller
             ],
         ]);
 
+        $reviewedAt = null;
+
         DB::transaction(function () use (
             $validated,
-            $service
+            $service,
+            &$reviewedAt
         ) {
             $lockedService = Service::query()
                 ->whereKey($service->id)
@@ -210,14 +265,61 @@ class ServiceModerationController extends Controller
                 ]);
             }
 
+            $reviewedAt = now();
+
             $lockedService->update([
                 'status' => 'rejected',
                 'rejection_reason' =>
                     $validated['rejection_reason'],
-                'reviewed_at' => now(),
+                'reviewed_at' => $reviewedAt,
                 'reviewed_by' => Auth::id(),
             ]);
         });
+
+        /*
+         * Notifikasi dikirim setelah transaksi database berhasil.
+         */
+        $service->load([
+            'freelancerProfile.user',
+            'category',
+            'subcategory',
+        ]);
+
+        $freelancerUser = $service->freelancerProfile?->user;
+
+        if ($freelancerUser) {
+            NotificationService::send(
+                recipient: $freelancerUser,
+                event: NotificationService::SERVICE_REJECTED,
+                title: 'Jasa belum disetujui',
+                message:
+                    'Jasa "' .
+                    $service->title .
+                    '" ditolak oleh Admin. Alasan: ' .
+                    $validated['rejection_reason'],
+                actionUrl: route(
+                    'freelancer.services.show',
+                    $service
+                ),
+                priority: NotificationService::PRIORITY_ACTION,
+                actor: Auth::user(),
+                relatedType: 'service',
+                relatedId: $service->id,
+                extra: [
+                    'service_id' => $service->id,
+                    'status' => 'rejected',
+                    'rejection_reason' =>
+                        $validated['rejection_reason'],
+                ],
+                dedupeKey:
+                    'service_rejected:freelancer:' .
+                    $freelancerUser->id .
+                    ':' .
+                    $service->id .
+                    ':' .
+                    ($reviewedAt?->timestamp ?? time()),
+            );
+        }
 
         return redirect()
             ->route(

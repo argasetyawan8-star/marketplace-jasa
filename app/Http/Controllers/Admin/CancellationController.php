@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CancellationRequest;
 use App\Models\Order;
-use App\Services\RefundService;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,6 +23,15 @@ class CancellationController extends Controller
         'in_progress',
         'revision',
     ];
+
+    /**
+     * Event notifikasi cancellation.
+     */
+    private const NOTIFICATION_CANCELLATION_MEDIATION_APPROVED =
+        'cancellation.mediation_approved';
+
+    private const NOTIFICATION_CANCELLATION_MEDIATION_REJECTED =
+        'cancellation.mediation_rejected';
 
     /**
      * Daftar pengajuan cancellation.
@@ -175,12 +184,6 @@ class CancellationController extends Controller
             $cancellationRequest,
             $validated
         ) {
-            /*
-            |--------------------------------------------------------------------------
-            | Lock Cancellation Request
-            |--------------------------------------------------------------------------
-            */
-
             $lockedRequest = CancellationRequest::query()
                 ->lockForUpdate()
                 ->findOrFail(
@@ -190,14 +193,8 @@ class CancellationController extends Controller
             abort_unless(
                 $lockedRequest->status === 'mediation_pending',
                 422,
-                'Pengajuan ini tidak lagi menunggu mediasi admin.'
+                'Pengajuan ini tidak sedang menunggu keputusan admin.'
             );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Lock Order
-            |--------------------------------------------------------------------------
-            */
 
             $order = Order::query()
                 ->with('payment')
@@ -208,10 +205,9 @@ class CancellationController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Pastikan Order Masih Dapat Dibatalkan
+            | Pastikan order masih dapat dibatalkan
             |--------------------------------------------------------------------------
             */
-
             if (
                 ! in_array(
                     $order->status,
@@ -222,8 +218,7 @@ class CancellationController extends Controller
                 $lockedRequest->update([
                     'status' => 'rejected_by_admin',
                     'reviewed_by' => Auth::id(),
-                    'admin_note' =>
-                        'Mediasi tidak dapat diproses karena status order sudah berubah.',
+                    'admin_note' => 'Mediasi tidak dapat diproses karena status order sudah berubah.',
                     'reviewed_at' => now(),
                 ]);
 
@@ -232,10 +227,9 @@ class CancellationController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Batalkan Order
+            | Batalkan order
             |--------------------------------------------------------------------------
             */
-
             $order->update([
                 'status' => 'cancelled',
                 'cancel_reason' => $lockedRequest->reason,
@@ -243,77 +237,89 @@ class CancellationController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Payment
+            | Update payment
             |--------------------------------------------------------------------------
             */
-
             if ($order->payment) {
-                /*
-                |--------------------------------------------------------------------------
-                | Belum Dibayar
-                |--------------------------------------------------------------------------
-                */
-
-                if (
-                    $order->payment->status === 'pending'
-                ) {
+                if ($order->payment->status === 'pending') {
                     $order->payment->update([
                         'status' => 'cancelled',
                     ]);
-                }
-
-                /*
-                |--------------------------------------------------------------------------
-                | Sudah Dibayar
-                |--------------------------------------------------------------------------
-                |
-                | Tandai payment sebagai refund_pending.
-                | Kemudian otomatis buat record Refund.
-                |
-                */
-
-                elseif (
-                    $order->payment->status === 'paid'
-                ) {
+                } elseif ($order->payment->status === 'paid') {
+                    /*
+                    | Refund aktual akan diproses pada modul Refund/Xendit
+                    | pada tahap payment final.
+                    */
                     $order->payment->update([
                         'status' => 'refund_pending',
                     ]);
-
-                    app(RefundService::class)->createPending(
-                        $order,
-                        'cancellation',
-                        $lockedRequest->id,
-                        $lockedRequest->reason
-                    );
                 }
             }
 
             /*
             |--------------------------------------------------------------------------
-            | Update Cancellation Request
+            | Update cancellation
             |--------------------------------------------------------------------------
             */
-
             $lockedRequest->update([
                 'status' => 'approved_by_admin',
                 'reviewed_by' => Auth::id(),
-                'admin_note' =>
-                    $validated['admin_note'] ?? null,
+                'admin_note' => $validated['admin_note'] ?? null,
                 'reviewed_at' => now(),
             ]);
         });
 
-        $freshRequest = $cancellationRequest->fresh();
+        /*
+        |--------------------------------------------------------------------------
+        | Ambil data terbaru
+        |--------------------------------------------------------------------------
+        */
+        $freshRequest = $cancellationRequest
+            ->fresh([
+                'order.client',
+                'order.freelancerProfile.user',
+            ]);
 
+        abort_unless(
+            $freshRequest,
+            404,
+            'Pengajuan pembatalan tidak ditemukan.'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Jika otomatis ditolak karena status order sudah berubah
+        |--------------------------------------------------------------------------
+        */
         if (
-            $freshRequest &&
             $freshRequest->status === 'rejected_by_admin'
         ) {
-            return back()->with(
-                'error',
-                'Mediasi tidak dapat diproses karena status order sudah berubah.'
+            $this->notifyAdminDecision(
+                cancellationRequest: $freshRequest,
+                approved: false,
+                fallbackReason: true
             );
+
+            return redirect()
+                ->route(
+                    'admin.cancellations.show',
+                    $cancellationRequest
+                )
+                ->with(
+                    'error',
+                    'Mediasi tidak dapat diproses karena status order sudah berubah.'
+                );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Notifikasi Client + Freelancer
+        |--------------------------------------------------------------------------
+        */
+        $this->notifyAdminDecision(
+            cancellationRequest: $freshRequest,
+            approved: true
+        );
 
         return redirect()
             ->route(
@@ -346,39 +352,17 @@ class CancellationController extends Controller
             $cancellationRequest,
             $validated
         ) {
-            /*
-            |--------------------------------------------------------------------------
-            | Lock Cancellation Request
-            |--------------------------------------------------------------------------
-            */
-
             $lockedRequest = CancellationRequest::query()
                 ->lockForUpdate()
                 ->findOrFail(
                     $cancellationRequest->id
                 );
 
-            /*
-            |--------------------------------------------------------------------------
-            | Pastikan Masih Menunggu Mediasi
-            |--------------------------------------------------------------------------
-            */
-
             abort_unless(
                 $lockedRequest->status === 'mediation_pending',
                 422,
-                'Pengajuan ini tidak lagi menunggu mediasi admin.'
+                'Pengajuan ini tidak sedang menunggu keputusan admin.'
             );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Tolak Mediasi
-            |--------------------------------------------------------------------------
-            |
-            | Order tetap berjalan.
-            | Tidak ada Refund yang dibuat.
-            |
-            */
 
             $lockedRequest->update([
                 'status' => 'rejected_by_admin',
@@ -387,6 +371,33 @@ class CancellationController extends Controller
                 'reviewed_at' => now(),
             ]);
         });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ambil data terbaru
+        |--------------------------------------------------------------------------
+        */
+        $freshRequest = $cancellationRequest
+            ->fresh([
+                'order.client',
+                'order.freelancerProfile.user',
+            ]);
+
+        abort_unless(
+            $freshRequest,
+            404,
+            'Pengajuan pembatalan tidak ditemukan.'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Notifikasi Client + Freelancer
+        |--------------------------------------------------------------------------
+        */
+        $this->notifyAdminDecision(
+            cancellationRequest: $freshRequest,
+            approved: false
+        );
 
         return redirect()
             ->route(
@@ -397,5 +408,135 @@ class CancellationController extends Controller
                 'success',
                 'Mediasi ditolak. Order tetap berjalan.'
             );
+    }
+
+    /**
+     * Kirim notifikasi keputusan admin kepada Client dan Freelancer.
+     */
+    private function notifyAdminDecision(
+        CancellationRequest $cancellationRequest,
+        bool $approved,
+        bool $fallbackReason = false
+    ): void {
+        $order = $cancellationRequest->order;
+
+        if (! $order) {
+            return;
+        }
+
+        $client = $order->client;
+        $freelancer = $order->freelancerProfile?->user;
+
+        $event = $approved
+            ? self::NOTIFICATION_CANCELLATION_MEDIATION_APPROVED
+            : self::NOTIFICATION_CANCELLATION_MEDIATION_REJECTED;
+
+        if ($approved) {
+            $clientTitle = 'Mediasi pembatalan disetujui';
+            $clientMessage =
+                'Admin menyetujui mediasi pembatalan order ' .
+                ($order->order_number ?? '#' . $order->id) .
+                '. Order telah dibatalkan.';
+
+            $freelancerTitle = 'Mediasi pembatalan disetujui';
+            $freelancerMessage =
+                'Admin menyetujui mediasi pembatalan order ' .
+                ($order->order_number ?? '#' . $order->id) .
+                '. Order telah dibatalkan.';
+
+            $priority = 'action';
+        } else {
+            $clientTitle = 'Mediasi pembatalan ditolak';
+            $clientMessage = $fallbackReason
+                ? 'Mediasi pembatalan order ' .
+                    ($order->order_number ?? '#' . $order->id) .
+                    ' tidak dapat disetujui karena status order sudah berubah.'
+                : 'Admin menolak mediasi pembatalan order ' .
+                    ($order->order_number ?? '#' . $order->id) .
+                    '. Order tetap berjalan.';
+
+            $freelancerTitle = 'Mediasi pembatalan ditolak';
+            $freelancerMessage = $fallbackReason
+                ? 'Mediasi pembatalan order ' .
+                    ($order->order_number ?? '#' . $order->id) .
+                    ' tidak dapat disetujui karena status order sudah berubah.'
+                : 'Admin menolak mediasi pembatalan order ' .
+                    ($order->order_number ?? '#' . $order->id) .
+                    '. Order tetap berjalan.';
+
+            $priority = 'info';
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Client
+        |--------------------------------------------------------------------------
+        */
+        if ($client) {
+            app(NotificationService::class)->send(
+                recipient: $client,
+                event: $event,
+                title: $clientTitle,
+                message: $clientMessage,
+                actionUrl: route(
+                    'client.orders.show',
+                    $order
+                ),
+                priority: $priority,
+                actor: Auth::user(),
+                relatedType: 'cancellation_request',
+                relatedId: $cancellationRequest->id,
+                extra: [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'cancellation_request_id' => $cancellationRequest->id,
+                    'status' => $cancellationRequest->status,
+                    'decision' => $approved
+                        ? 'approved'
+                        : 'rejected',
+                ],
+                dedupeKey:
+                    'cancellation_admin_decision:client:' .
+                    $cancellationRequest->id .
+                    ':' .
+                    ($approved ? 'approved' : 'rejected')
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Freelancer
+        |--------------------------------------------------------------------------
+        */
+        if ($freelancer) {
+            app(NotificationService::class)->send(
+                recipient: $freelancer,
+                event: $event,
+                title: $freelancerTitle,
+                message: $freelancerMessage,
+                actionUrl: route(
+                    'freelancer.orders.show',
+                    $order
+                ),
+                priority: $priority,
+                actor: Auth::user(),
+                relatedType: 'cancellation_request',
+                relatedId: $cancellationRequest->id,
+                extra: [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'cancellation_request_id' => $cancellationRequest->id,
+                    'status' => $cancellationRequest->status,
+                    'decision' => $approved
+                        ? 'approved'
+                        : 'rejected',
+                ],
+                dedupeKey:
+                    'cancellation_admin_decision:freelancer:' .
+                    $cancellationRequest->id .
+                    ':' .
+                    ($approved ? 'approved' : 'rejected')
+            );
+        }
     }
 }

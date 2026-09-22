@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Freelancer;
 use App\Http\Controllers\Controller;
 use App\Models\Delivery;
 use App\Models\Order;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -34,6 +35,14 @@ class DeliveryController extends Controller
             );
         }
 
+        /**
+         * Simpan status sebelum order diubah.
+         *
+         * Kalau sebelumnya revision, berarti freelancer
+         * sedang mengirim hasil revisi.
+         */
+        $isRevision = $order->status === 'revision';
+
         $validated = $request->validate([
             'message' => [
                 'nullable',
@@ -61,7 +70,8 @@ class DeliveryController extends Controller
         ) {
             return back()
                 ->withErrors([
-                    'delivery' => 'Isi pesan, link, atau upload file hasil pekerjaan.',
+                    'delivery' =>
+                        'Isi pesan, link, atau upload file hasil pekerjaan.',
                 ])
                 ->withInput();
         }
@@ -80,7 +90,11 @@ class DeliveryController extends Controller
             $fileName = $file->getClientOriginalName();
         }
 
-        Delivery::create([
+        /**
+         * Simpan delivery dan simpan object-nya
+         * untuk kebutuhan notifikasi.
+         */
+        $delivery = Delivery::create([
             'order_id' => $order->id,
 
             'freelancer_profile_id' =>
@@ -105,9 +119,71 @@ class DeliveryController extends Controller
                 now(),
         ]);
 
+        /**
+         * Setelah delivery berhasil dibuat,
+         * order masuk ke status delivered.
+         */
         $order->update([
             'status' => 'delivered',
         ]);
+
+        /**
+         * --------------------------------------------------------------------------
+         * Notification: Client
+         * --------------------------------------------------------------------------
+         */
+        $order->loadMissing('client');
+
+        $client = $order->client;
+
+        if ($client) {
+            if ($isRevision) {
+                $event = NotificationService::REVISION_SENT;
+
+                $title = 'Hasil revisi diterima';
+
+                $message =
+                    'Freelancer telah mengirim hasil revisi untuk order "' .
+                    $order->order_number .
+                    '". Silakan periksa hasil terbaru.';
+            } else {
+                $event = NotificationService::DELIVERY_SENT;
+
+                $title = 'Hasil pekerjaan diterima';
+
+                $message =
+                    'Freelancer telah mengirim hasil pekerjaan untuk order "' .
+                    $order->order_number .
+                    '". Silakan periksa hasilnya.';
+            }
+
+            app(NotificationService::class)->send(
+                recipient: $client,
+                event: $event,
+                title: $title,
+                message: $message,
+                actionUrl: route(
+                    'client.delivery.show',
+                    $order
+                ),
+                priority: 'action',
+                actor: Auth::user(),
+                relatedType: 'order',
+                relatedId: $order->id,
+                extra: [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'delivery_id' => $delivery->id,
+                    'delivery_status' => $delivery->status,
+                    'is_revision' => $isRevision,
+                ],
+                dedupeKey:
+                    ($isRevision
+                        ? 'revision_sent:'
+                        : 'delivery_sent:'
+                    ) . $delivery->id
+            );
+        }
 
         return redirect()
             ->route(
@@ -116,7 +192,9 @@ class DeliveryController extends Controller
             )
             ->with(
                 'success',
-                'Hasil pekerjaan berhasil dikirim ke client.'
+                $isRevision
+                    ? 'Hasil revisi berhasil dikirim ke client.'
+                    : 'Hasil pekerjaan berhasil dikirim ke client.'
             );
     }
 }

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Freelancer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -58,6 +60,35 @@ class ServiceModerationController extends Controller
                 'reviewed_by' => null,
             ]);
         });
+
+        /*
+         * Notifikasi ke seluruh Admin.
+         * Dikirim setelah transaksi database berhasil agar
+         * notifikasi tidak mengganggu proses submit service.
+         */
+        $admins = User::query()
+            ->where('role', 'admin')
+            ->get();
+
+        foreach ($admins as $admin) {
+            NotificationService::send(
+                recipient: $admin,
+                event: NotificationService::SERVICE_SUBMITTED,
+                title: 'Service baru perlu diperiksa',
+                message: 'Freelancer mengajukan jasa baru untuk diperiksa dan dimoderasi.',
+                actionUrl: null,
+                priority: NotificationService::PRIORITY_ACTION,
+                actor: Auth::user(),
+                relatedType: 'service',
+                relatedId: $service->id,
+                extra: [
+                    'service_id' => $service->id,
+                    'freelancer_profile_id' => $freelancerProfile->id,
+                    'status' => $service->status,
+                ],
+                dedupeKey: 'service_submitted:admin:' . $admin->id . ':' . $service->id,
+            );
+        }
 
         return redirect()
             ->route(

@@ -8,6 +8,7 @@ use App\Models\Message;
 use App\Models\Order;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -58,6 +59,10 @@ class DeliveryController extends Controller
      * Wallet freelancer bertambah
      *      ↓
      * WalletTransaction tercatat
+     *      ↓
+     * Notification client + freelancer
+     *      ↓
+     * Review window terbuka
      */
     public function approve(Order $order)
     {
@@ -66,31 +71,27 @@ class DeliveryController extends Controller
             403
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Semua proses approval dilakukan dalam transaction
-        |--------------------------------------------------------------------------
-        */
-
+        /**
+         * --------------------------------------------------------------------------
+         * Semua proses approval dilakukan dalam transaction
+         * --------------------------------------------------------------------------
+         */
         DB::transaction(function () use ($order) {
-
-            /*
-            |--------------------------------------------------------------------------
-            | Kunci order supaya tidak diproses dua kali bersamaan
-            |--------------------------------------------------------------------------
-            */
-
+            /**
+             * ----------------------------------------------------------------------
+             * Kunci order supaya tidak diproses dua kali bersamaan
+             * ----------------------------------------------------------------------
+             */
             $order = Order::query()
                 ->whereKey($order->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Order harus dalam status delivered
-            |--------------------------------------------------------------------------
-            */
-
+            /**
+             * ----------------------------------------------------------------------
+             * Order harus dalam status delivered
+             * ----------------------------------------------------------------------
+             */
             if ($order->status !== 'delivered') {
                 abort(
                     redirect()
@@ -102,12 +103,11 @@ class DeliveryController extends Controller
                 );
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Ambil delivery terbaru
-            |--------------------------------------------------------------------------
-            */
-
+            /**
+             * ----------------------------------------------------------------------
+             * Ambil delivery terbaru
+             * ----------------------------------------------------------------------
+             */
             $delivery = $order->deliveries()
                 ->latest()
                 ->lockForUpdate()
@@ -124,12 +124,11 @@ class DeliveryController extends Controller
                 );
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Delivery harus masih submitted
-            |--------------------------------------------------------------------------
-            */
-
+            /**
+             * ----------------------------------------------------------------------
+             * Delivery harus masih submitted
+             * ----------------------------------------------------------------------
+             */
             if ($delivery->status !== 'submitted') {
                 abort(
                     redirect()
@@ -141,43 +140,39 @@ class DeliveryController extends Controller
                 );
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Approve delivery
-            |--------------------------------------------------------------------------
-            */
-
+            /**
+             * ----------------------------------------------------------------------
+             * Approve delivery
+             * ----------------------------------------------------------------------
+             */
             $delivery->update([
                 'status' => 'approved',
             ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | Selesaikan order
-            |--------------------------------------------------------------------------
-            */
-
+            /**
+             * ----------------------------------------------------------------------
+             * Selesaikan order
+             * ----------------------------------------------------------------------
+             */
             $order->update([
                 'status' => 'completed',
                 'completed_at' => now(),
             ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | Commission
-            |--------------------------------------------------------------------------
-            |
-            | Order sudah memiliki:
-            |
-            | subtotal
-            | platform_fee
-            | total
-            | freelancer_amount
-            |
-            | Jadi kita gunakan angka yang sudah tersimpan di order.
-            |
-            */
-
+            /**
+             * ----------------------------------------------------------------------
+             * Commission
+             * ----------------------------------------------------------------------
+             *
+             * Order sudah memiliki:
+             *
+             * subtotal
+             * platform_fee
+             * total
+             * freelancer_amount
+             *
+             * Jadi kita gunakan angka yang sudah tersimpan di order.
+             */
             $commission = Commission::query()
                 ->where(
                     'order_id',
@@ -186,39 +181,24 @@ class DeliveryController extends Controller
                 ->lockForUpdate()
                 ->first();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Buat commission hanya sekali
-            |--------------------------------------------------------------------------
-            */
-
+            /**
+             * ----------------------------------------------------------------------
+             * Buat commission hanya sekali
+             * ----------------------------------------------------------------------
+             */
             if (!$commission) {
-
                 $orderTotal = (float) $order->total;
 
-                /*
-                | Jika platform_fee sudah tersimpan di Order,
-                | gunakan nilai tersebut.
-                */
-                $commissionAmount =
-                    (float) $order->platform_fee;
+                $commissionAmount = (float) $order->platform_fee;
 
-                /*
-                | Freelancer amount berasal dari Order.
-                */
-                $freelancerAmount =
-                    (float) $order->freelancer_amount;
+                $freelancerAmount = (float) $order->freelancer_amount;
 
-                /*
-                | Hitung kembali rate untuk pencatatan.
-                */
-                $commissionRate =
-                    $orderTotal > 0
-                        ? round(
-                            ($commissionAmount / $orderTotal) * 100,
-                            2
-                        )
-                        : 0;
+                $commissionRate = $orderTotal > 0
+                    ? round(
+                        ($commissionAmount / $orderTotal) * 100,
+                        2
+                    )
+                    : 0;
 
                 $commission = Commission::create([
                     'order_id' =>
@@ -249,12 +229,11 @@ class DeliveryController extends Controller
                         null,
                 ]);
 
-                /*
-                |--------------------------------------------------------------------------
-                | Wallet Freelancer
-                |--------------------------------------------------------------------------
-                */
-
+                /**
+                 * ------------------------------------------------------------------
+                 * Wallet Freelancer
+                 * ------------------------------------------------------------------
+                 */
                 $wallet = Wallet::query()
                     ->where(
                         'freelancer_profile_id',
@@ -263,12 +242,11 @@ class DeliveryController extends Controller
                     ->lockForUpdate()
                     ->first();
 
-                /*
-                |--------------------------------------------------------------------------
-                | Buat wallet jika belum tersedia
-                |--------------------------------------------------------------------------
-                */
-
+                /**
+                 * ------------------------------------------------------------------
+                 * Buat wallet jika belum tersedia
+                 * ------------------------------------------------------------------
+                 */
                 if (!$wallet) {
                     $wallet = Wallet::create([
                         'freelancer_profile_id' =>
@@ -286,28 +264,20 @@ class DeliveryController extends Controller
                         'total_withdrawn' =>
                             0,
                     ]);
-                } else {
-                    /*
-                    | Refresh object agar nilai terbaru digunakan.
-                    */
-                    $wallet->refresh();
-
-                    $wallet->lockForUpdate();
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Tambahkan penghasilan ke wallet
-                |--------------------------------------------------------------------------
-                */
-
+                /**
+                 * ------------------------------------------------------------------
+                 * Tambahkan penghasilan ke wallet
+                 * ------------------------------------------------------------------
+                 */
                 $newBalance =
                     (float) $wallet->balance
-                    + $commission->freelancer_amount;
+                    + (float) $commission->freelancer_amount;
 
                 $newTotalEarned =
                     (float) $wallet->total_earned
-                    + $commission->freelancer_amount;
+                    + (float) $commission->freelancer_amount;
 
                 $wallet->update([
                     'balance' =>
@@ -317,12 +287,11 @@ class DeliveryController extends Controller
                         $newTotalEarned,
                 ]);
 
-                /*
-                |--------------------------------------------------------------------------
-                | Catat transaksi wallet
-                |--------------------------------------------------------------------------
-                */
-
+                /**
+                 * ------------------------------------------------------------------
+                 * Catat transaksi wallet
+                 * ------------------------------------------------------------------
+                 */
                 WalletTransaction::create([
                     'wallet_id' =>
                         $wallet->id,
@@ -352,19 +321,373 @@ class DeliveryController extends Controller
             }
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | Message system
-        |--------------------------------------------------------------------------
-        */
+        /**
+         * --------------------------------------------------------------------------
+         * Ambil data terbaru setelah transaction selesai
+         * --------------------------------------------------------------------------
+         *
+         * Jangan menggunakan object order lama karena status di dalam
+         * transaction sudah diperbarui.
+         */
+        $freshOrder = Order::query()
+            ->with([
+                'client',
+                'freelancerProfile.user',
+                'conversation',
+            ])
+            ->findOrFail(
+                $order->id
+            );
 
-        $order->loadMissing('conversation');
+        /**
+         * --------------------------------------------------------------------------
+         * Ambil commission terbaru
+         * --------------------------------------------------------------------------
+         */
+        $commission = Commission::query()
+            ->where(
+                'order_id',
+                $freshOrder->id
+            )
+            ->first();
 
-        if ($order->conversation_id) {
+        /**
+         * --------------------------------------------------------------------------
+         * Notification: Client - Order selesai
+         * --------------------------------------------------------------------------
+         */
+        if ($freshOrder->client) {
+            app(NotificationService::class)->send(
+                recipient: $freshOrder->client,
 
+                event: NotificationService::ORDER_COMPLETED,
+
+                title: 'Order selesai',
+
+                message:
+                    'Order ' .
+                    $freshOrder->order_number .
+                    ' telah selesai setelah hasil pekerjaan disetujui.',
+
+                actionUrl: route(
+                    'client.orders.show',
+                    $freshOrder
+                ),
+
+                priority: NotificationService::PRIORITY_INFO,
+
+                actor: Auth::user(),
+
+                relatedType: 'order',
+
+                relatedId: $freshOrder->id,
+
+                extra: [
+                    'order_id' =>
+                        $freshOrder->id,
+
+                    'order_number' =>
+                        $freshOrder->order_number,
+
+                    'order_status' =>
+                        $freshOrder->status,
+                ],
+
+                dedupeKey:
+                    'order_completed:client:' .
+                    $freshOrder->id
+            );
+
+            /**
+             * ----------------------------------------------------------------------
+             * Notification: Client - Review window terbuka
+             * ----------------------------------------------------------------------
+             *
+             * Review baru tersedia setelah order benar-benar completed.
+             */
+            app(NotificationService::class)->send(
+                recipient: $freshOrder->client,
+
+                event: NotificationService::REVIEW_WINDOW_OPEN,
+
+                title: 'Berikan review untuk jasa ini',
+
+                message:
+                    'Order ' .
+                    $freshOrder->order_number .
+                    ' sudah selesai. Sekarang kamu dapat memberikan rating dan review untuk jasa freelancer.',
+
+                actionUrl: route(
+                    'client.orders.show',
+                    $freshOrder
+                ),
+
+                priority: NotificationService::PRIORITY_ACTION,
+
+                actor: Auth::user(),
+
+                relatedType: 'order',
+
+                relatedId: $freshOrder->id,
+
+                extra: [
+                    'order_id' =>
+                        $freshOrder->id,
+
+                    'order_number' =>
+                        $freshOrder->order_number,
+
+                    'order_status' =>
+                        $freshOrder->status,
+
+                    'review_available' =>
+                        true,
+                ],
+
+                dedupeKey:
+                    'review_window_open:client:' .
+                    $freshOrder->id
+            );
+
+        /**
+         * --------------------------------------------------------------------------
+         * Notification: Client - Invoice tersedia
+         * --------------------------------------------------------------------------
+         */
+        app(NotificationService::class)->send(
+            recipient: $freshOrder->client,
+
+            event: NotificationService::INVOICE_AVAILABLE,
+
+            title: 'Invoice tersedia',
+
+            message:
+                'Invoice INV-' .
+                $freshOrder->order_number .
+                ' sudah tersedia. Kamu dapat melihat detail transaksi order ini.',
+
+            actionUrl: route(
+                'client.orders.show',
+                $freshOrder
+            ),
+
+            priority: NotificationService::PRIORITY_INFO,
+
+            actor: Auth::user(),
+
+            relatedType: 'order',
+
+            relatedId: $freshOrder->id,
+
+            extra: [
+                'order_id' =>
+                    $freshOrder->id,
+
+                'order_number' =>
+                    $freshOrder->order_number,
+
+                'invoice_number' =>
+                    'INV-' . $freshOrder->order_number,
+
+                'order_status' =>
+                    $freshOrder->status,
+            ],
+
+            dedupeKey:
+                'invoice_available:client:' .
+                $freshOrder->id
+        );
+                }
+
+        /**
+         * --------------------------------------------------------------------------
+         * Notification: Freelancer - Order selesai
+         * --------------------------------------------------------------------------
+         */
+        $freelancerUser =
+            $freshOrder->freelancerProfile?->user;
+
+        if ($freelancerUser) {
+            app(NotificationService::class)->send(
+                recipient: $freelancerUser,
+
+                event: NotificationService::ORDER_COMPLETED,
+
+                title: 'Order selesai',
+
+                message:
+                    'Order ' .
+                    $freshOrder->order_number .
+                    ' telah selesai dan hasil pekerjaanmu telah disetujui client.',
+
+                actionUrl: route(
+                    'freelancer.orders.show',
+                    $freshOrder
+                ),
+
+                priority: NotificationService::PRIORITY_INFO,
+
+                actor: Auth::user(),
+
+                relatedType: 'order',
+
+                relatedId: $freshOrder->id,
+
+                extra: [
+                    'order_id' =>
+                        $freshOrder->id,
+
+                    'order_number' =>
+                        $freshOrder->order_number,
+
+                    'order_status' =>
+                        $freshOrder->status,
+                ],
+
+                dedupeKey:
+                    'order_completed:freelancer:' .
+                    $freshOrder->id
+            );
+
+            /**
+             * ----------------------------------------------------------------------
+             * Notification: Freelancer - Wallet bertambah
+             * ----------------------------------------------------------------------
+             */
+            if ($commission) {
+                $wallet = Wallet::query()
+                    ->where(
+                        'freelancer_profile_id',
+                        $freshOrder->freelancer_profile_id
+                    )
+                    ->first();
+
+                if ($wallet) {
+                    app(NotificationService::class)->send(
+                        recipient: $freelancerUser,
+
+                        event: NotificationService::WALLET_CREDITED,
+
+                        title: 'Pendapatan masuk ke wallet',
+
+                        message:
+                            'Pendapatan sebesar Rp' .
+                            number_format(
+                                (float) $commission->freelancer_amount,
+                                0,
+                                ',',
+                                '.'
+                            ) .
+                            ' dari Order ' .
+                            $freshOrder->order_number .
+                            ' telah masuk ke wallet.',
+
+                        actionUrl: route(
+                            'freelancer.wallet.index'
+                        ),
+
+                        priority:
+                            NotificationService::PRIORITY_CRITICAL,
+
+                        actor: Auth::user(),
+
+                        relatedType: 'wallet',
+
+                        relatedId: $wallet->id,
+
+                        extra: [
+                            'order_id' =>
+                                $freshOrder->id,
+
+                            'order_number' =>
+                                $freshOrder->order_number,
+
+                            'wallet_id' =>
+                                $wallet->id,
+
+                            'amount' =>
+                                (float) $commission->freelancer_amount,
+
+                            'balance' =>
+                                (float) $wallet->balance,
+                        ],
+
+                        dedupeKey:
+                            'wallet_credited:order:' .
+                            $freshOrder->id
+                    );
+                }
+
+                /**
+                 * ------------------------------------------------------------------
+                 * Notification: Freelancer - Commission
+                 * ------------------------------------------------------------------
+                 */
+                app(NotificationService::class)->send(
+                    recipient: $freelancerUser,
+
+                    event: NotificationService::COMMISSION_DEDUCTED,
+
+                    title: 'Komisi platform tercatat',
+
+                    message:
+                        'Komisi platform sebesar Rp' .
+                        number_format(
+                            (float) $commission->commission_amount,
+                            0,
+                            ',',
+                            '.'
+                        ) .
+                        ' telah diperhitungkan dari Order ' .
+                        $freshOrder->order_number .
+                        '.',
+
+                    actionUrl: route(
+                        'freelancer.wallet.index'
+                    ),
+
+                    priority:
+                        NotificationService::PRIORITY_INFO,
+
+                    actor: Auth::user(),
+
+                    relatedType: 'commission',
+
+                    relatedId: $commission->id,
+
+                    extra: [
+                        'order_id' =>
+                            $freshOrder->id,
+
+                        'order_number' =>
+                            $freshOrder->order_number,
+
+                        'commission_id' =>
+                            $commission->id,
+
+                        'commission_amount' =>
+                            (float) $commission->commission_amount,
+
+                        'freelancer_amount' =>
+                            (float) $commission->freelancer_amount,
+                    ],
+
+                    dedupeKey:
+                        'commission_deducted:order:' .
+                        $freshOrder->id
+                );
+            }
+        }
+
+        /**
+         * --------------------------------------------------------------------------
+         * Message system
+         * --------------------------------------------------------------------------
+         */
+        if ($freshOrder->conversation_id) {
             Message::create([
                 'conversation_id' =>
-                    $order->conversation_id,
+                    $freshOrder->conversation_id,
 
                 'sender_id' =>
                     Auth::id(),
@@ -372,7 +695,7 @@ class DeliveryController extends Controller
                 'message' =>
                     'Hasil pekerjaan telah disetujui oleh client. ' .
                     'Order ' .
-                    $order->order_number .
+                    $freshOrder->order_number .
                     ' telah selesai.',
 
                 'type' =>
@@ -382,7 +705,7 @@ class DeliveryController extends Controller
                     false,
             ]);
 
-            $order->conversation?->update([
+            $freshOrder->conversation?->update([
                 'last_message_at' =>
                     now(),
             ]);
@@ -391,7 +714,7 @@ class DeliveryController extends Controller
         return redirect()
             ->route(
                 'client.orders.show',
-                $order
+                $freshOrder
             )
             ->with(
                 'success',
@@ -411,12 +734,11 @@ class DeliveryController extends Controller
             403
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Validate
-        |--------------------------------------------------------------------------
-        */
-
+        /**
+         * --------------------------------------------------------------------------
+         * Validate
+         * --------------------------------------------------------------------------
+         */
         $validated = $request->validate(
             [
                 'revision_note' => [
@@ -438,12 +760,11 @@ class DeliveryController extends Controller
             ]
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Status harus delivered
-        |--------------------------------------------------------------------------
-        */
-
+        /**
+         * --------------------------------------------------------------------------
+         * Status harus delivered
+         * --------------------------------------------------------------------------
+         */
         if ($order->status !== 'delivered') {
             return back()->with(
                 'error',
@@ -451,12 +772,11 @@ class DeliveryController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Delivery terbaru
-        |--------------------------------------------------------------------------
-        */
-
+        /**
+         * --------------------------------------------------------------------------
+         * Delivery terbaru
+         * --------------------------------------------------------------------------
+         */
         $delivery = $order->deliveries()
             ->latest()
             ->first();
@@ -468,12 +788,11 @@ class DeliveryController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Delivery harus submitted
-        |--------------------------------------------------------------------------
-        */
-
+        /**
+         * --------------------------------------------------------------------------
+         * Delivery harus submitted
+         * --------------------------------------------------------------------------
+         */
         if ($delivery->status !== 'submitted') {
             return back()->with(
                 'error',
@@ -481,18 +800,16 @@ class DeliveryController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Update revision
-        |--------------------------------------------------------------------------
-        */
-
+        /**
+         * --------------------------------------------------------------------------
+         * Update revision
+         * --------------------------------------------------------------------------
+         */
         DB::transaction(function () use (
             $delivery,
             $order,
             $validated
         ) {
-
             $revisionMessage =
                 "PERMINTAAN REVISI CLIENT:\n\n" .
                 $validated['revision_note'];
@@ -511,16 +828,17 @@ class DeliveryController extends Controller
             ]);
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | Message system
-        |--------------------------------------------------------------------------
-        */
-
-        $order->loadMissing('conversation');
+        /**
+         * --------------------------------------------------------------------------
+         * Message system
+         * --------------------------------------------------------------------------
+         */
+        $order->loadMissing([
+            'conversation',
+            'freelancerProfile.user',
+        ]);
 
         if ($order->conversation_id) {
-
             Message::create([
                 'conversation_id' =>
                     $order->conversation_id,
@@ -545,6 +863,65 @@ class DeliveryController extends Controller
                 'last_message_at' =>
                     now(),
             ]);
+        }
+
+        /**
+         * --------------------------------------------------------------------------
+         * Notification: Freelancer - Revision requested
+         * --------------------------------------------------------------------------
+         */
+        $freelancerUser =
+            $order->freelancerProfile?->user;
+
+        if ($freelancerUser) {
+            app(NotificationService::class)->send(
+                recipient: $freelancerUser,
+
+                event: NotificationService::REVISION_REQUESTED,
+
+                title: 'Permintaan revisi baru',
+
+                message:
+                    'Client meminta revisi untuk Order ' .
+                    $order->order_number .
+                    '. Silakan periksa catatan revisi dan kirim hasil terbaru.',
+
+                actionUrl: route(
+                    'freelancer.orders.show',
+                    $order
+                ),
+
+                priority:
+                    NotificationService::PRIORITY_ACTION,
+
+                actor: Auth::user(),
+
+                relatedType: 'order',
+
+                relatedId: $order->id,
+
+                extra: [
+                    'order_id' =>
+                        $order->id,
+
+                    'order_number' =>
+                        $order->order_number,
+
+                    'delivery_id' =>
+                        $delivery->id,
+
+                    'revision_note' =>
+                        $validated['revision_note'],
+                ],
+
+                dedupeKey:
+                    'revision_requested:' .
+                    $delivery->id .
+                    ':' .
+                    sha1(
+                        $validated['revision_note']
+                    )
+            );
         }
 
         return back()->with(

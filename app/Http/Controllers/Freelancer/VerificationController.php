@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Freelancer;
 
 use App\Http\Controllers\Controller;
 use App\Models\FreelancerVerification;
+use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -49,7 +51,7 @@ class VerificationController extends Controller
             $freelancerProfile->id
         )->first();
 
-        /*
+        /**
          * Freelancer yang sudah verified tidak perlu
          * melakukan pengajuan ulang.
          */
@@ -60,7 +62,7 @@ class VerificationController extends Controller
             );
         }
 
-        /*
+        /**
          * Pengajuan yang sedang direview tidak bisa
          * dikirim ulang sampai Admin selesai memprosesnya.
          */
@@ -78,38 +80,32 @@ class VerificationController extends Controller
                 'min:3',
                 'max:255',
             ],
-
             'identity_type' => [
                 'required',
                 'in:KTP',
             ],
-
             'identity_number' => [
                 'required',
                 'string',
                 'min:8',
                 'max:30',
             ],
-
             'identity_document' => [
                 'required',
                 'file',
                 'mimes:jpg,jpeg,png',
                 'max:4096',
             ],
-
             'bank_name' => [
                 'required',
                 'string',
                 'max:100',
             ],
-
             'bank_account_name' => [
                 'required',
                 'string',
                 'max:255',
             ],
-
             'bank_account_number' => [
                 'required',
                 'string',
@@ -122,7 +118,7 @@ class VerificationController extends Controller
         $newDocumentPath = null;
 
         try {
-            /*
+            /**
              * Simpan dokumen ke local/private storage.
              *
              * File tidak disimpan di storage/app/public,
@@ -140,7 +136,10 @@ class VerificationController extends Controller
                     'local'
                 );
 
-            DB::transaction(function () use (
+            /**
+             * Simpan data verifikasi dalam transaction.
+             */
+            $savedVerification = DB::transaction(function () use (
                 $freelancerProfile,
                 $validated,
                 $verification,
@@ -171,33 +170,40 @@ class VerificationController extends Controller
                     'bank_account_number' =>
                         $validated['bank_account_number'],
 
-                    'status' => 'pending',
+                    'status' =>
+                        'pending',
 
-                    'rejection_reason' => null,
+                    'rejection_reason' =>
+                        null,
 
-                    'submitted_at' => now(),
+                    'submitted_at' =>
+                        now(),
 
-                    'reviewed_at' => null,
+                    'reviewed_at' =>
+                        null,
 
-                    'reviewed_by' => null,
+                    'reviewed_by' =>
+                        null,
                 ];
 
                 if ($verification) {
                     $verification->update($data);
-                } else {
-                    FreelancerVerification::create($data);
+
+                    return $verification->fresh();
                 }
 
-                /*
-                 * Set kembali menjadi belum verified
-                 * selama menunggu review Admin.
-                 */
-                $freelancerProfile->update([
-                    'is_verified' => false,
-                ]);
+                return FreelancerVerification::create($data);
             });
 
-            /*
+            /**
+             * Set kembali menjadi belum verified
+             * selama menunggu review Admin.
+             */
+            $freelancerProfile->update([
+                'is_verified' => false,
+            ]);
+
+            /**
              * Hapus dokumen lama setelah data baru berhasil
              * tersimpan ke database.
              */
@@ -210,6 +216,68 @@ class VerificationController extends Controller
                 );
             }
 
+            /**
+             * ------------------------------------------------------------------
+             * NOTIFICATION: KYC SUBMITTED
+             * ------------------------------------------------------------------
+             *
+             * Setelah data verifikasi berhasil tersimpan,
+             * seluruh Admin diberi tahu.
+             */
+            $admins = User::query()
+                ->where('role', 'admin')
+                ->get();
+
+            foreach ($admins as $admin) {
+                app(NotificationService::class)->send(
+                    recipient: $admin,
+                    event: NotificationService::KYC_SUBMITTED,
+                    title: 'Pengajuan verifikasi KYC baru',
+                    message:
+                        'Freelancer "' .
+                        Auth::user()->name .
+                        '" mengirim pengajuan verifikasi KYC. Silakan periksa dokumen dan data yang diajukan.',
+                    actionUrl: route(
+                        'admin.verifications.show',
+                        $savedVerification
+                    ),
+                    priority: 'action',
+                    actor: Auth::user(),
+                    relatedType: 'freelancer_verification',
+                    relatedId: $savedVerification->id,
+                    extra: [
+                        'verification_id' =>
+                            $savedVerification->id,
+
+                        'freelancer_profile_id' =>
+                            $freelancerProfile->id,
+
+                        'freelancer_user_id' =>
+                            Auth::id(),
+
+                        'full_name' =>
+                            $savedVerification->full_name,
+
+                        'identity_type' =>
+                            $savedVerification->identity_type,
+
+                        'identity_number' =>
+                            $savedVerification->identity_number,
+
+                        'status' =>
+                            $savedVerification->status,
+
+                        'submitted_at' =>
+                            $savedVerification->submitted_at?->toISOString(),
+                    ],
+                    dedupeKey:
+                        'kyc_submitted:admin:' .
+                        $admin->id .
+                        ':' .
+                        $savedVerification->id
+                );
+            }
+
             return redirect()
                 ->route('freelancer.verification.index')
                 ->with(
@@ -217,7 +285,7 @@ class VerificationController extends Controller
                     'Dokumen verifikasi berhasil dikirim dan sedang menunggu pemeriksaan Admin.'
                 );
         } catch (\Throwable $e) {
-            /*
+            /**
              * Kalau database gagal, file baru yang sudah
              * tersimpan ikut dibersihkan.
              */

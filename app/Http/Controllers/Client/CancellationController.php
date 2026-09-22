@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\CancellationRequest;
 use App\Models\Order;
+use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +23,19 @@ class CancellationController extends Controller
         'in_progress',
         'revision',
     ];
+
+    /**
+     * Event notification.
+     *
+     * Sengaja menggunakan string event langsung agar controller
+     * tidak bergantung pada constant tambahan yang mungkin belum
+     * tersedia di NotificationService.
+     */
+    private const NOTIFICATION_CANCELLATION_REQUESTED =
+        'cancellation.requested';
+
+    private const NOTIFICATION_CANCELLATION_MEDIATION_REQUESTED =
+        'cancellation.mediation_requested';
 
     /**
      * Menampilkan halaman cancellation client.
@@ -42,7 +57,10 @@ class CancellationController extends Controller
         );
 
         $latestRequest = CancellationRequest::query()
-            ->where('order_id', $order->id)
+            ->where(
+                'order_id',
+                $order->id
+            )
             ->latest('id')
             ->first();
 
@@ -94,15 +112,18 @@ class CancellationController extends Controller
         );
 
         $latestRequest = CancellationRequest::query()
-            ->where('order_id', $order->id)
+            ->where(
+                'order_id',
+                $order->id
+            )
             ->latest('id')
             ->first();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Jangan membuat pengajuan baru ketika request masih aktif
-        |--------------------------------------------------------------------------
-        */
+        /**
+         * --------------------------------------------------------------------------
+         * Jangan membuat pengajuan baru ketika request masih aktif.
+         * --------------------------------------------------------------------------
+         */
         if (
             $latestRequest &&
             in_array(
@@ -120,11 +141,11 @@ class CancellationController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Jika freelancer sudah menolak, client wajib menggunakan mediasi
-        |--------------------------------------------------------------------------
-        */
+        /**
+         * --------------------------------------------------------------------------
+         * Jika freelancer sudah menolak, client wajib menggunakan mediasi.
+         * --------------------------------------------------------------------------
+         */
         if (
             $latestRequest &&
             $latestRequest->status === 'rejected_by_freelancer'
@@ -135,11 +156,11 @@ class CancellationController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Jika sudah ada keputusan akhir
-        |--------------------------------------------------------------------------
-        */
+        /**
+         * --------------------------------------------------------------------------
+         * Jika sudah ada keputusan akhir.
+         * --------------------------------------------------------------------------
+         */
         if (
             $latestRequest &&
             in_array(
@@ -167,13 +188,60 @@ class CancellationController extends Controller
             ],
         ]);
 
-        CancellationRequest::create([
+        /**
+         * Pastikan relasi freelancer tersedia untuk notification.
+         */
+        $order->loadMissing(
+            'freelancerProfile.user'
+        );
+
+        $cancellationRequest = CancellationRequest::create([
             'order_id' => $order->id,
             'requester_id' => Auth::id(),
             'requester_role' => 'client',
             'reason' => $validated['reason'],
             'status' => 'pending_freelancer',
         ]);
+
+        /**
+         * --------------------------------------------------------------------------
+         * Notification: Client -> Freelancer
+         * --------------------------------------------------------------------------
+         *
+         * Freelancer diberi tahu bahwa ada pengajuan cancellation baru.
+         */
+        $freelancer = $order->freelancerProfile?->user;
+
+        if ($freelancer) {
+            app(NotificationService::class)->send(
+                recipient: $freelancer,
+                event: self::NOTIFICATION_CANCELLATION_REQUESTED,
+                title: 'Pengajuan pembatalan baru',
+                message:
+                    'Client mengajukan pembatalan untuk order "' .
+                    $order->order_number .
+                    '". Silakan tinjau pengajuan tersebut.',
+                actionUrl: route(
+                    'freelancer.orders.cancellation.create',
+                    $order
+                ),
+                priority: 'action',
+                actor: Auth::user(),
+                relatedType: 'cancellation_request',
+                relatedId: $cancellationRequest->id,
+                extra: [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'cancellation_request_id' =>
+                        $cancellationRequest->id,
+                    'requester_id' => Auth::id(),
+                    'requester_role' => 'client',
+                ],
+                dedupeKey:
+                    'cancellation_requested:' .
+                    $cancellationRequest->id
+            );
+        }
 
         return redirect()
             ->route(
@@ -208,7 +276,10 @@ class CancellationController extends Controller
         );
 
         $cancellationRequest = CancellationRequest::query()
-            ->where('order_id', $order->id)
+            ->where(
+                'order_id',
+                $order->id
+            )
             ->latest('id')
             ->first();
 
@@ -238,9 +309,57 @@ class CancellationController extends Controller
 
         $cancellationRequest->update([
             'status' => 'mediation_pending',
-            'mediation_reason' => $validated['mediation_reason'],
+            'mediation_reason' =>
+                $validated['mediation_reason'],
             'mediation_requested_at' => now(),
         ]);
+
+        /**
+         * --------------------------------------------------------------------------
+         * Notification: Client -> Admin
+         * --------------------------------------------------------------------------
+         *
+         * Semua admin diberi tahu bahwa ada pengajuan mediasi baru.
+         */
+        $admins = User::query()
+            ->where('role', 'admin')
+            ->get();
+
+        foreach ($admins as $admin) {
+            app(NotificationService::class)->send(
+                recipient: $admin,
+                event:
+                    self::NOTIFICATION_CANCELLATION_MEDIATION_REQUESTED,
+                title: 'Pengajuan mediasi baru',
+                message:
+                    'Client mengajukan mediasi untuk order "' .
+                    $order->order_number .
+                    '" setelah pembatalan ditolak freelancer.',
+                actionUrl: route(
+                    'admin.cancellations.show',
+                    $cancellationRequest
+                ),
+                priority: 'action',
+                actor: Auth::user(),
+                relatedType: 'cancellation_request',
+                relatedId: $cancellationRequest->id,
+                extra: [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'cancellation_request_id' =>
+                        $cancellationRequest->id,
+                    'requester_id' => Auth::id(),
+                    'requester_role' => 'client',
+                    'mediation_reason' =>
+                        $validated['mediation_reason'],
+                ],
+                dedupeKey:
+                    'cancellation_mediation_requested:' .
+                    $cancellationRequest->id .
+                    ':admin:' .
+                    $admin->id
+            );
+        }
 
         return redirect()
             ->route(

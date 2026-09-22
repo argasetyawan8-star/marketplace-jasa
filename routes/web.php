@@ -101,6 +101,7 @@ use App\Http\Controllers\JobBoardChatController;
 */
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -176,6 +177,19 @@ Route::middleware('auth')->group(function () {
         '/profile',
         [ProfileController::class, 'destroy']
     )->name('profile.destroy');
+
+    
+    Route::get('/notifications', [NotificationController::class, 'index'])
+    ->name('notifications.index');
+
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])
+        ->name('notifications.unread_count');
+
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])
+        ->name('notifications.read');
+
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])
+        ->name('notifications.read_all');
 });
 
 /*
@@ -855,7 +869,7 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerVerificationController::class, 'store']
         )->name('verification.store');
 
-        /*
+                /*
         |--------------------------------------------------------------------------
         | Cancellation
         |--------------------------------------------------------------------------
@@ -875,7 +889,6 @@ Route::middleware(['auth', 'role:freelancer'])
             '/orders/{order}/cancellation/reject',
             [FreelancerCancellationController::class, 'reject']
         )->name('orders.cancellation.reject');
-
          /*
         |--------------------------------------------------------------------------
         | Dispute

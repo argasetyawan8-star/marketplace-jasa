@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Service;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -52,16 +53,15 @@ class OrderController extends Controller
             'payment',
             'conversation',
 
-            /*
-            |--------------------------------------------------------------------------
-            | Cancellation
-            |--------------------------------------------------------------------------
-            |
-            | Ambil pengajuan cancellation terbaru beserta:
-            | - requester
-            | - reviewer/admin
-            |
-            */
+            /**
+             * --------------------------------------------------------------------------
+             * Cancellation
+             * --------------------------------------------------------------------------
+             *
+             * Ambil pengajuan cancellation terbaru beserta:
+             * - requester
+             * - reviewer/admin
+             */
             'latestCancellationRequest.requester',
             'latestCancellationRequest.reviewer',
         ]);
@@ -106,7 +106,6 @@ class OrderController extends Controller
                 'integer',
                 'exists:services,id',
             ],
-
             'requirements' => [
                 'nullable',
                 'string',
@@ -126,22 +125,20 @@ class OrderController extends Controller
             )
             ->firstOrFail();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Pastikan service memiliki freelancer
-        |--------------------------------------------------------------------------
-        */
-
+        /**
+         * --------------------------------------------------------------------------
+         * Pastikan service memiliki freelancer
+         * --------------------------------------------------------------------------
+         */
         if (!$service->freelancerProfile) {
             abort(404);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Pastikan freelancer tersedia
-        |--------------------------------------------------------------------------
-        */
-
+        /**
+         * --------------------------------------------------------------------------
+         * Pastikan freelancer tersedia
+         * --------------------------------------------------------------------------
+         */
         if (!$service->freelancerProfile->is_available) {
             return back()->with(
                 'error',
@@ -149,20 +146,18 @@ class OrderController extends Controller
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Harga jasa
-        |--------------------------------------------------------------------------
-        */
-
+        /**
+         * --------------------------------------------------------------------------
+         * Harga jasa
+         * --------------------------------------------------------------------------
+         */
         $subtotal = (float) $service->starting_price;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Platform fee sementara 10%
-        |--------------------------------------------------------------------------
-        */
-
+        /**
+         * --------------------------------------------------------------------------
+         * Platform fee sementara 10%
+         * --------------------------------------------------------------------------
+         */
         $platformFeeRate = 0.10;
 
         $platformFee = round(
@@ -175,12 +170,11 @@ class OrderController extends Controller
         $freelancerAmount =
             $total - $platformFee;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Simpan order + item
-        |--------------------------------------------------------------------------
-        */
-
+        /**
+         * --------------------------------------------------------------------------
+         * Simpan order + item
+         * --------------------------------------------------------------------------
+         */
         $order = DB::transaction(
             function () use (
                 $service,
@@ -261,6 +255,42 @@ class OrderController extends Controller
                 return $order;
             }
         );
+
+        /**
+         * --------------------------------------------------------------------------
+         * Notification: Order baru ke Freelancer
+         * --------------------------------------------------------------------------
+         *
+         * Notifikasi dikirim setelah transaksi database berhasil.
+         * Client tidak menerima notifikasi karena dia sendiri yang membuat order.
+         */
+        $freelancer = $service->freelancerProfile?->user;
+
+        if ($freelancer) {
+            app(NotificationService::class)->send(
+                recipient: $freelancer,
+                event: NotificationService::ORDER_CREATED,
+                title: 'Order baru masuk',
+                message: 'Ada order baru dari client untuk jasa "' .
+                    $service->title .
+                    '". Order menunggu pembayaran client.',
+                actionUrl: route(
+                    'freelancer.orders.show',
+                    $order
+                ),
+                priority: 'action',
+                actor: auth()->user(),
+                relatedType: 'order',
+                relatedId: $order->id,
+                extra: [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'service_id' => $service->id,
+                    'service_title' => $service->title,
+                ],
+                dedupeKey: 'order_created:' . $order->id
+            );
+        }
 
         return redirect()
             ->route(

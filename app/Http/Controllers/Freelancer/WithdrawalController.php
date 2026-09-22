@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Freelancer;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Models\Withdrawal;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -117,13 +119,19 @@ class WithdrawalController extends Controller
 
         $amount = (float) $validated['amount'];
 
-        DB::transaction(function () use (
+        /**
+         * Transaction harus menghasilkan Withdrawal yang sudah berhasil dibuat.
+         * Dengan begitu notifikasi baru dikirim setelah seluruh proses database
+         * berhasil commit.
+         */
+        $withdrawal = DB::transaction(function () use (
             $freelancerProfile,
             $validated,
             $amount
         ) {
-            /*
+            /**
              * Ambil wallet di dalam transaction dan lock row-nya.
+             *
              * Ini mencegah dua request withdrawal memakai saldo
              * yang sama secara bersamaan.
              */
@@ -134,7 +142,7 @@ class WithdrawalController extends Controller
                 ->lockForUpdate()
                 ->first();
 
-            /*
+            /**
              * Kalau wallet belum ada, buat terlebih dahulu.
              */
             if (! $wallet) {
@@ -153,16 +161,17 @@ class WithdrawalController extends Controller
 
             $balance = (float) $wallet->balance;
 
-            /*
+            /**
              * Cek ulang saldo setelah row wallet dikunci.
              */
             if ($amount > $balance) {
                 throw ValidationException::withMessages([
-                    'amount' => 'Nominal penarikan melebihi saldo yang tersedia.',
+                    'amount' =>
+                        'Nominal penarikan melebihi saldo yang tersedia.',
                 ]);
             }
 
-            /*
+            /**
              * Untuk tahap development, admin fee masih 0.
              * Nanti bisa dibuat configurable.
              */
@@ -170,7 +179,7 @@ class WithdrawalController extends Controller
 
             $netAmount = $amount - $adminFee;
 
-            /*
+            /**
              * Buat data withdrawal.
              */
             $withdrawal = Withdrawal::create([
@@ -187,8 +196,9 @@ class WithdrawalController extends Controller
                 'processed_at' => null,
             ]);
 
-            /*
+            /**
              * Saldo tersedia dikurangi.
+             *
              * Nilai withdrawal dipindahkan ke pending_balance
              * sampai admin memproses pengajuan.
              */
@@ -202,7 +212,7 @@ class WithdrawalController extends Controller
                 'pending_balance' => $newPendingBalance,
             ]);
 
-            /*
+            /**
              * Catat transaksi wallet.
              */
             WalletTransaction::create([
@@ -222,7 +232,63 @@ class WithdrawalController extends Controller
                 'reference_type' => 'Withdrawal',
                 'reference_id' => $withdrawal->id,
             ]);
+
+            return $withdrawal;
         });
+
+        /**
+         * ----------------------------------------------------------------------
+         * NOTIFICATION: WITHDRAWAL SUBMITTED
+         * ----------------------------------------------------------------------
+         *
+         * Setelah withdrawal berhasil tersimpan dan transaction commit,
+         * seluruh Admin diberi tahu bahwa ada pengajuan penarikan baru.
+         */
+        $admins = User::query()
+            ->where('role', 'admin')
+            ->get();
+
+        foreach ($admins as $admin) {
+            app(NotificationService::class)->send(
+                recipient: $admin,
+                event: NotificationService::WITHDRAWAL_SUBMITTED,
+                title: 'Pengajuan withdrawal baru',
+                message:
+                    'Freelancer mengajukan penarikan sebesar Rp ' .
+                    number_format(
+                        (float) $withdrawal->amount,
+                        0,
+                        ',',
+                        '.'
+                    ) .
+                    '. Silakan periksa dan proses pengajuan tersebut.',
+                actionUrl: route(
+                    'admin.withdrawals.show',
+                    $withdrawal
+                ),
+                priority: 'action',
+                actor: Auth::user(),
+                relatedType: 'withdrawal',
+                relatedId: $withdrawal->id,
+                extra: [
+                    'withdrawal_id' => $withdrawal->id,
+                    'amount' => (float) $withdrawal->amount,
+                    'admin_fee' => (float) $withdrawal->admin_fee,
+                    'net_amount' => (float) $withdrawal->net_amount,
+                    'method' => $withdrawal->method,
+                    'account_name' => $withdrawal->account_name,
+                    'account_number' => $withdrawal->account_number,
+                    'status' => $withdrawal->status,
+                    'freelancer_profile_id' =>
+                        $withdrawal->freelancer_profile_id,
+                ],
+                dedupeKey:
+                    'withdrawal_submitted:admin:' .
+                    $admin->id .
+                    ':' .
+                    $withdrawal->id
+            );
+        }
 
         return redirect()
             ->route('freelancer.withdrawals.index')
