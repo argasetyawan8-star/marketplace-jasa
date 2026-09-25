@@ -1,310 +1,125 @@
-<footer class="bg-[#0A4D2A] text-white">
+<footer class="border-t border-slate-200 bg-white">
+    <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
+        <div class="flex flex-col items-center justify-between gap-6 sm:flex-row">
 
-{{-- Main Footer --}}
-<div class="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
-
-    <div class="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_0.9fr_0.9fr_0.9fr]">
-
-        {{-- Brand --}}
-        <div class="max-w-sm">
-
+            {{-- Logo ProKerja --}}
             <a
-                href="{{ route('marketplace.home') }}"
-                class="group inline-flex items-center gap-3"
+                href="{{ Route::has('marketplace.home') ? route('marketplace.home') : url('/') }}"
+                class="group flex items-center gap-3"
             >
                 <div
-                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1E9E5A] text-sm font-semibold text-white shadow-[0_4px_16px_rgba(30,158,90,0.18)] transition duration-200 group-hover:bg-[#35C978]"
+                    class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-sm transition duration-200 group-hover:scale-105 group-hover:bg-blue-700"
                 >
-                    J
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M12 3v18"/>
+                        <path d="M5 8h14"/>
+                        <path d="M7 8c0 4 2 6 5 6s5-2 5-6"/>
+                        <path d="M5 18h14"/>
+                    </svg>
                 </div>
 
-                <div>
-                    <div class="text-lg font-semibold tracking-tight">
-                        JASAIN
+                <div class="leading-none">
+                    <div class="text-lg font-extrabold tracking-tight text-slate-900">
+                        ProKerja
                     </div>
 
-                    <div class="text-xs text-white/50">
+                    <div class="mt-1 text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400">
                         Marketplace Jasa
                     </div>
                 </div>
             </a>
 
-            <p class="mt-5 text-sm leading-6 text-white/60">
-                Platform untuk menemukan freelancer profesional
-                dan berbagai layanan jasa sesuai kebutuhanmu.
+
+            {{-- Social Media --}}
+            <div class="flex items-center gap-2">
+
+                {{-- Instagram --}}
+                <a
+                    href="#"
+                    aria-label="Instagram ProKerja"
+                    class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition duration-200 hover:border-blue-200 hover:bg-blue-50 hover:text-[#2563EB]"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
+                        <rect x="3" y="3" width="18" height="18" rx="5"/>
+                        <circle cx="12" cy="12" r="4"/>
+                        <circle cx="17.5" cy="6.5" r=".8" fill="currentColor" stroke="none"/>
+                    </svg>
+                </a>
+
+
+                {{-- Facebook --}}
+                <a
+                    href="#"
+                    aria-label="Facebook ProKerja"
+                    class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition duration-200 hover:border-blue-200 hover:bg-blue-50 hover:text-[#2563EB]"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                    >
+                        <path d="M13.5 21v-8h2.7l.4-3h-3.1V8.1c0-.9.3-1.6 1.7-1.6h1.8V3.8c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3V10H8v3h2.3v8h3.2Z"/>
+                    </svg>
+                </a>
+
+
+                {{-- TikTok --}}
+                <a
+                    href="#"
+                    aria-label="TikTok ProKerja"
+                    class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition duration-200 hover:border-blue-200 hover:bg-blue-50 hover:text-[#2563EB]"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
+                        <path d="M15 4c.2 2 1.3 3.3 3.5 3.5V11c-1.4-.1-2.7-.5-3.7-1.2v5.4a5.2 5.2 0 1 1-4.5-5.1v3.4a1.9 1.9 0 1 0 1.4 1.8V4H15Z"/>
+                    </svg>
+                </a>
+
+
+                {{-- LinkedIn --}}
+                <a
+                    href="#"
+                    aria-label="LinkedIn ProKerja"
+                    class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition duration-200 hover:border-blue-200 hover:bg-blue-50 hover:text-[#2563EB]"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                    >
+                        <path d="M6.5 8.2A1.7 1.7 0 1 0 6.5 4.8a1.7 1.7 0 0 0 0 3.4ZM5 19h3V9.8H5V19Zm5 0h3v-5.1c0-1.4.3-2.7 2-2.7s1.9 1.5 1.9 2.8V19H20v-5.7c0-2.8-.6-4.9-4-4.9-1.6 0-2.6.9-3 1.6h-.1V9.8h-2.9V19Z"/>
+                    </svg>
+                </a>
+
+            </div>
+
+        </div>
+
+
+        {{-- Copyright --}}
+        <div class="mt-6 border-t border-slate-100 pt-5 text-center">
+            <p class="text-xs text-slate-400 sm:text-sm">
+                © {{ date('Y') }} ProKerja. Semua hak dilindungi.
             </p>
-
-            {{-- Social --}}
-            <div class="mt-6 flex items-center gap-2">
-
-                <a
-                    href="#"
-                    aria-label="Instagram"
-                    class="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-white/60 transition hover:border-white/20 hover:bg-white/5 hover:text-white"
-                >
-                    <i class="bi bi-instagram"></i>
-                </a>
-
-                <a
-                    href="#"
-                    aria-label="Facebook"
-                    class="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-white/60 transition hover:border-white/20 hover:bg-white/5 hover:text-white"
-                >
-                    <i class="bi bi-facebook"></i>
-                </a>
-
-                <a
-                    href="#"
-                    aria-label="LinkedIn"
-                    class="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-white/60 transition hover:border-white/20 hover:bg-white/5 hover:text-white"
-                >
-                    <i class="bi bi-linkedin"></i>
-                </a>
-
-                <a
-                    href="#"
-                    aria-label="TikTok"
-                    class="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-white/60 transition hover:border-white/20 hover:bg-white/5 hover:text-white"
-                >
-                    <i class="bi bi-tiktok"></i>
-                </a>
-
-            </div>
-
-        </div>
-
-
-        {{-- Marketplace --}}
-        <div>
-
-            <h3 class="text-sm font-semibold text-white">
-                Marketplace
-            </h3>
-
-            <div class="mt-5 space-y-3">
-
-                <a
-                    href="{{ route('marketplace.home') }}"
-                    class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                >
-                    <i class="bi bi-house text-xs opacity-70 transition group-hover:opacity-100"></i>
-                    Beranda
-                </a>
-
-                <a
-                    href="{{ route('marketplace.search') }}"
-                    class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                >
-                    <i class="bi bi-search text-xs opacity-70 transition group-hover:opacity-100"></i>
-                    Cari Jasa
-                </a>
-
-                <a
-                    href="{{ route('marketplace.jobs.index') }}"
-                    class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                >
-                    <i class="bi bi-briefcase text-xs opacity-70 transition group-hover:opacity-100"></i>
-                    Job Board
-                </a>
-
-                @auth
-
-                    @if(auth()->user()->role === 'client')
-
-                        <a
-                            href="{{ route('client.favorites.index') }}"
-                            class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                        >
-                            <i class="bi bi-heart text-xs opacity-70 transition group-hover:opacity-100"></i>
-                            Favorit
-                        </a>
-
-                    @endif
-
-                @else
-
-                    <a
-                        href="{{ route('register') }}"
-                        class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                    >
-                        <i class="bi bi-person-plus text-xs opacity-70 transition group-hover:opacity-100"></i>
-                        Daftar
-                    </a>
-
-                @endauth
-
-            </div>
-
-        </div>
-
-
-        {{-- Untuk Pengguna --}}
-        <div>
-
-            <h3 class="text-sm font-semibold text-white">
-                Untuk Pengguna
-            </h3>
-
-            <div class="mt-5 space-y-3">
-
-                @guest
-
-                    <a
-                        href="{{ route('login') }}"
-                        class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                    >
-                        <i class="bi bi-box-arrow-in-right text-xs opacity-70 transition group-hover:opacity-100"></i>
-                        Masuk
-                    </a>
-
-                    <a
-                        href="{{ route('register') }}"
-                        class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                    >
-                        <i class="bi bi-person-plus text-xs opacity-70 transition group-hover:opacity-100"></i>
-                        Buat Akun
-                    </a>
-
-                @else
-
-                    @if(auth()->user()->role === 'client')
-
-                        <a
-                            href="{{ route('client.dashboard') }}"
-                            class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                        >
-                            <i class="bi bi-grid text-xs opacity-70 transition group-hover:opacity-100"></i>
-                            Dashboard
-                        </a>
-
-                        <a
-                            href="{{ route('client.orders.index') }}"
-                            class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                        >
-                            <i class="bi bi-bag text-xs opacity-70 transition group-hover:opacity-100"></i>
-                            Pesanan
-                        </a>
-
-                        <a
-                            href="{{ route('client.messages.index') }}"
-                            class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                        >
-                            <i class="bi bi-chat-dots text-xs opacity-70 transition group-hover:opacity-100"></i>
-                            Pesan
-                        </a>
-
-                    @elseif(auth()->user()->role === 'freelancer')
-
-                        <a
-                            href="{{ route('freelancer.dashboard') }}"
-                            class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                        >
-                            <i class="bi bi-grid text-xs opacity-70 transition group-hover:opacity-100"></i>
-                            Dashboard
-                        </a>
-
-                        <a
-                            href="{{ route('freelancer.services.index') }}"
-                            class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                        >
-                            <i class="bi bi-briefcase text-xs opacity-70 transition group-hover:opacity-100"></i>
-                            Jasa Saya
-                        </a>
-
-                        <a
-                            href="{{ route('freelancer.messages.index') }}"
-                            class="group flex items-center gap-2 text-sm text-white/55 transition hover:text-white"
-                        >
-                            <i class="bi bi-chat-dots text-xs opacity-70 transition group-hover:opacity-100"></i>
-                            Pesan
-                        </a>
-
-                    @endif
-
-                @endguest
-
-            </div>
-
-        </div>
-
-
-        {{-- Bantuan --}}
-        <div>
-
-            <h3 class="text-sm font-semibold text-white">
-                Bantuan
-            </h3>
-
-            <div class="mt-5 space-y-3">
-
-                <a
-                    href="#"
-                    class="block text-sm text-white/55 transition hover:text-white"
-                >
-                    Pusat Bantuan
-                </a>
-
-                <a
-                    href="#"
-                    class="block text-sm text-white/55 transition hover:text-white"
-                >
-                    Cara Kerja
-                </a>
-
-                <a
-                    href="#"
-                    class="block text-sm text-white/55 transition hover:text-white"
-                >
-                    Ketentuan Layanan
-                </a>
-
-                <a
-                    href="#"
-                    class="block text-sm text-white/55 transition hover:text-white"
-                >
-                    Kebijakan Privasi
-                </a>
-
-            </div>
-
         </div>
 
     </div>
-
-</div>
-
-
-{{-- Bottom Footer --}}
-<div class="border-t border-white/10">
-
-    <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
-
-        <p class="text-xs text-white/45">
-            © {{ date('Y') }} JASAIN. Semua hak dilindungi.
-        </p>
-
-        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-white/45">
-
-            <span class="inline-flex items-center gap-1.5">
-                <i class="bi bi-shield-check text-[#7AD8B5]"></i>
-                Transaksi aman
-            </span>
-
-            <span class="inline-flex items-center gap-1.5">
-                <i class="bi bi-people text-[#7AD8B5]"></i>
-                Freelancer profesional
-            </span>
-
-            <span class="inline-flex items-center gap-1.5">
-                <i class="bi bi-lightning-charge text-[#7AD8B5]"></i>
-                Proses mudah
-            </span>
-
-        </div>
-
-    </div>
-
-</div>
-
 </footer>

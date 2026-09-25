@@ -1,4 +1,6 @@
-@props(['title' => 'Marketplace Jasa'])
+@props([
+'title' => 'ProKerja — Marketplace Jasa',
+])
 
 <!DOCTYPE html>
 
@@ -18,42 +20,50 @@
     content="{{ csrf_token() }}"
 >
 
+<meta
+    name="theme-color"
+    content="#2563EB"
+>
+
 <title>
-    {{ $title }} — JASAIN
+    {{ $title }}
 </title>
 
 @vite([
     'resources/css/app.css',
-    'resources/js/app.js'
+    'resources/js/app.js',
 ])
 
 
 </head>
 
-<body class="min-h-screen bg-[#F8FAF9] text-[#1F2937] antialiased">
-
-
-{{-- Navbar --}}
-@auth
-    @if(auth()->user()->role === 'client')
-        {{-- Client memakai navbar yang sama di seluruh area Client --}}
-        <x-navigation.client />
-    @else
-        {{-- Freelancer tetap memakai navbar marketplace --}}
-        @include('components.navigation.marketplace')
-    @endif
-@else
-    {{-- Guest tetap memakai navbar marketplace --}}
+<body
+    class="min-h-screen overflow-x-hidden bg-[#F8FAFC] text-[#0F172A] antialiased"
+>
+    {{-- =========================================================
+        MARKETPLACE NAVBAR
+        Satu navbar untuk Guest / Client / Freelancer / Admin.
+    ========================================================== --}}
     @include('components.navigation.marketplace')
-@endauth
 
-{{-- Main --}}
-<main class="min-h-[calc(100vh-64px)]">
+
+{{-- =========================================================
+    MAIN CONTENT
+    Mobile diberi ruang bawah agar bottom navbar tidak
+    menutupi konten terakhir.
+========================================================== --}}
+<main
+    class="min-h-screen pb-24 lg:pb-0"
+>
     {{ $slot }}
 </main>
 
-{{-- Footer --}}
-@include('components.footer.marketplace')
+{{-- =========================================================
+    MARKETPLACE FOOTER
+========================================================== --}}
+<footer class="pb-20 lg:pb-0">
+    @include('components.footer.marketplace')
+</footer>
 
 
 </body>

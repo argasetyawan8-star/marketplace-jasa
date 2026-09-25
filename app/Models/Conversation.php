@@ -44,12 +44,16 @@ class Conversation extends Model
 
     public function service(): BelongsTo
     {
-        return $this->belongsTo(Service::class);
+        return $this->belongsTo(
+            Service::class
+        );
     }
 
     public function job(): BelongsTo
     {
-        return $this->belongsTo(Job::class);
+        return $this->belongsTo(
+            Job::class
+        );
     }
 
     public function jobProposal(): BelongsTo
@@ -62,16 +66,40 @@ class Conversation extends Model
 
     public function messages(): HasMany
     {
-        return $this->hasMany(Message::class);
+        return $this->hasMany(
+            Message::class
+        );
     }
 
     public function offers(): HasMany
     {
-        return $this->hasMany(Offer::class);
+        return $this->hasMany(
+            Offer::class
+        );
     }
 
+    /**
+     * Semua order yang menggunakan conversation ini.
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(
+            Order::class,
+            'conversation_id'
+        );
+    }
+
+    /**
+     * Order terbaru yang terkait conversation.
+     *
+     * Dipakai oleh view yang masih menggunakan:
+     * $conversation->order
+     */
     public function order(): HasOne
     {
-        return $this->hasOne(Order::class);
+        return $this->hasOne(
+            Order::class,
+            'conversation_id'
+        )->latestOfMany();
     }
 }

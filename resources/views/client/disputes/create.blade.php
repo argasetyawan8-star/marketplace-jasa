@@ -1,34 +1,38 @@
-<x-layouts.client title="Ajukan Dispute">
+<x-layouts.marketplace title="Ajukan Dispute - ProKerja">
 
-    <div class="min-h-screen bg-[#F8FCF9]">
+    <div class="min-h-screen bg-[#F8FAFC]">
+        <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
 
-        <div class="mx-auto max-w-4xl px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
-
-            <div class="mb-5">
+            {{-- Back --}}
+            <div class="mb-5 sm:mb-6">
                 <a
                     href="{{ route('client.orders.show', $order) }}"
-                    class="inline-flex items-center gap-2 text-xs font-medium text-[#71837B] transition hover:text-[#0F6B3A]"
+                    class="group inline-flex items-center gap-2 text-xs font-semibold text-slate-500 transition hover:text-[#2563EB]"
                 >
-                    <i class="bi bi-arrow-left"></i>
+                    <span class="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white transition group-hover:border-blue-100 group-hover:bg-blue-50">
+                        <i class="bi bi-arrow-left text-[11px]"></i>
+                    </span>
+
                     Kembali ke order
                 </a>
             </div>
 
+            {{-- Validation Errors --}}
             @if($errors->any())
-                <div class="mb-5 rounded-2xl border border-red-100 bg-white px-5 py-4 shadow-sm">
-                    <div class="flex items-start gap-3">
-                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500">
+                <div class="mb-5 overflow-hidden rounded-2xl border border-rose-100 bg-white shadow-sm sm:mb-6">
+                    <div class="flex items-start gap-3 px-4 py-4 sm:px-5">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-500">
                             <i class="bi bi-exclamation-circle"></i>
                         </div>
 
-                        <div>
-                            <p class="text-sm font-semibold text-red-600">
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-rose-600">
                                 Periksa kembali data yang kamu isi.
                             </p>
 
-                            <div class="mt-1 space-y-1">
+                            <div class="mt-1.5 space-y-1">
                                 @foreach($errors->all() as $error)
-                                    <p class="text-xs text-red-500">
+                                    <p class="text-xs leading-5 text-rose-500">
                                         {{ $error }}
                                     </p>
                                 @endforeach
@@ -38,126 +42,175 @@
                 </div>
             @endif
 
-            <section class="overflow-hidden rounded-3xl border border-[#DCE9E1] bg-white shadow-[0_8px_28px_rgba(18,49,40,0.045)]">
+            {{-- Main Card --}}
+            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
 
-                <div class="border-b border-[#E9F0EC] bg-[#EAF7EF] px-5 py-6 sm:px-7">
-
+                {{-- Header --}}
+                <div class="border-b border-blue-100 bg-gradient-to-br from-blue-50 via-white to-blue-50/70 px-5 py-6 sm:px-7 sm:py-7">
                     <div class="flex items-start gap-4">
 
-                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#1E9E5A] shadow-sm">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-sm ring-1 ring-blue-100 sm:h-12 sm:w-12">
                             <i class="bi bi-shield-exclamation text-lg"></i>
                         </div>
 
-                        <div>
-                            <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
+                        <div class="min-w-0">
+                            <div class="inline-flex items-center rounded-full border border-blue-100 bg-white/80 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-[#2563EB]">
                                 Dispute
-                            </p>
+                            </div>
 
-                            <h1 class="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#123128]">
+                            <h1 class="mt-2 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
                                 Ajukan sengketa
                             </h1>
 
-                            <p class="mt-2 max-w-2xl text-xs leading-5 text-[#63786E]">
+                            <p class="mt-2 max-w-2xl text-xs leading-5 text-slate-500 sm:text-sm sm:leading-6">
                                 Jelaskan masalah yang terjadi pada order ini secara jelas agar
                                 freelancer dan admin dapat memahami situasinya.
                             </p>
                         </div>
 
                     </div>
-
                 </div>
 
-                <div class="px-5 py-6 sm:px-7">
+                {{-- Content --}}
+                <div class="px-5 py-6 sm:px-7 sm:py-8">
 
-                    <div class="rounded-2xl border border-[#E3ECE7] bg-[#F8FBF9] px-4 py-4">
-
+                    {{-- Order Summary --}}
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
                         <div class="flex items-start gap-3">
 
-                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#1E9E5A] shadow-sm">
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#2563EB] shadow-sm ring-1 ring-slate-200">
                                 <i class="bi bi-receipt"></i>
                             </div>
 
-                            <div class="min-w-0">
-                                <p class="text-[10px] text-[#8A9992]">
-                                    Order
-                                </p>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                                    <div class="min-w-0">
+                                        <p class="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                            Order
+                                        </p>
 
-                                <p class="mt-1 truncate text-xs font-semibold text-[#18382E]">
-                                    {{ $order->order_number }}
-                                </p>
+                                        <p class="mt-1 truncate text-sm font-bold text-slate-800">
+                                            {{ $order->order_number }}
+                                        </p>
+                                    </div>
 
-                                <p class="mt-1 truncate text-[10px] text-[#7C8B84]">
+                                    <span class="hidden shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-blue-600 sm:inline-flex">
+                                        Ajukan Dispute
+                                    </span>
+                                </div>
+
+                                <p class="mt-1 truncate text-xs text-slate-500">
                                     {{ $order->items->first()?->service_title ?? 'Pesanan Jasa' }}
                                 </p>
                             </div>
 
                         </div>
-
                     </div>
 
+                    {{-- Form --}}
                     <form
                         action="{{ route('client.orders.dispute.store', $order) }}"
                         method="POST"
-                        class="mt-6"
+                        class="mt-6 sm:mt-7"
                     >
                         @csrf
 
+                        {{-- Category --}}
                         <div>
                             <label
                                 for="category"
-                                class="text-xs font-semibold text-[#355248]"
+                                class="text-xs font-bold text-slate-700 sm:text-sm"
                             >
                                 Jenis masalah
                             </label>
 
-                            <select
-                                id="category"
-                                name="category"
-                                required
-                                class="mt-2 h-11 w-full rounded-xl border border-[#DCE7E1] bg-[#FAFCFB] px-4 text-xs text-[#123128] outline-none transition focus:border-[#9ACCB0] focus:bg-white focus:ring-2 focus:ring-[#EAF7EF]"
-                            >
-                                <option value="">
-                                    Pilih jenis masalah
-                                </option>
+                            <p class="mt-1 text-[11px] leading-5 text-slate-400 sm:text-xs">
+                                Pilih kategori yang paling sesuai dengan kendala pada order ini.
+                            </p>
 
-                                <option value="delivery_issue" @selected(old('category') === 'delivery_issue')>
-                                    Masalah delivery
-                                </option>
+                            <div class="relative mt-2">
+                                <select
+                                    id="category"
+                                    name="category"
+                                    required
+                                    class="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-xs text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50 sm:h-12 sm:text-sm"
+                                >
+                                    <option value="">
+                                        Pilih jenis masalah
+                                    </option>
 
-                                <option value="quality_issue" @selected(old('category') === 'quality_issue')>
-                                    Kualitas hasil pekerjaan
-                                </option>
+                                    <option
+                                        value="delivery_issue"
+                                        @selected(old('category') === 'delivery_issue')
+                                    >
+                                        Masalah delivery
+                                    </option>
 
-                                <option value="scope_issue" @selected(old('category') === 'scope_issue')>
-                                    Masalah scope pekerjaan
-                                </option>
+                                    <option
+                                        value="quality_issue"
+                                        @selected(old('category') === 'quality_issue')
+                                    >
+                                        Kualitas hasil pekerjaan
+                                    </option>
 
-                                <option value="communication_issue" @selected(old('category') === 'communication_issue')>
-                                    Masalah komunikasi
-                                </option>
+                                    <option
+                                        value="scope_issue"
+                                        @selected(old('category') === 'scope_issue')
+                                    >
+                                        Masalah scope pekerjaan
+                                    </option>
 
-                                <option value="non_delivery" @selected(old('category') === 'non_delivery')>
-                                    Pekerjaan belum dikirim
-                                </option>
+                                    <option
+                                        value="communication_issue"
+                                        @selected(old('category') === 'communication_issue')
+                                    >
+                                        Masalah komunikasi
+                                    </option>
 
-                                <option value="payment_issue" @selected(old('category') === 'payment_issue')>
-                                    Masalah pembayaran
-                                </option>
+                                    <option
+                                        value="non_delivery"
+                                        @selected(old('category') === 'non_delivery')
+                                    >
+                                        Pekerjaan belum dikirim
+                                    </option>
 
-                                <option value="other" @selected(old('category') === 'other')>
-                                    Masalah lainnya
-                                </option>
-                            </select>
+                                    <option
+                                        value="payment_issue"
+                                        @selected(old('category') === 'payment_issue')
+                                    >
+                                        Masalah pembayaran
+                                    </option>
+
+                                    <option
+                                        value="other"
+                                        @selected(old('category') === 'other')
+                                    >
+                                        Masalah lainnya
+                                    </option>
+                                </select>
+
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400">
+                                    <i class="bi bi-chevron-down text-xs"></i>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="mt-5">
+                        {{-- Reason --}}
+                        <div class="mt-6 sm:mt-7">
+                            <div class="flex items-end justify-between gap-3">
+                                <div>
+                                    <label
+                                        for="reason"
+                                        class="text-xs font-bold text-slate-700 sm:text-sm"
+                                    >
+                                        Jelaskan masalah
+                                    </label>
 
-                            <label
-                                for="reason"
-                                class="text-xs font-semibold text-[#355248]"
-                            >
-                                Jelaskan masalah
-                            </label>
+                                    <p class="mt-1 text-[11px] leading-5 text-slate-400 sm:text-xs">
+                                        Berikan informasi yang jelas agar kasus dapat ditinjau dengan tepat.
+                                    </p>
+                                </div>
+                            </div>
 
                             <textarea
                                 id="reason"
@@ -166,42 +219,51 @@
                                 required
                                 maxlength="5000"
                                 placeholder="Jelaskan masalah secara detail, termasuk apa yang terjadi, bagian yang tidak sesuai, dan penyelesaian yang kamu harapkan..."
-                                class="mt-2 w-full rounded-xl border border-[#DCE7E1] bg-[#FAFCFB] px-4 py-3 text-sm leading-6 text-[#123128] outline-none placeholder:text-[#A0ADA7] transition focus:border-[#9ACCB0] focus:bg-white focus:ring-2 focus:ring-[#EAF7EF]"
+                                class="mt-3 w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm leading-6 text-slate-800 outline-none placeholder:text-slate-400 transition focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
                             >{{ old('reason') }}</textarea>
 
-                            <p class="mt-1.5 text-right text-[10px] text-[#A0ADA7]">
-                                Maksimal 5000 karakter
-                            </p>
-
+                            <div class="mt-1.5 flex justify-end">
+                                <p class="text-[10px] text-slate-400 sm:text-xs">
+                                    Maksimal 5000 karakter
+                                </p>
+                            </div>
                         </div>
 
-                        <div class="mt-5 rounded-2xl border border-[#DCE9E1] bg-[#F5FBF7] px-4 py-4">
-
+                        {{-- Information --}}
+                        <div class="mt-6 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-4 sm:mt-7 sm:px-5">
                             <div class="flex items-start gap-3">
 
-                                <i class="bi bi-info-circle mt-0.5 text-sm text-[#1E9E5A]"></i>
+                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white text-[#2563EB] shadow-sm">
+                                    <i class="bi bi-info-circle text-sm"></i>
+                                </div>
 
-                                <p class="text-[10px] leading-5 text-[#667D73]">
-                                    Setelah dispute dikirim, freelancer akan mendapat kesempatan
-                                    memberikan tanggapan sebelum kasus masuk ke tahap peninjauan admin.
-                                </p>
+                                <div>
+                                    <p class="text-xs font-semibold text-slate-700">
+                                        Bagaimana proses dispute?
+                                    </p>
+
+                                    <p class="mt-1 text-[11px] leading-5 text-slate-500 sm:text-xs sm:leading-5">
+                                        Setelah dispute dikirim, freelancer akan mendapat kesempatan
+                                        memberikan tanggapan sebelum kasus masuk ke tahap peninjauan admin.
+                                    </p>
+                                </div>
 
                             </div>
-
                         </div>
 
-                        <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        {{-- Actions --}}
+                        <div class="mt-6 flex flex-col-reverse gap-3 sm:mt-7 sm:flex-row sm:justify-end">
 
                             <a
                                 href="{{ route('client.orders.show', $order) }}"
-                                class="inline-flex h-11 items-center justify-center rounded-xl border border-[#DCE7E1] bg-white px-5 text-xs font-semibold text-[#52685F] transition hover:bg-[#F6FAF7]"
+                                class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 sm:h-12"
                             >
                                 Batal
                             </a>
 
                             <button
                                 type="submit"
-                                class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1E9E5A] px-5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0F6B3A]"
+                                class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md sm:h-12"
                             >
                                 <i class="bi bi-shield-exclamation"></i>
                                 Ajukan Dispute
@@ -212,11 +274,29 @@
                     </form>
 
                 </div>
-
             </section>
 
-        </div>
+            {{-- Bottom Note --}}
+            <div class="mt-5 flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:mt-6 sm:px-5">
 
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                    <i class="bi bi-lightbulb text-sm"></i>
+                </div>
+
+                <div>
+                    <p class="text-xs font-semibold text-slate-700">
+                        Tips
+                    </p>
+
+                    <p class="mt-1 text-[11px] leading-5 text-slate-500 sm:text-xs">
+                        Jelaskan kronologi secara singkat, sertakan bagian pekerjaan yang
+                        bermasalah, dan tuliskan penyelesaian yang kamu harapkan.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
     </div>
 
-</x-layouts.client>
+</x-layouts.marketplace>

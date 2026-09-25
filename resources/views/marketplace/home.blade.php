@@ -1,1488 +1,2282 @@
-<x-layouts.marketplace title="JASAIN - Marketplace Jasa">
+@php
 
-<style>
-    @keyframes jasainHeroUp {
-        from {
-            opacity: 0;
-            transform: translateY(18px);
-        }
+use Illuminate\Support\Facades\Schema;
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+/*
+|--------------------------------------------------------------------------
+| Safe collections
+|--------------------------------------------------------------------------
+*/
+
+$categories = collect($categories ?? []);
+$featuredServices = collect($featuredServices ?? []);
+$featuredFreelancers = collect($featuredFreelancers ?? []);
+$testimonials = collect($testimonials ?? []);
+
+/*
+|--------------------------------------------------------------------------
+| CMS Banners
+| Existing banner system is preserved.
+|--------------------------------------------------------------------------
+*/
+
+$cmsHeroBanners = collect();
+$cmsMiddleBanners = collect();
+$cmsBottomBanners = collect();
+
+if (
+    class_exists(\App\Models\Banner::class) &&
+    Schema::hasTable('banners')
+) {
+    try {
+        $today = now();
+
+        $baseBannerQuery = \App\Models\Banner::query()
+            ->where('is_active', true)
+            ->where(function ($query) use ($today) {
+                $query
+                    ->whereNull('starts_at')
+                    ->orWhere('starts_at', '<=', $today);
+            })
+            ->where(function ($query) use ($today) {
+                $query
+                    ->whereNull('ends_at')
+                    ->orWhere('ends_at', '>=', $today);
+            })
+            ->orderBy('sort_order')
+            ->orderByDesc('id');
+
+        $cmsHeroBanners = (clone $baseBannerQuery)
+            ->where('placement', 'hero')
+            ->get();
+
+        $cmsMiddleBanners = (clone $baseBannerQuery)
+            ->where('placement', 'middle')
+            ->get();
+
+        $cmsBottomBanners = (clone $baseBannerQuery)
+            ->where('placement', 'bottom')
+            ->get();
+
+    } catch (\Throwable $e) {
+        $cmsHeroBanners = collect();
+        $cmsMiddleBanners = collect();
+        $cmsBottomBanners = collect();
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Marketplace shortcuts
+|--------------------------------------------------------------------------
+*/
+
+$popularSearches = [
+    'Logo Design',
+    'Website',
+    'Video Editing',
+    'Social Media',
+    'Copywriting',
+    'AI Services',
+];
+
+$categoryIcons = [
+    'design' => 'bi-palette2',
+    'kreatif' => 'bi-brush',
+    'website' => 'bi-window',
+    'web' => 'bi-window',
+    'programming' => 'bi-code-slash',
+    'teknologi' => 'bi-cpu',
+    'video' => 'bi-camera-video',
+    'animation' => 'bi-play-circle',
+    'marketing' => 'bi-megaphone',
+    'social' => 'bi-share',
+    'writing' => 'bi-pencil-square',
+    'translation' => 'bi-translate',
+    'business' => 'bi-briefcase',
+    'consulting' => 'bi-lightbulb',
+    'ai' => 'bi-stars',
+];
+
+$defaultCategoryIcons = [
+    'bi-grid',
+    'bi-layers',
+    'bi-stars',
+    'bi-briefcase',
+    'bi-palette2',
+    'bi-code-slash',
+    'bi-megaphone',
+    'bi-camera-video',
+    'bi-pencil-square',
+    'bi-lightbulb',
+    'bi-cpu',
+    'bi-grid-3x3-gap',
+];
+
+$needShortcuts = [
+    [
+        'title' => 'Bangun Website',
+        'description' => 'Landing page, company profile, toko online, dan lainnya.',
+        'icon' => 'bi-window',
+        'url' => route('marketplace.search', ['q' => 'website']),
+    ],
+    [
+        'title' => 'Desain Kreatif',
+        'description' => 'Logo, branding, poster, presentasi, dan visual lainnya.',
+        'icon' => 'bi-palette2',
+        'url' => route('marketplace.search', ['q' => 'desain']),
+    ],
+    [
+        'title' => 'Video & Konten',
+        'description' => 'Editing video, reels, motion, dan kebutuhan konten.',
+        'icon' => 'bi-camera-video',
+        'url' => route('marketplace.search', ['q' => 'video editing']),
+    ],
+    [
+        'title' => 'Marketing',
+        'description' => 'Social media, SEO, iklan, dan strategi digital.',
+        'icon' => 'bi-megaphone',
+        'url' => route('marketplace.search', ['q' => 'marketing']),
+    ],
+];
+
+$howItWorks = [
+    [
+        'number' => '01',
+        'icon' => 'bi-search',
+        'title' => 'Cari kebutuhanmu',
+        'description' => 'Telusuri jasa atau proyek berdasarkan kategori dan kebutuhan.',
+    ],
+    [
+        'number' => '02',
+        'icon' => 'bi-chat-dots',
+        'title' => 'Diskusikan detail',
+        'description' => 'Hubungi freelancer dan sepakati kebutuhan pekerjaan.',
+    ],
+    [
+        'number' => '03',
+        'icon' => 'bi-check2-circle',
+        'title' => 'Kerja selesai',
+        'description' => 'Pantau proses, terima hasil, lalu selesaikan transaksi.',
+    ],
+];
+
+$benefits = [
+    [
+        'icon' => 'bi-grid-3x3-gap',
+        'title' => 'Banyak pilihan',
+        'description' => 'Beragam freelancer dan layanan dari berbagai bidang.',
+    ],
+    [
+        'icon' => 'bi-shield-check',
+        'title' => 'Transaksi lebih aman',
+        'description' => 'Alur pembayaran dan pekerjaan dibuat terstruktur.',
+    ],
+    [
+        'icon' => 'bi-chat-square-text',
+        'title' => 'Komunikasi jelas',
+        'description' => 'Diskusikan brief dan progres pekerjaan di dalam platform.',
+    ],
+];
+
+/*
+|--------------------------------------------------------------------------
+| Featured category
+|--------------------------------------------------------------------------
+*/
+
+$featuredCategory = $categories->first(function ($category) {
+
+    $text = strtolower(
+        trim(
+            (string) data_get($category, 'name', '')
+            . ' '
+            . (string) data_get($category, 'slug', '')
+        )
+    );
+
+    return str_contains($text, 'web')
+        || str_contains($text, 'program')
+        || str_contains($text, 'teknologi');
+
+}) ?? $categories->first();
+
+$featuredCategoryName = data_get(
+    $featuredCategory,
+    'name',
+    'Jasa Profesional'
+);
+
+$featuredCategorySlug = data_get(
+    $featuredCategory,
+    'slug'
+);
+
+/*
+|--------------------------------------------------------------------------
+| Helpers for service/freelancer cards
+|--------------------------------------------------------------------------
+*/
+
+$getMediaUrl = function ($path) {
+
+    if (!$path) {
+        return null;
     }
 
-    @keyframes jasainSoftFloat {
-        0%,
-        100% {
-            transform: translateY(0);
-        }
+    $path = ltrim((string) $path, '/');
 
-        50% {
-            transform: translateY(-5px);
-        }
+    if (
+        str_starts_with($path, 'http://') ||
+        str_starts_with($path, 'https://') ||
+        str_starts_with($path, 'data:')
+    ) {
+        return $path;
     }
 
-    .jasain-hero-up {
-        animation: jasainHeroUp .7s ease-out both;
-    }
+    return asset('storage/' . $path);
+};
 
-    .jasain-hero-up-delay {
-        animation: jasainHeroUp .7s .12s ease-out both;
-    }
-
-    .jasain-hero-up-delay-2 {
-        animation: jasainHeroUp .7s .24s ease-out both;
-    }
-
-    .jasain-soft-float {
-        animation: jasainSoftFloat 4s ease-in-out infinite;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | HERO
-    |--------------------------------------------------------------------------
-    */
-
-    .jasain-hero {
-        position: relative;
-        overflow: hidden;
-        background: #0F6B3A;
-    }
-
-    .jasain-hero-image {
-        position: absolute;
-        inset: 0;
-        z-index: 0;
-        overflow: hidden;
-    }
-
-    .jasain-hero-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: 72% center;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | GREEN BLEND
-    |--------------------------------------------------------------------------
-    */
-
-    .jasain-hero-image::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        background:
-            linear-gradient(
-                90deg,
-                #0F6B3A 0%,
-                #0F6B3A 22%,
-                rgba(15, 107, 58, 0.98) 30%,
-                rgba(15, 107, 58, 0.86) 38%,
-                rgba(15, 107, 58, 0.58) 47%,
-                rgba(15, 107, 58, 0.23) 58%,
-                rgba(15, 107, 58, 0.03) 68%,
-                transparent 76%
-            );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | BOTTOM BLEND
-    |--------------------------------------------------------------------------
-    */
-
-    .jasain-hero-bottom {
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: 24%;
-        z-index: 2;
-        pointer-events: none;
-        background:
-            linear-gradient(
-                to top,
-                rgba(15, 107, 58, 0.42),
-                transparent
-            );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | TABLET
-    |--------------------------------------------------------------------------
-    */
-
-    @media (max-width: 1023px) {
-        .jasain-hero-image img {
-            object-position: 68% center;
-        }
-
-        .jasain-hero-image::after {
-            background:
-                linear-gradient(
-                    90deg,
-                    #0F6B3A 0%,
-                    #0F6B3A 19%,
-                    rgba(15, 107, 58, 0.96) 29%,
-                    rgba(15, 107, 58, 0.72) 41%,
-                    rgba(15, 107, 58, 0.28) 56%,
-                    transparent 70%
-                );
-        }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | MOBILE
-    |--------------------------------------------------------------------------
-    */
-
-    @media (max-width: 767px) {
-        .jasain-hero {
-            background: #0F6B3A;
-        }
-
-        .jasain-hero-image {
-            position: relative;
-            inset: auto;
-            height: 360px;
-            margin-top: 6px;
-        }
-
-        .jasain-hero-image img {
-            height: 100%;
-            object-position: 62% center;
-        }
-
-        .jasain-hero-image::after {
-            background:
-                linear-gradient(
-                    to bottom,
-                    #0F6B3A 0%,
-                    #0F6B3A 5%,
-                    rgba(15, 107, 58, 0.88) 18%,
-                    rgba(15, 107, 58, 0.40) 35%,
-                    rgba(15, 107, 58, 0.10) 52%,
-                    rgba(15, 107, 58, 0.38) 72%,
-                    #0F6B3A 100%
-                );
-        }
-
-        .jasain-hero-bottom {
-            display: none;
-        }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | REDUCED MOTION
-    |--------------------------------------------------------------------------
-    */
-
-    @media (prefers-reduced-motion: reduce) {
-        .jasain-hero-up,
-        .jasain-hero-up-delay,
-        .jasain-hero-up-delay-2,
-        .jasain-soft-float {
-            animation: none;
-        }
-    }
-</style>
+@endphp
 
 
-{{-- =========================================================
-    HERO
-========================================================== --}}
+<x-layouts.marketplace title="ProKerja - Marketplace Jasa">
 
-<section class="jasain-hero">
-
-    {{-- =====================================================
-        HERO BACKGROUND IMAGE
-    ====================================================== --}}
-
-    <div class="jasain-hero-image">
-
-        <img
-            src="{{ asset('images/ImagesHero.png') }}"
-            alt="Freelancer JASAIN sedang bekerja"
-        >
-
-        <div class="jasain-hero-bottom"></div>
-
-    </div>
+<div class="min-h-screen bg-slate-50 text-slate-900">
 
 
-    {{-- =====================================================
-        DECORATIVE ELEMENTS
-    ====================================================== --}}
+    {{-- =========================================================
+        SEARCH-FIRST INTRO
+    ========================================================== --}}
 
-    <div
-        class="pointer-events-none absolute -left-40 -top-40 z-[1] h-[520px] w-[520px] rounded-full bg-[#1E9E5A]/20"
-    ></div>
+    <section class="border-b border-slate-200 bg-white">
 
-    <div
-        class="pointer-events-none absolute -right-32 -top-28 z-[1] h-[380px] w-[380px] rounded-full border-[75px] border-[#7AD8B5]/10"
-    ></div>
+        <div class="mx-auto max-w-[1280px] px-4 pb-8 pt-7 sm:px-6 sm:pb-10 sm:pt-10 lg:px-8 lg:pb-12 lg:pt-12">
 
+            <div class="mx-auto max-w-4xl text-center">
 
-    {{-- =====================================================
-        CONTENT
-    ====================================================== --}}
+                <h4 class="pk-home-reveal text-xs font-medium uppercase tracking-[0.16em] text-blue-600 sm:text-sm">
+                    Temukan Freelancer
+                </h4>
 
-    <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        <div
-            class="grid min-h-[calc(100vh-72px)] items-center pt-[96px] pb-8 sm:pt-[104px] lg:grid-cols-[0.92fr_1.08fr] lg:gap-6 lg:py-16"
-        >
-
-            {{-- =================================================
-                LEFT CONTENT
-            ================================================== --}}
-
-            <div class="max-w-2xl">
-
-                {{-- Heading --}}
-
-                <h1
-                    class="jasain-hero-up mt-5 max-w-xl text-[38px] font-semibold leading-[1.07] tracking-[-0.045em] text-white sm:mt-6 sm:text-5xl lg:text-[58px]"
-                >
-                    Wujudkan ide,
-
-                    <span class="block text-[#7AD8B5]">
-                        temukan talent terbaik.
+                <h4 class="pk-home-reveal mt-3 min-h-[76px] text-[32px] font-medium leading-[1.12] tracking-[-0.035em] text-slate-900 sm:min-h-[96px] sm:text-5xl lg:min-h-[108px] lg:text-[56px]">
+                    Temukan solusi untuk...
+                    <span class="mt-1 block font-medium text-blue-600">
+                        <span id="pk-typing-text" class="inline-block"></span><span
+                            id="pk-typing-cursor"
+                            class="ml-0.5 inline-block h-[0.82em] w-[2px] translate-y-[2px] bg-blue-600 align-middle"
+                        ></span>
                     </span>
-                </h1>
+                </h2>
 
-
-                {{-- Description --}}
-
-                <p
-                    class="jasain-hero-up-delay mt-5 max-w-xl text-sm leading-6 text-white/72 sm:mt-6 sm:text-base sm:leading-8"
-                >
-                    Temukan freelancer profesional dari berbagai bidang
-                    untuk membantu kebutuhan personal, bisnis maupun proyekmu.
+                <p class="pk-home-reveal mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-[15px] sm:leading-7">
+                    Temukan talenta terbaik untuk membantu mewujudkan ide dan pekerjaanmu.
                 </p>
-
-
-                {{-- =================================================
-                    SEARCH
-                ================================================== --}}
 
                 <form
                     action="{{ route('marketplace.search') }}"
                     method="GET"
-                    class="jasain-hero-up-delay-2 mt-7 sm:mt-8"
+                    class="pk-home-reveal mx-auto mt-6 max-w-3xl"
                 >
 
-                    <div
-                        class="max-w-[650px] rounded-2xl bg-white p-2 shadow-[0_22px_60px_rgba(0,0,0,0.16)]"
-                    >
+                    <div class="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_10px_35px_rgba(15,23,42,0.07)] sm:flex-row sm:rounded-[18px]">
 
-                        <div
-                            class="flex flex-col sm:flex-row sm:items-center"
-                        >
+                        <div class="relative min-w-0 flex-1">
 
-                            {{-- Input --}}
+                            <i class="bi bi-search pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[17px] text-slate-400"></i>
 
-                            <div
-                                class="flex min-w-0 flex-1 items-center gap-3 px-3 sm:px-4"
+                            <input
+                                type="text"
+                                name="q"
+                                value="{{ request('q') }}"
+                                autocomplete="off"
+                                placeholder="Cari jasa, keahlian, atau freelancer..."
+                                class="h-12 w-full rounded-xl border-0 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-800 outline-none ring-0 placeholder:text-slate-400 focus:bg-blue-50/60 focus:outline-none sm:h-[52px]"
                             >
-
-                                <i
-                                    class="bi bi-search shrink-0 text-lg text-[#0F6B3A]"
-                                ></i>
-
-                                <input
-                                    type="text"
-                                    name="q"
-                                    value="{{ request('q') }}"
-                                    placeholder="Cari jasa, keahlian, atau freelancer..."
-                                    class="w-full border-0 bg-transparent py-3 text-sm text-[#123128] outline-none placeholder:text-slate-400 focus:border-0 focus:ring-0 sm:text-[15px]"
-                                >
-
-                            </div>
-
-
-                            {{-- Search Button --}}
-
-                            <button
-                                type="submit"
-                                class="mt-2 inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#1E9E5A] px-6 text-sm font-semibold text-white transition duration-200 hover:bg-[#0F6B3A] sm:mt-0 sm:w-auto"
-                            >
-                                Cari Sekarang
-
-                                <i class="bi bi-arrow-right"></i>
-                            </button>
 
                         </div>
+
+                        <button
+                            type="submit"
+                            class="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white transition duration-200 hover:bg-blue-700 active:scale-[0.99] sm:h-[52px] sm:min-w-[112px]"
+                        >
+                            Cari
+                            <i class="bi bi-arrow-right text-xs"></i>
+                        </button>
 
                     </div>
 
                 </form>
 
+                <div class="pk-home-reveal mt-5">
 
-                {{-- =================================================
-                    POPULAR KEYWORDS
-                ================================================== --}}
+                    <div class="flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
 
-                <div class="mt-5 overflow-x-auto pb-1">
-
-                    <div class="flex min-w-max items-center gap-2">
-
-                        <span class="mr-1 text-xs text-white/50 sm:text-sm">
+                        <span class="shrink-0 text-xs font-semibold text-slate-400">
                             Populer:
                         </span>
 
-                        @foreach ([
-                            'Logo',
-                            'Website',
-                            'UI/UX',
-                            'Video Editing',
-                            'SEO'
-                        ] as $keyword)
+                        <div class="no-scrollbar flex w-full max-w-full gap-2 overflow-x-auto pb-1 sm:w-auto sm:flex-wrap sm:justify-center sm:overflow-visible">
+
+                            @foreach ($popularSearches as $popular)
+
+                                <a
+                                    href="{{ route('marketplace.search', ['q' => $popular]) }}"
+                                    class="shrink-0 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                >
+                                    {{ $popular }}
+                                </a>
+
+                            @endforeach
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    {{-- =========================================================
+        CATEGORY
+    ========================================================== --}}
+
+    <section
+        id="kategori"
+        class="scroll-mt-24 bg-slate-50 py-8 sm:py-10 lg:py-12"
+    >
+
+        <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+
+            <div class="flex items-end justify-between gap-4">
+
+                <div class="pk-home-reveal min-w-0">
+
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600 sm:text-xs">
+                        Jelajahi kategori
+                    </p>
+
+                    <h2 class="mt-1.5 text-[22px] font-bold tracking-[-0.025em] text-slate-900 sm:text-2xl">
+                        Cari berdasarkan kebutuhan
+                    </h2>
+
+                    <p class="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500">
+                        Temukan layanan dari berbagai bidang dalam satu marketplace.
+                    </p>
+
+                </div>
+
+
+                <a
+                    href="{{ route('marketplace.search') }}"
+                    class="hidden shrink-0 items-center gap-1.5 text-xs font-semibold text-blue-600 transition hover:text-blue-700 sm:inline-flex"
+                >
+                    Lihat semua
+                    <i class="bi bi-arrow-right text-[10px]"></i>
+                </a>
+
+            </div>
+
+
+            {{-- Mobile horizontal categories --}}
+
+            <div class="pk-home-reveal mt-5 sm:hidden">
+
+                <div class="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
+
+                    @forelse ($categories->take(12) as $index => $category)
+
+                        @php
+
+                            $categoryName = data_get(
+                                $category,
+                                'name',
+                                'Kategori'
+                            );
+
+                            $categorySlug = data_get(
+                                $category,
+                                'slug'
+                            );
+
+                            $categoryKey = strtolower(
+                                (string) $categoryName
+                                . ' '
+                                . (string) $categorySlug
+                            );
+
+                            $icon = 'bi-grid';
+
+                            foreach ($categoryIcons as $keyword => $iconClass) {
+
+                                if (
+                                    str_contains(
+                                        $categoryKey,
+                                        $keyword
+                                    )
+                                ) {
+                                    $icon = $iconClass;
+                                    break;
+                                }
+
+                            }
+
+                            if ($icon === 'bi-grid') {
+                                $icon = $defaultCategoryIcons[
+                                    $index % count($defaultCategoryIcons)
+                                ];
+                            }
+
+                        @endphp
+
+
+                        @if ($categorySlug)
 
                             <a
-                                href="{{ route('marketplace.search', ['q' => $keyword]) }}"
-                                class="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs text-white/75 transition hover:border-white/20 hover:bg-white/15 hover:text-white sm:text-sm"
+                                href="{{ route('marketplace.category', ['slug' => $categorySlug]) }}"
+                                class="group min-w-[132px] snap-start rounded-2xl border border-slate-200 bg-white p-3.5 transition duration-200 active:scale-[0.98]"
                             >
-                                {{ $keyword }}
+
+                                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                                    <i class="bi {{ $icon }} text-[16px]"></i>
+                                </span>
+
+                                <span class="mt-3 block truncate text-xs font-semibold text-slate-800">
+                                    {{ $categoryName }}
+                                </span>
+
+                                <span class="mt-1 block text-[10px] text-slate-400">
+                                    Jelajahi jasa
+                                </span>
+
                             </a>
+
+                        @endif
+
+                    @empty
+
+                        <div class="w-full rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-400">
+                            Belum ada kategori tersedia.
+                        </div>
+
+                    @endforelse
+
+                </div>
+
+            </div>
+
+
+            {{-- Desktop / tablet category grid --}}
+
+            <div class="pk-home-reveal mt-6 hidden grid-cols-3 gap-4 sm:grid md:grid-cols-4 lg:grid-cols-6">
+
+                @forelse ($categories->take(12) as $index => $category)
+
+                    @php
+
+                        $categoryName = data_get(
+                            $category,
+                            'name',
+                            'Kategori'
+                        );
+
+                        $categorySlug = data_get(
+                            $category,
+                            'slug'
+                        );
+
+                        $categoryKey = strtolower(
+                            (string) $categoryName
+                            . ' '
+                            . (string) $categorySlug
+                        );
+
+                        $icon = 'bi-grid';
+
+                        foreach ($categoryIcons as $keyword => $iconClass) {
+
+                            if (
+                                str_contains(
+                                    $categoryKey,
+                                    $keyword
+                                )
+                            ) {
+                                $icon = $iconClass;
+                                break;
+                            }
+
+                        }
+
+                        if ($icon === 'bi-grid') {
+                            $icon = $defaultCategoryIcons[
+                                $index % count($defaultCategoryIcons)
+                            ];
+                        }
+
+                    @endphp
+
+
+                    @if ($categorySlug)
+
+                        <a
+                            href="{{ route('marketplace.category', ['slug' => $categorySlug]) }}"
+                            class="group rounded-2xl border border-slate-200 bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_10px_25px_rgba(15,23,42,0.06)]"
+                        >
+
+                            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition group-hover:bg-blue-100">
+                                <i class="bi {{ $icon }} text-[17px]"></i>
+                            </span>
+
+                            <span class="mt-4 block truncate text-sm font-semibold text-slate-800">
+                                {{ $categoryName }}
+                            </span>
+
+                            <span class="mt-1 block text-xs text-slate-400">
+                                Jelajahi jasa
+                            </span>
+
+                        </a>
+
+                    @endif
+
+                @empty
+
+                    <div class="col-span-full rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-400">
+                        Belum ada kategori tersedia.
+                    </div>
+
+                @endforelse
+
+            </div>
+
+
+            <a
+                href="{{ route('marketplace.search') }}"
+                class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-600 sm:hidden"
+            >
+                Lihat semua kategori
+                <i class="bi bi-arrow-right text-[10px]"></i>
+            </a>
+
+        </div>
+
+    </section>
+
+
+
+    {{-- =========================================================
+    CMS HERO / PROMOTION BANNER
+    Smooth cross-fade + natural uploaded image ratio
+========================================================== --}}
+
+@if ($cmsHeroBanners->isNotEmpty())
+
+    <section class="bg-slate-50 pb-8 sm:pb-10 lg:pb-12">
+
+        <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+
+            <div
+                x-data='{
+                    active: 0,
+                    paused: false,
+                    count: {{ $cmsHeroBanners->count() }},
+                    slideHeight: null,
+                    timer: null,
+
+                    measureHeight() {
+                        const slide = this.$refs.slides?.children[this.active];
+
+                        if (!slide) {
+                            return;
+                        }
+
+                        const image = slide.querySelector("img");
+
+                        if (image) {
+
+                            const update = () => {
+
+                                const height =
+                                    image.getBoundingClientRect().height;
+
+                                if (height > 0) {
+                                    this.slideHeight =
+                                        Math.round(height) + "px";
+                                }
+
+                            };
+
+                            if (
+                                image.complete &&
+                                image.naturalWidth > 0
+                            ) {
+                                update();
+                            } else {
+                                image.addEventListener(
+                                    "load",
+                                    update,
+                                    { once: true }
+                                );
+                            }
+
+                            return;
+                        }
+
+                        const fallback =
+                            slide.querySelector("[data-banner-fallback]");
+
+                        if (fallback) {
+
+                            const height =
+                                fallback.getBoundingClientRect().height;
+
+                            if (height > 0) {
+                                this.slideHeight =
+                                    Math.round(height) + "px";
+                            }
+
+                        }
+                    },
+
+                    goTo(index) {
+
+                        if (
+                            index < 0 ||
+                            index >= this.count
+                        ) {
+                            return;
+                        }
+
+                        this.active = index;
+
+                        this.$nextTick(() => {
+                            this.measureHeight();
+                        });
+                    },
+
+                    next() {
+                        this.goTo(
+                            (this.active + 1) % this.count
+                        );
+                    },
+
+                    previous() {
+                        this.goTo(
+                            this.active === 0
+                                ? this.count - 1
+                                : this.active - 1
+                        );
+                    }
+                }'
+
+                x-init='
+                    $nextTick(() => {
+
+                        setTimeout(() => {
+                            measureHeight();
+                        }, 100);
+
+                        window.addEventListener(
+                            "resize",
+                            () => measureHeight()
+                        );
+
+                    });
+
+                    if (count > 1) {
+
+                        timer = setInterval(() => {
+
+                            if (!paused) {
+                                next();
+                            }
+
+                        }, 6500);
+
+                    }
+                '
+
+                @mouseenter="paused = true"
+                @mouseleave="paused = false"
+
+                class="pk-home-reveal relative overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.06)] sm:rounded-3xl"
+            >
+
+                {{-- =================================================
+                    DYNAMIC HEIGHT WRAPPER
+                ================================================== --}}
+
+                <div
+                    x-ref="slider"
+                    class="relative min-h-[120px] overflow-hidden transition-[height] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] sm:min-h-[170px]"
+                    :style="slideHeight ? { height: slideHeight } : null"
+                >
+
+                    {{-- =================================================
+                        SLIDES
+                    ================================================== --}}
+
+                    <div
+                        x-ref="slides"
+                        class="absolute inset-0"
+                    >
+
+                        @foreach ($cmsHeroBanners as $index => $banner)
+
+                            @php
+
+                                $desktopImage =
+                                    method_exists(
+                                        $banner,
+                                        'getImageUrlAttribute'
+                                    )
+                                        ? $banner->image_url
+                                        : $getMediaUrl(
+                                            $banner->image_path ?? null
+                                        );
+
+                                $mobileImage =
+                                    method_exists(
+                                        $banner,
+                                        'getMobileImageUrlAttribute'
+                                    )
+                                        ? (
+                                            $banner->mobile_image_url
+                                            ?: $desktopImage
+                                        )
+                                        : $getMediaUrl(
+                                            $banner->mobile_image_path ?? null
+                                        );
+
+                                $mobileImage =
+                                    $mobileImage
+                                    ?: $desktopImage;
+
+                                $bannerLink =
+                                    $banner->link_url ?? null;
+
+                                $bannerAlt =
+                                    $banner->alt_text
+                                    ?? (
+                                        $banner->name
+                                        ?? 'Banner ProKerja'
+                                    );
+
+                                $bannerName =
+                                    $banner->name
+                                    ?? 'ProKerja';
+
+                            @endphp
+
+
+                            <div
+                                class="absolute inset-x-0 top-0 w-full transform-gpu transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                                :class="
+                                    active === {{ $index }}
+                                        ? 'z-10 translate-y-0 scale-100 opacity-100'
+                                        : 'z-0 translate-y-0 scale-[1.008] opacity-0 pointer-events-none'
+                                "
+                                aria-hidden="{{ $index === 0 ? 'false' : 'true' }}"
+                            >
+
+                                @if ($bannerLink)
+
+                                    <a
+                                        href="{{ $bannerLink }}"
+                                        @if ($banner->open_new_tab ?? false)
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        @endif
+                                        class="block w-full"
+                                    >
+
+                                @endif
+
+
+                                @if ($desktopImage)
+
+                                    <picture class="block w-full">
+
+                                        @if ($mobileImage)
+
+                                            <source
+                                                media="(max-width: 639px)"
+                                                srcset="{{ $mobileImage }}"
+                                            >
+
+                                        @endif
+
+
+                                        <img
+                                            src="{{ $desktopImage }}"
+                                            alt="{{ $bannerAlt }}"
+                                            class="block h-auto w-full max-w-none object-contain"
+                                            loading="{{ $index === 0 ? 'eager' : 'lazy' }}"
+                                            draggable="false"
+                                            @load="
+                                                if (active === {{ $index }}) {
+                                                    measureHeight();
+                                                }
+                                            "
+                                        >
+
+                                    </picture>
+
+
+                                @else
+
+                                    <div
+                                        data-banner-fallback
+                                        class="flex min-h-[120px] w-full items-center bg-blue-50 px-5 py-10 sm:min-h-[170px] sm:px-10 sm:py-12"
+                                    >
+
+                                        <div class="max-w-xl">
+
+                                            <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-600">
+                                                ProKerja
+                                            </p>
+
+                                            <h3 class="mt-2 text-xl font-bold text-slate-900 sm:text-3xl">
+                                                {{ $bannerName }}
+                                            </h3>
+
+                                        </div>
+
+                                    </div>
+
+                                @endif
+
+
+                                @if ($bannerLink)
+
+                                    </a>
+
+                                @endif
+
+                            </div>
 
                         @endforeach
 
                     </div>
 
-                </div>
 
+                    {{-- =================================================
+                        CONTROLS
+                    ================================================== --}}
 
-                {{-- =================================================
-                    STATS
-                ================================================== --}}
+                    @if ($cmsHeroBanners->count() > 1)
 
-                <div
-                    class="mt-8 grid max-w-[650px] grid-cols-3 border-t border-white/10 pt-6 sm:mt-10 sm:pt-7"
-                >
+                        <div class="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end justify-between p-3 sm:p-4">
 
-                    {{-- Total Services --}}
+                            {{-- Previous --}}
 
-                    <div class="pr-3">
+                            <button
+                                type="button"
+                                @click="previous()"
+                                class="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-xl border border-white/60 bg-white/90 text-slate-700 shadow-sm backdrop-blur transition duration-200 hover:bg-white hover:shadow-md active:scale-95"
+                                aria-label="Banner sebelumnya"
+                            >
+                                <i class="bi bi-chevron-left text-xs"></i>
+                            </button>
 
-                        <div class="text-lg font-semibold text-white sm:text-2xl">
-                            {{ number_format($totalServices, 0, ',', '.') }}
-                        </div>
 
-                        <div
-                            class="mt-1 text-[10px] leading-4 text-white/50 sm:text-xs"
-                        >
-                            Layanan tersedia
-                        </div>
+                            {{-- Dots --}}
 
-                    </div>
+                            <div class="pointer-events-auto flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-2 shadow-sm backdrop-blur">
 
+                                @foreach ($cmsHeroBanners as $index => $banner)
 
-                    {{-- Total Freelancers --}}
+                                    <button
+                                        type="button"
+                                        @click="goTo({{ $index }})"
+                                        class="h-1.5 rounded-full transition-all duration-500"
+                                        :class="
+                                            active === {{ $index }}
+                                                ? 'w-5 bg-blue-600'
+                                                : 'w-1.5 bg-slate-300 hover:bg-slate-400'
+                                        "
+                                        aria-label="Ke banner {{ $index + 1 }}"
+                                    ></button>
 
-                    <div
-                        class="border-l border-white/10 px-3"
-                    >
-
-                        <div class="text-lg font-semibold text-white sm:text-2xl">
-                            {{ number_format($totalFreelancers, 0, ',', '.') }}
-                        </div>
-
-                        <div
-                            class="mt-1 text-[10px] leading-4 text-white/50 sm:text-xs"
-                        >
-                            Freelancer
-                        </div>
-
-                    </div>
-
-
-                    {{-- Average Rating --}}
-
-                    <div
-                        class="border-l border-white/10 pl-3"
-                    >
-
-                        <div class="text-lg font-semibold text-white sm:text-2xl">
-                            {{ number_format($averageRating, 1, ',', '.') }}/5
-                        </div>
-
-                        <div
-                            class="mt-1 text-[10px] leading-4 text-white/50 sm:text-xs"
-                        >
-                            Rata-rata rating
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            {{-- =================================================
-                EMPTY GRID COLUMN
-                Background image sudah mengisi seluruh hero.
-            ================================================== --}}
-
-            <div class="hidden lg:block"></div>
-
-        </div>
-
-
-        {{-- =====================================================
-            FLOATING CARD 1
-        ====================================================== --}}
-
-        <div
-            class="jasain-soft-float absolute right-[14%] top-[80px] z-20 hidden rounded-2xl border border-[#DCEFE4] bg-white px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.14)] lg:block"
-        >
-
-            <div class="flex items-center gap-3">
-
-                <div
-                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#0F6B3A]"
-                >
-                    <i class="bi bi-shield-check text-lg"></i>
-                </div>
-
-                <div>
-
-                    <div class="text-[11px] text-[#789088]">
-                        Proses aman
-                    </div>
-
-                    <div class="mt-0.5 text-xs font-semibold text-[#123128]">
-                        Transaksi terjamin
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- =====================================================
-            FLOATING CARD 2
-        ====================================================== --}}
-
-        <div
-            class="absolute bottom-[58px] right-[14%] z-20 hidden rounded-2xl border border-[#DCEFE4] bg-white px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.14)] lg:block"
-        >
-
-            <div class="flex items-center gap-3">
-
-                <div
-                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0F6B3A] text-white"
-                >
-                    <i class="bi bi-briefcase"></i>
-                </div>
-
-                <div>
-
-                    <div class="text-[11px] text-[#789088]">
-                        Banyak pilihan
-                    </div>
-
-                    <div class="mt-0.5 text-xs font-semibold text-[#123128]">
-                        Berbagai kategori jasa
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-{{-- =========================================================
-    CATEGORY
-========================================================== --}}
-
-<section class="bg-[#F8FCF9] py-14 sm:py-20">
-
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        <div
-            class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
-        >
-
-            <div>
-
-                <span class="text-sm font-semibold text-[#1E9E5A]">
-                    Jelajahi kategori
-                </span>
-
-                <h2
-                    class="mt-2 text-2xl font-semibold tracking-tight text-[#123128] sm:text-3xl"
-                >
-                    Cari jasa berdasarkan kebutuhan
-                </h2>
-
-                <p
-                    class="mt-3 max-w-2xl text-sm leading-6 text-[#667D73] sm:text-base"
-                >
-                    Temukan berbagai layanan dari freelancer
-                    profesional dalam satu tempat.
-                </p>
-
-            </div>
-
-
-            <a
-                href="{{ route('marketplace.search') }}"
-                class="inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#0F6B3A] transition hover:text-[#1E9E5A]"
-            >
-                Lihat semua
-
-                <i class="bi bi-arrow-right"></i>
-            </a>
-
-        </div>
-
-
-        <div
-            class="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6"
-        >
-
-            @forelse ($categories->take(6) as $category)
-
-                @php
-
-                    $categoryIcons = [
-
-                        'desain' => 'bi-palette2',
-
-                        'website' => 'bi-window',
-
-                        'teknologi' => 'bi-code-slash',
-
-                        'video' => 'bi-camera-video',
-
-                        'marketing' => 'bi-megaphone',
-
-                        'penulisan' => 'bi-pencil',
-
-                    ];
-
-                    $categoryName = strtolower($category->name);
-
-                    $icon = 'bi-grid';
-
-                    foreach ($categoryIcons as $keyword => $categoryIcon) {
-
-                        if (str_contains($categoryName, $keyword)) {
-
-                            $icon = $categoryIcon;
-
-                            break;
-                        }
-                    }
-
-                @endphp
-
-
-                <a
-                    href="{{ route('marketplace.category', $category->slug) }}"
-                    class="group rounded-2xl border border-[#DCEDE3] bg-white p-4 transition duration-300 hover:-translate-y-1 hover:border-[#B9DDC8] hover:shadow-[0_16px_32px_rgba(15,107,58,0.06)] sm:p-5"
-                >
-
-                    <div
-                        class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF7EF] text-lg text-[#0F6B3A] transition duration-300 group-hover:bg-[#0F6B3A] group-hover:text-white sm:h-12 sm:w-12"
-                    >
-                        <i class="bi {{ $icon }}"></i>
-                    </div>
-
-
-                    <h3
-                        class="mt-4 line-clamp-2 text-sm font-semibold leading-5 text-[#123128]"
-                    >
-                        {{ $category->name }}
-                    </h3>
-
-
-                    <div
-                        class="mt-1 text-[11px] text-[#8A9B94] sm:text-xs"
-                    >
-                        {{ $category->subcategories_count ?? 0 }} subkategori
-                    </div>
-
-                </a>
-
-            @empty
-
-                <div
-                    class="col-span-full rounded-2xl border border-dashed border-[#CFE1D6] bg-white px-6 py-12 text-center"
-                >
-
-                    <div
-                        class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EAF7EF] text-[#0F6B3A]"
-                    >
-                        <i class="bi bi-grid"></i>
-                    </div>
-
-                    <h3
-                        class="mt-4 text-sm font-semibold text-[#123128]"
-                    >
-                        Belum ada kategori
-                    </h3>
-
-                    <p
-                        class="mt-2 text-xs leading-5 text-[#81918B]"
-                    >
-                        Kategori layanan akan muncul di sini.
-                    </p>
-
-                </div>
-
-            @endforelse
-
-        </div>
-
-    </div>
-
-</section>
-
-
-{{-- =========================================================
-    FEATURED SERVICES
-========================================================== --}}
-
-<section class="bg-white py-14 sm:py-20">
-
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        <div
-            class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
-        >
-
-            <div>
-
-                <span class="text-sm font-semibold text-[#1E9E5A]">
-                    Layanan pilihan
-                </span>
-
-                <h2
-                    class="mt-2 text-2xl font-semibold tracking-tight text-[#123128] sm:text-3xl"
-                >
-                    Jasa yang mungkin kamu butuhkan
-                </h2>
-
-                <p
-                    class="mt-3 max-w-2xl text-sm leading-6 text-[#667D73] sm:text-base"
-                >
-                    Pilihan layanan dari freelancer yang siap
-                    membantu kebutuhanmu.
-                </p>
-
-            </div>
-
-
-            <a
-                href="{{ route('marketplace.search') }}"
-                class="inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#0F6B3A] transition hover:text-[#1E9E5A]"
-            >
-                Lihat semua jasa
-
-                <i class="bi bi-arrow-right"></i>
-            </a>
-
-        </div>
-
-
-        <div
-            class="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4"
-        >
-
-            @forelse ($featuredServices as $service)
-
-                @php
-
-                    $freelancer = $service->freelancerProfile;
-
-                    $freelancerUser = $freelancer?->user;
-
-                    $avatar = $freelancer?->avatar
-                        ? asset('storage/' . $freelancer->avatar)
-                        : null;
-
-                    $serviceRating = (float) ($service->rating ?? 0);
-
-                    $serviceReviews = (int) (
-                        $service->reviews_count ?? 0
-                    );
-
-                    $serviceOrders = (int) (
-                        $service->orders_count ?? 0
-                    );
-
-                    $servicePrice = (float) (
-                        $service->starting_price ?? 0
-                    );
-
-                    $serviceTitle = $service->title
-                        ?: 'Layanan freelancer';
-
-                @endphp
-
-
-                <article
-                    class="group overflow-hidden rounded-2xl border border-[#E1EDE6] bg-white transition duration-300 hover:-translate-y-1 hover:border-[#BFDCCA] hover:shadow-[0_18px_38px_rgba(15,107,58,0.07)]"
-                >
-
-                    {{-- Thumbnail --}}
-
-                    <a
-                        href="{{ route('marketplace.service', $service->slug) }}"
-                        class="block"
-                    >
-
-                        <div
-                            class="relative aspect-[4/3] overflow-hidden bg-[#EAF7EF]"
-                        >
-
-                            @if ($service->thumbnail)
-
-                                <img
-                                    src="{{ asset('storage/' . $service->thumbnail) }}"
-                                    alt="{{ $serviceTitle }}"
-                                    loading="lazy"
-                                    class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.035]"
-                                >
-
-                            @else
-
-                                <div
-                                    class="flex h-full items-center justify-center bg-gradient-to-br from-[#EAF7EF] via-[#D7F2E3] to-[#C2E8D0]"
-                                >
-
-                                    <div
-                                        class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/85 text-2xl text-[#0F6B3A] shadow-sm"
-                                    >
-                                        <i class="bi bi-briefcase"></i>
-                                    </div>
-
-                                </div>
-
-                            @endif
-
-
-                            @if ($service->is_featured)
-
-                                <div class="absolute left-3 top-3">
-
-                                    <span
-                                        class="inline-flex items-center gap-1.5 rounded-full bg-[#0F6B3A] px-3 py-1.5 text-[10px] font-semibold text-white shadow-sm"
-                                    >
-
-                                        <i class="bi bi-stars"></i>
-
-                                        Pilihan
-
-                                    </span>
-
-                                </div>
-
-                            @endif
-
-                        </div>
-
-                    </a>
-
-
-                    {{-- Content --}}
-
-                    <div class="p-4 sm:p-5">
-
-                        <div
-                            class="flex items-start justify-between gap-3"
-                        >
-
-                            <div class="min-w-0">
-
-                                <a
-                                    href="{{ route('marketplace.service', $service->slug) }}"
-                                    class="block"
-                                >
-
-                                    <div
-                                        class="flex flex-wrap items-center gap-2 text-[10px] text-[#8A9B94] sm:text-[11px]"
-                                    >
-
-                                        @if ($service->category)
-
-                                            <span>
-                                                {{ $service->category->name }}
-                                            </span>
-
-                                        @endif
-
-
-                                        @if ($service->delivery_days)
-
-                                            <span>•</span>
-
-                                            <span>
-                                                {{ $service->delivery_days }} hari
-                                            </span>
-
-                                        @endif
-
-                                    </div>
-
-
-                                    <h3
-                                        class="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-[#123128] transition group-hover:text-[#0F6B3A] sm:text-[15px]"
-                                    >
-                                        {{ $serviceTitle }}
-                                    </h3>
-
-                                </a>
+                                @endforeach
 
                             </div>
 
 
-                            {{-- Favorite --}}
+                            {{-- Next --}}
 
-                            @auth
-
-                                @if (auth()->user()->role === 'client')
-
-                                    <form
-                                        method="POST"
-                                        action="{{ route('client.favorites.store', $service) }}"
-                                        class="shrink-0"
-                                    >
-
-                                        @csrf
-
-                                        <button
-                                            type="submit"
-                                            class="flex h-9 w-9 items-center justify-center rounded-full border border-[#DDEBE2] bg-white text-[#82958D] transition hover:border-[#B9DCC6] hover:bg-[#EAF7EF] hover:text-[#0F6B3A]"
-                                            title="Tambah favorit"
-                                        >
-
-                                            <i class="bi bi-heart"></i>
-
-                                        </button>
-
-                                    </form>
-
-                                @endif
-
-                            @endauth
+                            <button
+                                type="button"
+                                @click="next()"
+                                class="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-xl border border-white/60 bg-white/90 text-slate-700 shadow-sm backdrop-blur transition duration-200 hover:bg-white hover:shadow-md active:scale-95"
+                                aria-label="Banner berikutnya"
+                            >
+                                <i class="bi bi-chevron-right text-xs"></i>
+                            </button>
 
                         </div>
 
+                    @endif
 
-                        {{-- Freelancer --}}
+                </div>
 
-                        <a
-                            href="{{ $freelancer?->username
-                                ? route('marketplace.freelancer', $freelancer->username)
-                                : route('marketplace.search') }}"
-                            class="mt-4 flex items-center gap-3 sm:mt-5"
-                        >
+            </div>
 
-                            @if ($avatar)
+        </div>
 
-                                <img
-                                    src="{{ $avatar }}"
-                                    alt="{{ $freelancerUser?->name ?? 'Freelancer' }}"
-                                    loading="lazy"
-                                    class="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-[#EAF7EF]"
-                                >
+    </section>
 
-                            @else
+@endif
 
-                                <div
-                                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#D8F0E2] text-xs font-semibold text-[#0F6B3A]"
-                                >
-                                    {{ strtoupper(
-                                        mb_substr(
-                                            $freelancerUser?->name ?? 'F',
-                                            0,
-                                            1
+
+
+    {{-- =========================================================
+        FEATURED SERVICES
+    ========================================================== --}}
+
+    <section
+        id="layanan"
+        class="bg-white py-9 sm:py-11 lg:py-14"
+    >
+
+        <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+
+            <div class="flex items-end justify-between gap-4">
+
+                <div class="pk-home-reveal min-w-0">
+
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600 sm:text-xs">
+                        Layanan pilihan
+                    </p>
+
+                    <h2 class="mt-1.5 text-[22px] font-bold tracking-[-0.025em] text-slate-900 sm:text-2xl">
+                        Jasa yang mungkin kamu butuhkan
+                    </h2>
+
+                    <p class="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500">
+                        Pilihan layanan untuk membantu menyelesaikan kebutuhan project-mu.
+                    </p>
+
+                </div>
+
+
+                <a
+                    href="{{ route('marketplace.search') }}"
+                    class="hidden shrink-0 items-center gap-1.5 text-xs font-semibold text-blue-600 transition hover:text-blue-700 sm:inline-flex"
+                >
+                    Lihat semua
+                    <i class="bi bi-arrow-right text-[10px]"></i>
+                </a>
+
+            </div>
+
+
+            {{-- Mobile service cards --}}
+
+            <div class="pk-home-reveal mt-6 sm:hidden">
+
+                <div class="no-scrollbar flex snap-x snap-mandatory gap-3.5 overflow-x-auto pb-3">
+
+                    @forelse ($featuredServices->take(8) as $service)
+
+                        @php
+
+                            $serviceTitle = data_get(
+                                $service,
+                                'title',
+                                data_get(
+                                    $service,
+                                    'name',
+                                    'Layanan Freelancer'
+                                )
+                            );
+
+                            $serviceSlug = data_get(
+                                $service,
+                                'slug'
+                            );
+
+                            $sellerName = data_get(
+                                $service,
+                                'freelancerProfile.user.name',
+                                data_get(
+                                    $service,
+                                    'user.name',
+                                    'Freelancer'
+                                )
+                            );
+
+                            $sellerUsername = data_get(
+                                $service,
+                                'freelancerProfile.user.username',
+                                data_get(
+                                    $service,
+                                    'user.username'
+                                )
+                            );
+
+                            $sellerAvatar = data_get(
+                                $service,
+                                'freelancerProfile.avatar',
+                                data_get(
+                                    $service,
+                                    'freelancerProfile.user.avatar'
+                                )
+                            );
+
+                            $serviceImage = data_get(
+                                $service,
+                                'thumbnail_url',
+                                data_get(
+                                    $service,
+                                    'image_url',
+                                    null
+                                )
+                            );
+
+                            if (!$serviceImage) {
+
+                                $serviceImage =
+                                    $getMediaUrl(
+                                        data_get(
+                                            $service,
+                                            'thumbnail',
+                                            data_get(
+                                                $service,
+                                                'image_path',
+                                                data_get(
+                                                    $service,
+                                                    'cover_image'
+                                                )
+                                            )
                                         )
-                                    ) }}
-                                </div>
+                                    );
 
-                            @endif
+                            }
+
+                            $price = data_get(
+                                $service,
+                                'price',
+                                data_get(
+                                    $service,
+                                    'starting_price',
+                                    0
+                                )
+                            );
+
+                            $rating = data_get(
+                                $service,
+                                'rating',
+                                data_get(
+                                    $service,
+                                    'average_rating'
+                                )
+                            );
+
+                            $reviewCount = data_get(
+                                $service,
+                                'reviews_count',
+                                data_get(
+                                    $service,
+                                    'review_count',
+                                    0
+                                )
+                            );
+
+                            $isVerified = (bool) data_get(
+                                $service,
+                                'freelancerProfile.is_verified',
+                                data_get(
+                                    $service,
+                                    'freelancerProfile.verified',
+                                    false
+                                )
+                            );
+
+                        @endphp
 
 
-                            <div class="min-w-0">
+                        @if ($serviceSlug)
 
-                                <div
-                                    class="flex items-center gap-1.5"
-                                >
+                            <a
+                                href="{{ route('marketplace.service', ['slug' => $serviceSlug]) }}"
+                                class="group w-[238px] shrink-0 snap-start overflow-hidden rounded-2xl border border-slate-200 bg-white transition duration-200 active:scale-[0.99]"
+                            >
 
-                                    <span
-                                        class="truncate text-sm font-medium text-[#234238]"
-                                    >
-                                        {{ $freelancerUser?->name ?? 'Freelancer' }}
-                                    </span>
+                                <div class="relative aspect-[4/3] overflow-hidden bg-slate-100">
 
-                                    @if ($freelancer?->is_verified)
+                                    @if ($serviceImage)
 
-                                        <i
-                                            class="bi bi-patch-check-fill shrink-0 text-[#1E9E5A]"
-                                        ></i>
+                                        <img
+                                            src="{{ $serviceImage }}"
+                                            alt="{{ $serviceTitle }}"
+                                            class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                                            loading="lazy"
+                                        >
+
+                                    @else
+
+                                        <div class="flex h-full w-full items-center justify-center bg-blue-50 text-blue-500">
+                                            <i class="bi bi-image text-2xl"></i>
+                                        </div>
 
                                     @endif
 
                                 </div>
 
 
-                                @if ($freelancer?->username)
+                                <div class="p-3.5">
 
-                                    <div
-                                        class="truncate text-xs text-[#899B94]"
+                                    <div class="flex items-center gap-2">
+
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-[11px] font-bold text-blue-700">
+
+                                            @if ($sellerAvatar)
+
+                                                <img
+                                                    src="{{ $getMediaUrl($sellerAvatar) }}"
+                                                    alt="{{ $sellerName }}"
+                                                    class="h-full w-full object-cover"
+                                                >
+
+                                            @else
+
+                                                {{ strtoupper(mb_substr($sellerName, 0, 1)) }}
+
+                                            @endif
+
+                                        </span>
+
+
+                                        <span class="min-w-0 flex-1">
+
+                                            <span class="flex items-center gap-1">
+
+                                                <span class="truncate text-[11px] font-semibold text-slate-700">
+                                                    {{ $sellerName }}
+                                                </span>
+
+                                                @if ($isVerified)
+
+                                                    <i class="bi bi-patch-check-fill shrink-0 text-[10px] text-blue-500"></i>
+
+                                                @endif
+
+                                            </span>
+
+
+                                            @if ($sellerUsername)
+
+                                                <span class="mt-0.5 block truncate text-[10px] text-slate-400">
+                                                    @{{ ltrim($sellerUsername, '@') }}
+                                                </span>
+
+                                            @endif
+
+                                        </span>
+
+                                    </div>
+
+
+                                    <h3 class="mt-3 line-clamp-2 text-sm font-semibold leading-5 text-slate-900">
+                                        {{ $serviceTitle }}
+                                    </h3>
+
+
+                                    <div class="mt-3 flex items-center justify-between gap-2">
+
+                                        <div class="flex items-center gap-1 text-[11px]">
+
+                                            <i class="bi bi-star-fill text-amber-400"></i>
+
+                                            <span class="font-semibold text-slate-700">
+                                                {{ $rating ? number_format((float) $rating, 1) : 'Baru' }}
+                                            </span>
+
+
+                                            @if ($reviewCount)
+
+                                                <span class="text-slate-400">
+                                                    ({{ $reviewCount }})
+                                                </span>
+
+                                            @endif
+
+                                        </div>
+
+
+                                        <div class="text-right">
+
+                                            <span class="block text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                                                Mulai dari
+                                            </span>
+
+                                            <span class="mt-0.5 block text-sm font-bold text-slate-900">
+                                                Rp {{ number_format((float) $price, 0, ',', '.') }}
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </a>
+
+                        @endif
+
+                    @empty
+
+                        <div class="w-full rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
+                            Belum ada layanan unggulan.
+                        </div>
+
+                    @endforelse
+
+                </div>
+
+            </div>
+
+
+            {{-- Desktop service grid --}}
+
+            <div class="pk-home-reveal mt-6 hidden grid-cols-2 gap-5 sm:grid lg:grid-cols-4">
+
+                @forelse ($featuredServices->take(8) as $service)
+
+                    @php
+
+                        $serviceTitle = data_get(
+                            $service,
+                            'title',
+                            data_get(
+                                $service,
+                                'name',
+                                'Layanan Freelancer'
+                            )
+                        );
+
+                        $serviceSlug = data_get(
+                            $service,
+                            'slug'
+                        );
+
+                        $sellerName = data_get(
+                            $service,
+                            'freelancerProfile.user.name',
+                            data_get(
+                                $service,
+                                'user.name',
+                                'Freelancer'
+                            )
+                        );
+
+                        $sellerUsername = data_get(
+                            $service,
+                            'freelancerProfile.user.username',
+                            data_get(
+                                $service,
+                                'user.username'
+                            )
+                        );
+
+                        $sellerAvatar = data_get(
+                            $service,
+                            'freelancerProfile.avatar',
+                            data_get(
+                                $service,
+                                'freelancerProfile.user.avatar'
+                            )
+                        );
+
+                        $serviceImage = data_get(
+                            $service,
+                            'thumbnail_url',
+                            data_get(
+                                $service,
+                                'image_url'
+                            )
+                        );
+
+                        if (!$serviceImage) {
+
+                            $serviceImage =
+                                $getMediaUrl(
+                                    data_get(
+                                        $service,
+                                        'thumbnail',
+                                        data_get(
+                                            $service,
+                                            'image_path',
+                                            data_get(
+                                                $service,
+                                                'cover_image'
+                                            )
+                                        )
+                                    )
+                                );
+
+                        }
+
+                        $price = data_get(
+                            $service,
+                            'price',
+                            data_get(
+                                $service,
+                                'starting_price',
+                                0
+                            )
+                        );
+
+                        $rating = data_get(
+                            $service,
+                            'rating',
+                            data_get(
+                                $service,
+                                'average_rating'
+                            )
+                        );
+
+                        $reviewCount = data_get(
+                            $service,
+                            'reviews_count',
+                            data_get(
+                                $service,
+                                'review_count',
+                                0
+                            )
+                        );
+
+                        $isVerified = (bool) data_get(
+                            $service,
+                            'freelancerProfile.is_verified',
+                            data_get(
+                                $service,
+                                'freelancerProfile.verified',
+                                false
+                            )
+                        );
+
+                    @endphp
+
+
+                    @if ($serviceSlug)
+
+                        <a
+                            href="{{ route('marketplace.service', ['slug' => $serviceSlug]) }}"
+                            class="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_14px_32px_rgba(15,23,42,0.08)]"
+                        >
+
+                            <div class="relative aspect-[4/3] overflow-hidden bg-slate-100">
+
+                                @if ($serviceImage)
+
+                                    <img
+                                        src="{{ $serviceImage }}"
+                                        alt="{{ $serviceTitle }}"
+                                        class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                                        loading="lazy"
                                     >
-                                        {{ '@' . $freelancer->username }}
+
+                                @else
+
+                                    <div class="flex h-full w-full items-center justify-center bg-blue-50 text-blue-500">
+                                        <i class="bi bi-image text-2xl"></i>
                                     </div>
 
                                 @endif
+
+                            </div>
+
+
+                            <div class="p-4">
+
+                                <div class="flex items-center gap-2">
+
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-[11px] font-bold text-blue-700">
+
+                                        @if ($sellerAvatar)
+
+                                            <img
+                                                src="{{ $getMediaUrl($sellerAvatar) }}"
+                                                alt="{{ $sellerName }}"
+                                                class="h-full w-full object-cover"
+                                            >
+
+                                        @else
+
+                                            {{ strtoupper(mb_substr($sellerName, 0, 1)) }}
+
+                                        @endif
+
+                                    </span>
+
+
+                                    <div class="min-w-0">
+
+                                        <div class="flex items-center gap-1">
+
+                                            <span class="truncate text-[11px] font-semibold text-slate-700">
+                                                {{ $sellerName }}
+                                            </span>
+
+                                            @if ($isVerified)
+
+                                                <i class="bi bi-patch-check-fill shrink-0 text-[10px] text-blue-500"></i>
+
+                                            @endif
+
+                                        </div>
+
+
+                                        @if ($sellerUsername)
+
+                                            <span class="mt-0.5 block truncate text-[10px] text-slate-400">
+                                                @{{ ltrim($sellerUsername, '@') }}
+                                            </span>
+
+                                        @endif
+
+                                    </div>
+
+                                </div>
+
+
+                                <h3 class="mt-3 line-clamp-2 min-h-[40px] text-sm font-semibold leading-5 text-slate-900">
+                                    {{ $serviceTitle }}
+                                </h3>
+
+
+                                <div class="mt-4 flex items-end justify-between gap-3">
+
+                                    <div class="flex items-center gap-1 text-[11px]">
+
+                                        <i class="bi bi-star-fill text-amber-400"></i>
+
+                                        <span class="font-semibold text-slate-700">
+                                            {{ $rating ? number_format((float) $rating, 1) : 'Baru' }}
+                                        </span>
+
+
+                                        @if ($reviewCount)
+
+                                            <span class="text-slate-400">
+                                                ({{ $reviewCount }})
+                                            </span>
+
+                                        @endif
+
+                                    </div>
+
+
+                                    <div class="text-right">
+
+                                        <span class="block text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                                            Mulai dari
+                                        </span>
+
+                                        <span class="mt-0.5 block text-sm font-bold text-slate-900">
+                                            Rp {{ number_format((float) $price, 0, ',', '.') }}
+                                        </span>
+
+                                    </div>
+
+                                </div>
 
                             </div>
 
                         </a>
 
+                    @endif
 
-                        {{-- Rating --}}
+                @empty
 
-                        <div
-                            class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#71847C] sm:mt-5 sm:text-xs"
-                        >
-
-                            <span
-                                class="inline-flex items-center gap-1 font-medium text-[#425B51]"
-                            >
-
-                                <i class="bi bi-star-fill text-[#1E9E5A]"></i>
-
-                                {{ number_format($serviceRating, 1, ',', '.') }}
-
-                            </span>
-
-
-                            <span>
-                                {{ number_format($serviceReviews) }} ulasan
-                            </span>
-
-
-                            <span>
-                                {{ number_format($serviceOrders) }} order
-                            </span>
-
-                        </div>
-
-
-                        {{-- Price --}}
-
-                        <div
-                            class="mt-4 flex items-end justify-between border-t border-[#EDF3EF] pt-4 sm:mt-5"
-                        >
-
-                            <div>
-
-                                <div
-                                    class="text-[10px] text-[#899B94] sm:text-[11px]"
-                                >
-                                    Mulai dari
-                                </div>
-
-                                <div
-                                    class="mt-1 text-base font-semibold text-[#123128]"
-                                >
-                                    Rp {{ number_format(
-                                        $servicePrice,
-                                        0,
-                                        ',',
-                                        '.'
-                                    ) }}
-                                </div>
-
-                            </div>
-
-
-                            <a
-                                href="{{ route('marketplace.service', $service->slug) }}"
-                                class="flex h-9 w-9 items-center justify-center rounded-full bg-[#EAF7EF] text-[#0F6B3A] transition hover:bg-[#0F6B3A] hover:text-white"
-                                aria-label="Lihat layanan"
-                            >
-                                <i class="bi bi-arrow-up-right text-sm"></i>
-                            </a>
-
-                        </div>
-
+                    <div class="col-span-full rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
+                        Belum ada layanan unggulan.
                     </div>
 
-                </article>
-
-            @empty
-
-                <div
-                    class="col-span-full rounded-2xl border border-dashed border-[#CFE1D6] bg-[#F8FCF9] px-6 py-16 text-center"
-                >
-
-                    <div
-                        class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF7EF] text-xl text-[#0F6B3A]"
-                    >
-                        <i class="bi bi-box"></i>
-                    </div>
-
-
-                    <h3
-                        class="mt-4 text-base font-semibold text-[#123128]"
-                    >
-                        Belum ada layanan tersedia
-                    </h3>
-
-
-                    <p
-                        class="mt-2 text-sm text-[#81918B]"
-                    >
-                        Layanan freelancer yang sudah dipublikasikan akan muncul di sini.
-                    </p>
-
-                </div>
-
-            @endforelse
-
-        </div>
-
-    </div>
-
-</section>
-
-
-{{-- =========================================================
-    FEATURED FREELANCERS
-========================================================== --}}
-
-<section class="bg-[#F8FCF9] py-14 sm:py-20">
-
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        <div
-            class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
-        >
-
-            <div>
-
-                <span class="text-sm font-semibold text-[#1E9E5A]">
-                    Freelancer pilihan
-                </span>
-
-                <h2
-                    class="mt-2 text-2xl font-semibold tracking-tight text-[#123128] sm:text-3xl"
-                >
-                    Kenalan dengan talenta terbaik
-                </h2>
-
-                <p
-                    class="mt-3 max-w-2xl text-sm leading-6 text-[#667D73] sm:text-base"
-                >
-                    Temukan freelancer berdasarkan keahlian,
-                    rating, pengalaman, dan layanan mereka.
-                </p>
+                @endforelse
 
             </div>
 
 
             <a
                 href="{{ route('marketplace.search') }}"
-                class="inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#0F6B3A] transition hover:text-[#1E9E5A]"
+                class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-600 sm:hidden"
             >
-                Cari freelancer
-
-                <i class="bi bi-arrow-right"></i>
+                Lihat semua layanan
+                <i class="bi bi-arrow-right text-[10px]"></i>
             </a>
 
         </div>
 
-
-        <div
-            class="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3"
-        >
-
-            @forelse ($featuredFreelancers as $freelancer)
-
-                @php
-
-                    $user = $freelancer->user;
-
-                    $avatar = $freelancer->avatar
-                        ? asset('storage/' . $freelancer->avatar)
-                        : null;
-
-                    $freelancerName = $user?->name
-                        ?? $freelancer->username
-                        ?? 'Freelancer';
-
-                    $freelancerRating = (float) (
-                        $freelancer->rating ?? 0
-                    );
-
-                    $completedOrders = (int) (
-                        $freelancer->completed_orders ?? 0
-                    );
-
-                @endphp
+    </section>
 
 
-                <a
-                    href="{{ route('marketplace.freelancer', $freelancer->username) }}"
-                    class="group rounded-2xl border border-[#DCEDE3] bg-white p-4 transition duration-300 hover:-translate-y-1 hover:border-[#BEDCC9] hover:shadow-[0_18px_38px_rgba(15,107,58,0.06)] sm:p-5"
-                >
 
-                    <div
-                        class="flex items-start justify-between gap-3"
-                    >
+    {{-- =========================================================
+        FEATURED FREELANCERS
+    ========================================================== --}}
 
-                        <div
-                            class="flex min-w-0 items-center gap-3 sm:gap-4"
-                        >
+    <section
+        id="freelancer"
+        class="scroll-mt-24 bg-slate-50 py-9 sm:py-11 lg:py-14"
+    >
 
-                            @if ($avatar)
+        <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
-                                <img
-                                    src="{{ $avatar }}"
-                                    alt="{{ $freelancerName }}"
-                                    loading="lazy"
-                                    class="h-12 w-12 shrink-0 rounded-full object-cover ring-4 ring-[#EAF7EF] sm:h-14 sm:w-14"
-                                >
+            <div class="pk-home-reveal max-w-2xl">
 
-                            @else
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600 sm:text-xs">
+                    Freelancer pilihan
+                </p>
 
-                                <div
-                                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#D8F0E2] text-base font-semibold text-[#0F6B3A] sm:h-14 sm:w-14 sm:text-lg"
-                                >
-                                    {{ strtoupper(
-                                        mb_substr(
-                                            $freelancerName,
-                                            0,
-                                            1
-                                        )
-                                    ) }}
+                <h2 class="mt-1.5 text-[22px] font-bold tracking-[-0.025em] text-slate-900 sm:text-2xl">
+                    Temukan talenta untuk project-mu
+                </h2>
+
+                <p class="mt-1.5 text-sm leading-6 text-slate-500">
+                    Jelajahi freelancer dari berbagai keahlian dan bidang.
+                </p>
+
+            </div>
+
+
+            {{-- Mobile --}}
+
+            <div class="pk-home-reveal mt-6 sm:hidden">
+
+                <div class="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3">
+
+                    @forelse ($featuredFreelancers->take(8) as $freelancer)
+
+                        @php
+
+                            $freelancerName = data_get(
+                                $freelancer,
+                                'user.name',
+                                data_get(
+                                    $freelancer,
+                                    'name',
+                                    'Freelancer'
+                                )
+                            );
+
+                            $freelancerUsername = data_get(
+                                $freelancer,
+                                'user.username',
+                                data_get(
+                                    $freelancer,
+                                    'username'
+                                )
+                            );
+
+                            $freelancerSlug =
+                                $freelancerUsername;
+
+                            $freelancerAvatar = data_get(
+                                $freelancer,
+                                'avatar',
+                                data_get(
+                                    $freelancer,
+                                    'user.avatar'
+                                )
+                            );
+
+                            $freelancerRating = data_get(
+                                $freelancer,
+                                'rating',
+                                data_get(
+                                    $freelancer,
+                                    'average_rating'
+                                )
+                            );
+
+                            $freelancerReviewCount = data_get(
+                                $freelancer,
+                                'reviews_count',
+                                data_get(
+                                    $freelancer,
+                                    'review_count',
+                                    0
+                                )
+                            );
+
+                            $freelancerVerified = (bool) data_get(
+                                $freelancer,
+                                'is_verified',
+                                data_get(
+                                    $freelancer,
+                                    'verified',
+                                    false
+                                )
+                            );
+
+                        @endphp
+
+
+                        @if ($freelancerSlug)
+
+                            <a
+                                href="{{ route('marketplace.freelancer', ['username' => $freelancerSlug]) }}"
+                                class="group w-[230px] shrink-0 snap-start rounded-2xl border border-slate-200 bg-white p-4 transition duration-200 active:scale-[0.99]"
+                            >
+
+                                <div class="flex items-center gap-3">
+
+                                    <span class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+
+                                        @if ($freelancerAvatar)
+
+                                            <img
+                                                src="{{ $getMediaUrl($freelancerAvatar) }}"
+                                                alt="{{ $freelancerName }}"
+                                                class="h-full w-full object-cover"
+                                            >
+
+                                        @else
+
+                                            {{ strtoupper(mb_substr($freelancerName, 0, 1)) }}
+
+                                        @endif
+
+                                    </span>
+
+
+                                    <div class="min-w-0">
+
+                                        <div class="flex items-center gap-1">
+
+                                            <h3 class="truncate text-sm font-semibold text-slate-900">
+                                                {{ $freelancerName }}
+                                            </h3>
+
+                                            @if ($freelancerVerified)
+
+                                                <i class="bi bi-patch-check-fill shrink-0 text-xs text-blue-500"></i>
+
+                                            @endif
+
+                                        </div>
+
+
+                                        @if ($freelancerUsername)
+
+                                            <p class="mt-0.5 truncate text-[10px] text-slate-400">
+                                                @{{ ltrim($freelancerUsername, '@') }}
+                                            </p>
+
+                                        @endif
+
+                                    </div>
+
                                 </div>
 
-                            @endif
+
+                                <div class="mt-4 flex items-center gap-1 text-[11px]">
+
+                                    <i class="bi bi-star-fill text-amber-400"></i>
+
+                                    <span class="font-semibold text-slate-700">
+                                        {{ $freelancerRating ? number_format((float) $freelancerRating, 1) : 'Baru' }}
+                                    </span>
 
 
-                            <div class="min-w-0">
+                                    @if ($freelancerReviewCount)
 
-                                <div
-                                    class="flex items-center gap-1.5"
-                                >
-
-                                    <h3
-                                        class="truncate text-sm font-semibold text-[#123128]"
-                                    >
-                                        {{ $freelancerName }}
-                                    </h3>
-
-
-                                    @if ($freelancer->is_verified)
-
-                                        <i
-                                            class="bi bi-patch-check-fill shrink-0 text-[#1E9E5A]"
-                                        ></i>
+                                        <span class="text-slate-400">
+                                            ({{ $freelancerReviewCount }})
+                                        </span>
 
                                     @endif
 
                                 </div>
 
 
-                                @if ($freelancer->username)
+                                <span class="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-blue-600">
+                                    Lihat profil
+                                    <i class="bi bi-arrow-right text-[10px]"></i>
+                                </span>
 
-                                    <p
-                                        class="mt-1 truncate text-xs text-[#899B94]"
-                                    >
-                                        {{ '@' . $freelancer->username }}
-                                    </p>
+                            </a>
+
+                        @endif
+
+                    @empty
+
+                        <div class="w-full rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-400">
+                            Belum ada freelancer pilihan.
+                        </div>
+
+                    @endforelse
+
+                </div>
+
+            </div>
+
+
+            {{-- Desktop --}}
+
+            <div class="pk-home-reveal mt-6 hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-4">
+
+                @forelse ($featuredFreelancers->take(8) as $freelancer)
+
+                    @php
+
+                        $freelancerName = data_get(
+                            $freelancer,
+                            'user.name',
+                            data_get(
+                                $freelancer,
+                                'name',
+                                'Freelancer'
+                            )
+                        );
+
+                        $freelancerUsername = data_get(
+                            $freelancer,
+                            'user.username',
+                            data_get(
+                                $freelancer,
+                                'username'
+                            )
+                        );
+
+                        $freelancerSlug =
+                            $freelancerUsername;
+
+                        $freelancerAvatar = data_get(
+                            $freelancer,
+                            'avatar',
+                            data_get(
+                                $freelancer,
+                                'user.avatar'
+                            )
+                        );
+
+                        $freelancerRating = data_get(
+                            $freelancer,
+                            'rating',
+                            data_get(
+                                $freelancer,
+                                'average_rating'
+                            )
+                        );
+
+                        $freelancerReviewCount = data_get(
+                            $freelancer,
+                            'reviews_count',
+                            data_get(
+                                $freelancer,
+                                'review_count',
+                                0
+                            )
+                        );
+
+                        $freelancerVerified = (bool) data_get(
+                            $freelancer,
+                            'is_verified',
+                            data_get(
+                                $freelancer,
+                                'verified',
+                                false
+                            )
+                        );
+
+                    @endphp
+
+
+                    @if ($freelancerSlug)
+
+                        <a
+                            href="{{ route('marketplace.freelancer', ['username' => $freelancerSlug]) }}"
+                            class="group rounded-2xl border border-slate-200 bg-white p-5 transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)]"
+                        >
+
+                            <div class="flex items-center gap-3">
+
+                                <span class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+
+                                    @if ($freelancerAvatar)
+
+                                        <img
+                                            src="{{ $getMediaUrl($freelancerAvatar) }}"
+                                            alt="{{ $freelancerName }}"
+                                            class="h-full w-full object-cover"
+                                            loading="lazy"
+                                        >
+
+                                    @else
+
+                                        {{ strtoupper(mb_substr($freelancerName, 0, 1)) }}
+
+                                    @endif
+
+                                </span>
+
+
+                                <div class="min-w-0">
+
+                                    <div class="flex items-center gap-1">
+
+                                        <h3 class="truncate text-sm font-semibold text-slate-900">
+                                            {{ $freelancerName }}
+                                        </h3>
+
+                                        @if ($freelancerVerified)
+
+                                            <i class="bi bi-patch-check-fill shrink-0 text-xs text-blue-500"></i>
+
+                                        @endif
+
+                                    </div>
+
+
+                                    @if ($freelancerUsername)
+
+                                        <p class="mt-0.5 truncate text-[10px] text-slate-400">
+                                            @{{ ltrim($freelancerUsername, '@') }}
+                                        </p>
+
+                                    @endif
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="mt-4 flex items-center gap-1 text-[11px]">
+
+                                <i class="bi bi-star-fill text-amber-400"></i>
+
+                                <span class="font-semibold text-slate-700">
+                                    {{ $freelancerRating ? number_format((float) $freelancerRating, 1) : 'Baru' }}
+                                </span>
+
+
+                                @if ($freelancerReviewCount)
+
+                                    <span class="text-slate-400">
+                                        ({{ $freelancerReviewCount }})
+                                    </span>
 
                                 @endif
 
                             </div>
 
-                        </div>
+
+                            <span class="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-blue-600">
+                                Lihat profil
+                                <i class="bi bi-arrow-right text-[10px]"></i>
+                            </span>
+
+                        </a>
+
+                    @endif
+
+                @empty
+
+                    <div class="col-span-full rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-400">
+                        Belum ada freelancer pilihan.
+                    </div>
+
+                @endforelse
+
+            </div>
+
+        </div>
+
+    </section>
 
 
-                        @if ($freelancer->is_available)
 
-                            <span
-                                class="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#EAF7EF] px-2 py-1 text-[9px] font-semibold text-[#0F6B3A] sm:px-2.5 sm:py-1 sm:text-[11px]"
-                            >
+    {{-- =========================================================
+        FEATURED CATEGORY BANNER
+    ========================================================== --}}
 
-                                <span
-                                    class="h-1.5 w-1.5 rounded-full bg-[#1E9E5A]"
-                                ></span>
+    @if ($featuredCategorySlug)
 
-                                Tersedia
+        <section class="bg-white py-9 sm:py-11 lg:py-14">
+
+            <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+
+                <a
+                    href="{{ route('marketplace.category', ['slug' => $featuredCategorySlug]) }}"
+                    class="pk-home-reveal group block overflow-hidden rounded-[22px] border border-blue-100 bg-gradient-to-r from-blue-50 via-white to-white sm:rounded-3xl"
+                >
+
+                    <div class="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7 lg:p-9">
+
+                        <div class="max-w-2xl">
+
+                            <span class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-blue-600 shadow-sm">
+                                <i class="bi bi-stars text-[10px]"></i>
+                                Kategori pilihan
+                            </span>
+
+                            <h2 class="mt-3 text-xl font-bold tracking-[-0.025em] text-slate-900 sm:text-2xl">
+                                Jelajahi layanan {{ $featuredCategoryName }}
+                            </h2>
+
+                            <p class="mt-2 text-sm leading-6 text-slate-500">
+                                Temukan freelancer dengan keahlian yang sesuai untuk kebutuhan project-mu.
+                            </p>
+
+                            <span class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-600">
+
+                                Jelajahi kategori
+
+                                <i class="bi bi-arrow-right text-xs transition group-hover:translate-x-0.5"></i>
 
                             </span>
 
-                        @else
-
-                            <span
-                                class="inline-flex shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[9px] font-medium text-slate-500 sm:px-2.5 sm:py-1 sm:text-[11px]"
-                            >
-                                Offline
-                            </span>
-
-                        @endif
-
-                    </div>
-
-
-                    <p
-                        class="mt-4 line-clamp-2 text-sm leading-6 text-[#667D73] sm:mt-5"
-                    >
-                        {{ $freelancer->headline
-                            ?: 'Freelancer profesional siap membantu kebutuhanmu.' }}
-                    </p>
-
-
-                    <div
-                        class="mt-4 grid grid-cols-3 border-t border-[#EDF3EF] pt-4 sm:mt-5"
-                    >
-
-                        <div>
-
-                            <div
-                                class="flex items-center gap-1 text-sm font-semibold text-[#234238]"
-                            >
-
-                                <i class="bi bi-star-fill text-[#1E9E5A]"></i>
-
-                                {{ number_format(
-                                    $freelancerRating,
-                                    1,
-                                    ',',
-                                    '.'
-                                ) }}
-
-                            </div>
-
-
-                            <div
-                                class="mt-1 text-[10px] text-[#8A9B94] sm:text-[11px]"
-                            >
-                                Rating
-                            </div>
-
                         </div>
 
 
-                        <div
-                            class="border-l border-[#EDF3EF] pl-3"
-                        >
+                        <div class="flex h-24 w-24 shrink-0 items-center justify-center rounded-[22px] bg-blue-600 text-white shadow-lg shadow-blue-600/15 sm:h-28 sm:w-28">
 
-                            <div
-                                class="text-sm font-semibold text-[#234238]"
-                            >
-                                {{ number_format($completedOrders) }}
-                            </div>
-
-
-                            <div
-                                class="mt-1 text-[10px] text-[#8A9B94] sm:text-[11px]"
-                            >
-                                Pesanan
-                            </div>
+                            <i class="bi bi-grid-3x3-gap text-3xl"></i>
 
                         </div>
-
-
-                        <div
-                            class="border-l border-[#EDF3EF] pl-3"
-                        >
-
-                            <div
-                                class="truncate text-sm font-semibold text-[#234238]"
-                            >
-                                {{ $freelancer->location ?: '-' }}
-                            </div>
-
-
-                            <div
-                                class="mt-1 text-[10px] text-[#8A9B94] sm:text-[11px]"
-                            >
-                                Lokasi
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        class="mt-4 flex items-center justify-between border-t border-[#EDF3EF] pt-4 text-sm font-semibold text-[#0F6B3A] sm:mt-5"
-                    >
-
-                        <span>
-                            Lihat profil
-                        </span>
-
-
-                        <span
-                            class="flex h-8 w-8 items-center justify-center rounded-full bg-[#EAF7EF] transition group-hover:bg-[#0F6B3A] group-hover:text-white"
-                        >
-                            <i class="bi bi-arrow-up-right"></i>
-                        </span>
 
                     </div>
 
                 </a>
 
-            @empty
+            </div>
 
-                <div
-                    class="col-span-full rounded-2xl border border-dashed border-[#CFE1D6] bg-white px-6 py-16 text-center"
-                >
+        </section>
 
-                    <div
-                        class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF7EF] text-xl text-[#0F6B3A]"
-                    >
-                        <i class="bi bi-people"></i>
-                    </div>
+    @endif
 
 
-                    <h3
-                        class="mt-4 text-base font-semibold text-[#123128]"
-                    >
-                        Belum ada freelancer pilihan
-                    </h3>
 
+    {{-- =========================================================
+        NEED DISCOVERY
+    ========================================================== --}}
 
-                    <p
-                        class="mt-2 text-sm text-[#81918B]"
-                    >
-                        Freelancer yang tersedia akan muncul di sini.
-                    </p>
+    <section class="bg-slate-50 py-9 sm:py-11 lg:py-14">
 
-                </div>
+        <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
-            @endforelse
+            <div class="pk-home-reveal max-w-2xl">
 
-        </div>
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600 sm:text-xs">
+                    Butuh bantuan apa?
+                </p>
 
-    </div>
-
-</section>
-
-
-{{-- =========================================================
-    WHY JASAIN
-========================================================== --}}
-
-<section class="bg-white py-14 sm:py-20">
-
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        <div
-            class="grid items-center gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-12"
-        >
-
-            <div class="max-w-xl">
-
-                <span class="text-sm font-semibold text-[#1E9E5A]">
-                    Kenapa JASAIN?
-                </span>
-
-
-                <h2
-                    class="mt-2 text-2xl font-semibold tracking-tight text-[#123128] sm:text-3xl"
-                >
-                    Temukan partner yang tepat untuk kebutuhanmu.
+                <h2 class="mt-1.5 text-[22px] font-bold tracking-[-0.025em] text-slate-900 sm:text-2xl">
+                    Mulai dari kebutuhanmu
                 </h2>
 
-
-                <p
-                    class="mt-4 text-sm leading-7 text-[#667D73] sm:text-base"
-                >
-                    JASAIN membantu client menemukan freelancer,
-                    berkomunikasi, melakukan pemesanan, hingga
-                    menyelesaikan pekerjaan dalam satu alur.
+                <p class="mt-1.5 text-sm leading-6 text-slate-500">
+                    Pilih kebutuhan yang paling dekat dengan project-mu.
                 </p>
 
             </div>
 
 
-            <div class="grid gap-3 sm:grid-cols-2 sm:gap-4">
+            {{-- Mobile --}}
 
-                @php
+            <div class="pk-home-reveal mt-6 grid grid-cols-2 gap-3 sm:hidden">
 
-                    $advantages = [
+                @foreach ($needShortcuts as $need)
 
-                        [
-                            'icon' => 'bi-shield-check',
-                            'title' => 'Transaksi lebih aman',
-                            'description' => 'Alur pembayaran dan pemesanan dilakukan melalui sistem JASAIN.',
-                        ],
-
-                        [
-                            'icon' => 'bi-patch-check',
-                            'title' => 'Freelancer profesional',
-                            'description' => 'Lihat profil, rating, layanan, dan pengalaman sebelum memilih.',
-                        ],
-
-                        [
-                            'icon' => 'bi-chat-square-text',
-                            'title' => 'Komunikasi langsung',
-                            'description' => 'Diskusikan kebutuhanmu sebelum melakukan pemesanan.',
-                        ],
-
-                        [
-                            'icon' => 'bi-grid',
-                            'title' => 'Beragam layanan',
-                            'description' => 'Berbagai kategori jasa dalam satu marketplace.',
-                        ],
-
-                    ];
-
-                @endphp
-
-
-                @foreach ($advantages as $advantage)
-
-                    <div
-                        class="rounded-2xl border border-[#DCEDE3] bg-[#F8FCF9] p-4 transition duration-300 hover:-translate-y-0.5 hover:border-[#C1DFCC] sm:p-5"
+                    <a
+                        href="{{ $need['url'] }}"
+                        class="group rounded-2xl border border-slate-200 bg-white p-4 transition active:scale-[0.99]"
                     >
 
-                        <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-lg text-[#0F6B3A] shadow-sm sm:h-11 sm:w-11"
-                        >
-                            <i class="bi {{ $advantage['icon'] }}"></i>
+                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                            <i class="bi {{ $need['icon'] }} text-[17px]"></i>
+                        </span>
+
+                        <h3 class="mt-3 text-sm font-semibold leading-5 text-slate-900">
+                            {{ $need['title'] }}
+                        </h3>
+
+                        <p class="mt-1.5 line-clamp-3 text-[10px] leading-4.5 text-slate-400">
+                            {{ $need['description'] }}
+                        </p>
+
+                        <span class="mt-3 inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600">
+                            Cari jasa
+                            <i class="bi bi-arrow-right text-[9px]"></i>
+                        </span>
+
+                    </a>
+
+                @endforeach
+
+            </div>
+
+
+            {{-- Desktop --}}
+
+            <div class="pk-home-reveal mt-6 hidden grid-cols-4 gap-4 sm:grid">
+
+                @foreach ($needShortcuts as $need)
+
+                    <a
+                        href="{{ $need['url'] }}"
+                        class="group rounded-2xl border border-slate-200 bg-white p-5 transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_12px_28px_rgba(15,23,42,0.06)]"
+                    >
+
+                        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                            <i class="bi {{ $need['icon'] }} text-[18px]"></i>
+                        </span>
+
+                        <h3 class="mt-4 text-sm font-semibold text-slate-900">
+                            {{ $need['title'] }}
+                        </h3>
+
+                        <p class="mt-1.5 text-xs leading-5 text-slate-500">
+                            {{ $need['description'] }}
+                        </p>
+
+                        <span class="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600">
+                            Cari jasa
+                            <i class="bi bi-arrow-right text-[10px] transition group-hover:translate-x-0.5"></i>
+                        </span>
+
+                    </a>
+
+                @endforeach
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    {{-- =========================================================
+        MIDDLE CMS BANNER
+        Natural image ratio
+    ========================================================== --}}
+
+    @if ($cmsMiddleBanners->isNotEmpty())
+
+        <section class="bg-slate-50 pb-9 sm:pb-11 lg:pb-14">
+
+            <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+
+                @foreach ($cmsMiddleBanners->take(1) as $banner)
+
+                    @php
+
+                        $desktopImage = method_exists(
+                            $banner,
+                            'getImageUrlAttribute'
+                        )
+                            ? $banner->image_url
+                            : $getMediaUrl(
+                                $banner->image_path ?? null
+                            );
+
+                        $mobileImage = method_exists(
+                            $banner,
+                            'getMobileImageUrlAttribute'
+                        )
+                            ? (
+                                $banner->mobile_image_url
+                                ?: $desktopImage
+                            )
+                            : $getMediaUrl(
+                                $banner->mobile_image_path ?? null
+                            );
+
+                        $mobileImage =
+                            $mobileImage
+                            ?: $desktopImage;
+
+                        $bannerLink =
+                            $banner->link_url
+                            ?? null;
+
+                        $bannerAlt =
+                            $banner->alt_text
+                            ?? (
+                                $banner->name
+                                ?? 'Banner ProKerja'
+                            );
+
+                    @endphp
+
+
+                    <div class="pk-home-reveal overflow-hidden rounded-[22px] border border-slate-200 bg-white sm:rounded-3xl">
+
+                        @if ($bannerLink)
+
+                            <a
+                                href="{{ $bannerLink }}"
+                                @if ($banner->open_new_tab ?? false)
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                @endif
+                                class="block"
+                            >
+
+                        @endif
+
+
+                        @if ($desktopImage)
+
+                            <picture class="block w-full">
+
+                                @if ($mobileImage)
+
+                                    <source
+                                        media="(max-width: 639px)"
+                                        srcset="{{ $mobileImage }}"
+                                    >
+
+                                @endif
+
+
+                                <img
+                                    src="{{ $desktopImage }}"
+                                    alt="{{ $bannerAlt }}"
+                                    class="block h-auto w-full object-contain"
+                                    loading="lazy"
+                                    draggable="false"
+                                >
+
+                            </picture>
+
+                        @else
+
+                            <div class="flex min-h-[150px] items-center bg-blue-50 px-5 py-10 sm:px-10">
+                                <p class="text-lg font-bold text-slate-900">
+                                    {{ $banner->name ?? 'ProKerja' }}
+                                </p>
+                            </div>
+
+                        @endif
+
+
+                        @if ($bannerLink)
+
+                            </a>
+
+                        @endif
+
+                    </div>
+
+                @endforeach
+
+            </div>
+
+        </section>
+
+    @endif
+
+
+
+    {{-- =========================================================
+        HOW IT WORKS
+    ========================================================== --}}
+
+    <section class="bg-white py-10 sm:py-12 lg:py-14">
+
+        <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+
+            <div class="pk-home-reveal text-center">
+
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600 sm:text-xs">
+                    Cara kerja
+                </p>
+
+                <h2 class="mt-1.5 text-[22px] font-bold tracking-[-0.025em] text-slate-900 sm:text-2xl">
+                    Mulai sampai selesai, lebih sederhana
+                </h2>
+
+                <p class="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                    Alur kerja ProKerja dibuat agar client dan freelancer mudah bekerja bersama.
+                </p>
+
+            </div>
+
+
+            {{-- Mobile --}}
+
+            <div class="mt-7 space-y-3 sm:hidden">
+
+                @foreach ($howItWorks as $step)
+
+                    <div class="pk-home-reveal flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+
+                        <div class="relative shrink-0">
+
+                            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white">
+                                <i class="bi {{ $step['icon'] }} text-[16px]"></i>
+                            </span>
+
                         </div>
 
 
-                        <h3
-                            class="mt-4 text-sm font-semibold text-[#123128]"
-                        >
-                            {{ $advantage['title'] }}
+                        <div class="min-w-0">
+
+                            <div class="flex items-center gap-2">
+
+                                <span class="text-[10px] font-bold tracking-[0.12em] text-blue-600">
+                                    {{ $step['number'] }}
+                                </span>
+
+                                <h3 class="text-sm font-semibold text-slate-900">
+                                    {{ $step['title'] }}
+                                </h3>
+
+                            </div>
+
+
+                            <p class="mt-1 text-xs leading-5 text-slate-500">
+                                {{ $step['description'] }}
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                @endforeach
+
+            </div>
+
+
+            {{-- Desktop --}}
+
+            <div class="mt-8 hidden grid-cols-3 gap-5 sm:grid">
+
+                @foreach ($howItWorks as $step)
+
+                    <div class="pk-home-reveal relative rounded-2xl border border-slate-200 bg-slate-50 p-6">
+
+                        <div class="flex items-center justify-between">
+
+                            <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white">
+                                <i class="bi {{ $step['icon'] }} text-[17px]"></i>
+                            </span>
+
+                            <span class="text-xs font-bold tracking-[0.14em] text-blue-200">
+                                {{ $step['number'] }}
+                            </span>
+
+                        </div>
+
+
+                        <h3 class="mt-5 text-sm font-semibold text-slate-900">
+                            {{ $step['title'] }}
                         </h3>
 
-
-                        <p
-                            class="mt-2 text-sm leading-6 text-[#7A8D85]"
-                        >
-                            {{ $advantage['description'] }}
+                        <p class="mt-2 text-xs leading-5 text-slate-500">
+                            {{ $step['description'] }}
                         </p>
 
                     </div>
@@ -1493,216 +2287,371 @@
 
         </div>
 
-    </div>
-
-</section>
+    </section>
 
 
-{{-- =========================================================
-    HOW IT WORKS
-========================================================== --}}
 
-<section class="bg-[#F8FCF9] py-14 sm:py-20">
+    {{-- =========================================================
+        BENEFITS
+    ========================================================== --}}
 
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section class="bg-slate-50 py-10 sm:py-12 lg:py-14">
 
-        <div class="mx-auto max-w-2xl text-center">
+        <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
-            <span class="text-sm font-semibold text-[#1E9E5A]">
-                Cara kerja
-            </span>
+            <div class="pk-home-reveal text-center">
+
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600 sm:text-xs">
+                    Kenapa ProKerja?
+                </p>
+
+                <h2 class="mt-1.5 text-[22px] font-bold tracking-[-0.025em] text-slate-900 sm:text-2xl">
+                    Dibuat untuk mempermudah pekerjaan
+                </h2>
+
+            </div>
 
 
-            <h2
-                class="mt-2 text-2xl font-semibold tracking-tight text-[#123128] sm:text-3xl"
-            >
-                Sederhana dari awal sampai selesai
-            </h2>
+            {{-- Mobile --}}
+
+            <div class="mt-7 space-y-3 sm:hidden">
+
+                @foreach ($benefits as $benefit)
+
+                    <div class="pk-home-reveal flex gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                            <i class="bi {{ $benefit['icon'] }} text-[17px]"></i>
+                        </span>
 
 
-            <p
-                class="mt-3 text-sm leading-6 text-[#667D73] sm:text-base"
-            >
-                Cari jasa, diskusikan kebutuhan, lakukan pemesanan,
-                lalu terima hasil pekerjaan.
-            </p>
+                        <div class="min-w-0">
+
+                            <h3 class="text-sm font-semibold text-slate-900">
+                                {{ $benefit['title'] }}
+                            </h3>
+
+                            <p class="mt-1 text-xs leading-5 text-slate-500">
+                                {{ $benefit['description'] }}
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                @endforeach
+
+            </div>
+
+
+            {{-- Desktop --}}
+
+            <div class="mt-8 hidden grid-cols-3 gap-5 sm:grid">
+
+                @foreach ($benefits as $benefit)
+
+                    <div class="pk-home-reveal rounded-2xl border border-slate-200 bg-white p-6">
+
+                        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                            <i class="bi {{ $benefit['icon'] }} text-[18px]"></i>
+                        </span>
+
+                        <h3 class="mt-4 text-sm font-semibold text-slate-900">
+                            {{ $benefit['title'] }}
+                        </h3>
+
+                        <p class="mt-2 text-xs leading-5 text-slate-500">
+                            {{ $benefit['description'] }}
+                        </p>
+
+                    </div>
+
+                @endforeach
+
+            </div>
 
         </div>
 
-
-        <div
-            class="mt-10 grid gap-8 sm:mt-12 sm:grid-cols-2 lg:grid-cols-4"
-        >
-
-            @php
-
-                $steps = [
-
-                    [
-                        'number' => '01',
-                        'icon' => 'bi-search',
-                        'title' => 'Cari jasa',
-                        'description' => 'Temukan layanan yang sesuai dengan kebutuhanmu.',
-                    ],
-
-                    [
-                        'number' => '02',
-                        'icon' => 'bi-chat-dots',
-                        'title' => 'Diskusikan',
-                        'description' => 'Hubungi freelancer dan bahas detail pekerjaan.',
-                    ],
-
-                    [
-                        'number' => '03',
-                        'icon' => 'bi-credit-card',
-                        'title' => 'Pesan',
-                        'description' => 'Setujui penawaran dan lakukan pembayaran.',
-                    ],
-
-                    [
-                        'number' => '04',
-                        'icon' => 'bi-check2-circle',
-                        'title' => 'Selesaikan',
-                        'description' => 'Terima hasil pekerjaan dan selesaikan pesanan.',
-                    ],
-
-                ];
-
-            @endphp
+    </section>
 
 
-            @foreach ($steps as $step)
 
-                <div class="relative">
+    {{-- =========================================================
+        TESTIMONIALS
+    ========================================================== --}}
 
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-lg text-[#0F6B3A] shadow-sm ring-1 ring-[#DCEDE3]"
-                    >
-                        <i class="bi {{ $step['icon'] }}"></i>
-                    </div>
+    @if ($testimonials->isNotEmpty())
 
+        <section class="bg-white py-10 sm:py-12 lg:py-14">
 
-                    <div
-                        class="mt-5 text-[11px] font-semibold tracking-[0.18em] text-[#1E9E5A]"
-                    >
-                        {{ $step['number'] }}
-                    </div>
+            <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
 
+                <div class="pk-home-reveal">
 
-                    <h3
-                        class="mt-2 text-base font-semibold text-[#123128]"
-                    >
-                        {{ $step['title'] }}
-                    </h3>
-
-
-                    <p
-                        class="mt-2 max-w-xs text-sm leading-6 text-[#7A8D85]"
-                    >
-                        {{ $step['description'] }}
+                    <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600 sm:text-xs">
+                        Cerita pengguna
                     </p>
 
-                </div>
-
-            @endforeach
-
-        </div>
-
-    </div>
-
-</section>
-
-
-{{-- =========================================================
-    FREELANCER CTA
-========================================================== --}}
-
-<section class="bg-white py-16 sm:py-20">
-
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        <div
-            class="relative overflow-hidden rounded-[28px] bg-[#0F6B3A] px-6 py-12 sm:px-10 sm:py-14 lg:px-14"
-        >
-
-            <div
-                class="pointer-events-none absolute right-[-80px] top-[-80px] h-64 w-64 rounded-full bg-[#1E9E5A]/45"
-            ></div>
-
-
-            <div
-                class="pointer-events-none absolute bottom-[-100px] left-[38%] h-56 w-56 rounded-full bg-[#7AD8B5]/10"
-            ></div>
-
-
-            <div
-                class="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between"
-            >
-
-                <div class="max-w-2xl">
-
-                    <span class="text-sm font-medium text-[#7AD8B5]">
-                        Untuk freelancer
-                    </span>
-
-
-                    <h2
-                        class="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl"
-                    >
-                        Ubah keahlianmu menjadi peluang.
+                    <h2 class="mt-1.5 text-[22px] font-bold tracking-[-0.025em] text-slate-900 sm:text-2xl">
+                        Pengalaman dari pengguna ProKerja
                     </h2>
 
-
-                    <p
-                        class="mt-4 max-w-xl text-sm leading-7 text-white/65 sm:text-base"
-                    >
-                        Tawarkan jasamu di JASAIN, temukan client,
-                        dan bangun reputasi profesionalmu.
-                    </p>
-
                 </div>
 
 
-                <div class="shrink-0">
+                <div class="pk-home-reveal mt-6">
 
-                    @guest
+                    <div class="no-scrollbar flex gap-4 overflow-x-auto pb-3 sm:grid sm:grid-cols-2 sm:overflow-visible lg:grid-cols-3">
 
-                        <a
-                            href="{{ route('register') }}"
-                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-semibold text-[#0F6B3A] transition hover:bg-[#EAF7EF] sm:w-auto"
-                        >
-                            Mulai menjadi freelancer
+                        @foreach ($testimonials->take(6) as $testimonial)
 
-                            <i class="bi bi-arrow-right"></i>
-                        </a>
+                            @php
 
-                    @else
+                                $testimonialName = data_get(
+                                    $testimonial,
+                                    'user.name',
+                                    data_get(
+                                        $testimonial,
+                                        'name',
+                                        'Pengguna ProKerja'
+                                    )
+                                );
 
-                        @if (auth()->user()->role === 'freelancer')
+                                $testimonialMessage = data_get(
+                                    $testimonial,
+                                    'comment',
+                                    data_get(
+                                        $testimonial,
+                                        'message',
+                                        data_get(
+                                            $testimonial,
+                                            'content',
+                                            ''
+                                        )
+                                    )
+                                );
+
+                                $testimonialRating = data_get(
+                                    $testimonial,
+                                    'rating',
+                                    5
+                                );
+
+                            @endphp
+
+
+                            <article class="w-[285px] shrink-0 rounded-2xl border border-slate-200 bg-slate-50 p-5 sm:w-auto">
+
+                                <div class="flex items-center gap-1">
+
+                                    @for ($i = 1; $i <= 5; $i++)
+
+                                        <i class="bi bi-star-fill text-[10px] {{ $i <= (int) $testimonialRating ? 'text-amber-400' : 'text-slate-300' }}"></i>
+
+                                    @endfor
+
+                                </div>
+
+
+                                <p class="mt-4 line-clamp-4 text-xs leading-5 text-slate-600">
+                                    “{{ $testimonialMessage }}”
+                                </p>
+
+
+                                <div class="mt-5 text-xs font-semibold text-slate-900">
+                                    {{ $testimonialName }}
+                                </div>
+
+                            </article>
+
+                        @endforeach
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    @endif
+
+
+
+    {{-- =========================================================
+        BOTTOM BANNER
+        Natural image ratio
+    ========================================================== --}}
+
+    @if ($cmsBottomBanners->isNotEmpty())
+
+        <section class="bg-slate-50 py-9 sm:py-11 lg:py-14">
+
+            <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+
+                @foreach ($cmsBottomBanners->take(1) as $banner)
+
+                    @php
+
+                        $desktopImage = method_exists(
+                            $banner,
+                            'getImageUrlAttribute'
+                        )
+                            ? $banner->image_url
+                            : $getMediaUrl(
+                                $banner->image_path ?? null
+                            );
+
+                        $mobileImage = method_exists(
+                            $banner,
+                            'getMobileImageUrlAttribute'
+                        )
+                            ? (
+                                $banner->mobile_image_url
+                                ?: $desktopImage
+                            )
+                            : $getMediaUrl(
+                                $banner->mobile_image_path ?? null
+                            );
+
+                        $mobileImage =
+                            $mobileImage
+                            ?: $desktopImage;
+
+                        $bannerLink =
+                            $banner->link_url
+                            ?? null;
+
+                        $bannerAlt =
+                            $banner->alt_text
+                            ?? (
+                                $banner->name
+                                ?? 'Banner ProKerja'
+                            );
+
+                    @endphp
+
+
+                    <div class="pk-home-reveal overflow-hidden rounded-[22px] border border-slate-200 bg-white sm:rounded-3xl">
+
+                        @if ($bannerLink)
 
                             <a
-                                href="{{ route('freelancer.dashboard') }}"
-                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-semibold text-[#0F6B3A] transition hover:bg-[#EAF7EF] sm:w-auto"
+                                href="{{ $bannerLink }}"
+                                @if ($banner->open_new_tab ?? false)
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                @endif
+                                class="block"
                             >
-                                Buka dashboard
 
-                                <i class="bi bi-arrow-right"></i>
-                            </a>
+                        @endif
+
+
+                        @if ($desktopImage)
+
+                            <picture class="block w-full">
+
+                                @if ($mobileImage)
+
+                                    <source
+                                        media="(max-width: 639px)"
+                                        srcset="{{ $mobileImage }}"
+                                    >
+
+                                @endif
+
+
+                                <img
+                                    src="{{ $desktopImage }}"
+                                    alt="{{ $bannerAlt }}"
+                                    class="block h-auto w-full object-contain"
+                                    loading="lazy"
+                                    draggable="false"
+                                >
+
+                            </picture>
 
                         @else
 
-                            <a
-                                href="{{ route('register') }}"
-                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-semibold text-[#0F6B3A] transition hover:bg-[#EAF7EF] sm:w-auto"
-                            >
-                                Daftar sebagai freelancer
+                            <div class="flex min-h-[150px] items-center bg-blue-50 px-5 py-10 sm:px-10">
 
-                                <i class="bi bi-arrow-right"></i>
+                                <p class="text-lg font-bold text-slate-900">
+                                    {{ $banner->name ?? 'ProKerja' }}
+                                </p>
+
+                            </div>
+
+                        @endif
+
+
+                        @if ($bannerLink)
+
                             </a>
 
                         @endif
 
-                    @endguest
+                    </div>
+
+                @endforeach
+
+            </div>
+
+        </section>
+
+    @endif
+
+
+
+    {{-- =========================================================
+        FINAL CTA
+    ========================================================== --}}
+
+    <section class="bg-white py-10 sm:py-12 lg:py-16">
+
+        <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+
+            <div class="pk-home-reveal overflow-hidden rounded-[24px] border border-blue-100 bg-blue-50">
+
+                <div class="flex flex-col gap-5 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between lg:p-10">
+
+                    <div class="max-w-2xl">
+
+                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600 sm:text-xs">
+                            Siap mulai?
+                        </p>
+
+                        <h2 class="mt-2 text-2xl font-bold tracking-[-0.03em] text-slate-900 sm:text-3xl">
+                            Temukan talenta. Wujudkan kerja.
+                        </h2>
+
+                        <p class="mt-2 text-sm leading-6 text-slate-500">
+                            Temukan layanan yang sesuai atau mulai jelajahi berbagai proyek yang tersedia.
+                        </p>
+
+                    </div>
+
+
+                    <div class="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+
+                        <a
+                            href="{{ route('marketplace.search') }}"
+                            class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                        >
+                            Cari Jasa
+                            <i class="bi bi-search text-xs"></i>
+                        </a>
+
+
+                        <a
+                            href="{{ route('marketplace.jobs.index') }}"
+                            class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-600"
+                        >
+                            Lihat Proyek
+                            <i class="bi bi-arrow-right text-xs"></i>
+                        </a>
+
+                    </div>
 
                 </div>
 
@@ -1710,54 +2659,244 @@
 
         </div>
 
-    </div>
+    </section>
 
-</section>
+</div>
 
-
-{{-- =========================================================
-    FINAL CTA
-========================================================== --}}
-
-<section class="bg-[#F8FCF9] py-14 sm:py-16">
-
-    <div
-        class="mx-auto max-w-3xl px-4 text-center sm:px-6"
-    >
-
-        <div
-            class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#EAF7EF] text-lg text-[#0F6B3A]"
-        >
-            <i class="bi bi-search"></i>
-        </div>
-
-
-        <h2
-            class="mt-5 text-2xl font-semibold tracking-tight text-[#123128]"
-        >
-            Siap menemukan jasa yang tepat?
-        </h2>
-
-
-        <p
-            class="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#71847C] sm:text-base"
-        >
-            Jelajahi berbagai layanan dan temukan freelancer
-            yang sesuai dengan kebutuhanmu.
-        </p>
-
-
-        <a
-            href="{{ route('marketplace.search') }}"
-            class="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0F6B3A] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#1E9E5A]"
-        >
-            Jelajahi jasa
-
-            <i class="bi bi-arrow-right"></i>
-        </a>
-
-    </div>
-
-</section>
 
 </x-layouts.marketplace>
+
+
+
+{{-- ================================================================
+HOMEPAGE INTERACTION
+================================================================ --}}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const typingText = document.getElementById('pk-typing-text');
+    const typingCursor = document.getElementById('pk-typing-cursor');
+
+    if (typingText) {
+
+        const words = [
+            'Bisnis',
+            'Kebutuhan',
+            'Project',
+            'Impian',
+            'Pekerjaan',
+        ];
+
+        let wordIndex = 0;
+        let charIndex = 0;
+        let deleting = false;
+        let timer = null;
+
+        const typeLoop = function () {
+
+            const currentWord = words[wordIndex];
+
+            if (!deleting) {
+                charIndex += 1;
+                typingText.textContent = currentWord.substring(0, charIndex);
+
+                if (charIndex >= currentWord.length) {
+                    timer = setTimeout(function () {
+                        deleting = true;
+                        typeLoop();
+                    }, 1800);
+                    return;
+                }
+
+                timer = setTimeout(typeLoop, 90);
+                return;
+            }
+
+            charIndex -= 1;
+            typingText.textContent = currentWord.substring(0, charIndex);
+
+            if (charIndex <= 0) {
+                charIndex = 0;
+                deleting = false;
+                wordIndex = (wordIndex + 1) % words.length;
+
+                timer = setTimeout(typeLoop, 400);
+                return;
+            }
+
+            timer = setTimeout(typeLoop, 50);
+        };
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            typingText.textContent = words[0];
+        } else {
+            timer = setTimeout(typeLoop, 500);
+        }
+    }
+
+    if (typingCursor) {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            typingCursor.style.display = 'none';
+        } else {
+            setInterval(function () {
+                typingCursor.style.opacity = typingCursor.style.opacity === '0' ? '1' : '0';
+            }, 550);
+        }
+    }
+
+    const revealItems = document.querySelectorAll('.pk-home-reveal');
+
+    if (!revealItems.length) {
+        return;
+    }
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        revealItems.forEach(function (item) {
+            item.classList.add('pk-home-visible');
+        });
+        return;
+    }
+
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(function (entries, obs) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) {
+                    return;
+                }
+
+                entry.target.classList.add('pk-home-visible');
+                obs.unobserve(entry.target);
+            });
+        }, {
+            threshold: 0.08,
+            rootMargin: '0px 0px -35px 0px'
+        });
+
+        revealItems.forEach(function (item) {
+            observer.observe(item);
+        });
+    } else {
+        revealItems.forEach(function (item) {
+            item.classList.add('pk-home-visible');
+        });
+    }
+});
+</script>
+
+
+
+<style>
+
+.no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Homepage reveal
+|--------------------------------------------------------------------------
+*/
+
+.pk-home-reveal {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.985);
+    transition:
+        opacity 650ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+}
+
+.pk-home-reveal.pk-home-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+}
+
+.pk-home-reveal:nth-child(2) {
+    transition-delay: 40ms;
+}
+
+.pk-home-reveal:nth-child(3) {
+    transition-delay: 80ms;
+}
+
+.pk-home-reveal:nth-child(4) {
+    transition-delay: 120ms;
+}
+
+.pk-home-reveal:nth-child(5) {
+    transition-delay: 160ms;
+}
+
+.pk-home-reveal:nth-child(6) {
+    transition-delay: 200ms;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Banner transition
+|--------------------------------------------------------------------------
+*/
+
+.pk-banner-slider {
+    transition:
+        height 700ms cubic-bezier(
+            0.22,
+            1,
+            0.36,
+            1
+        );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Mobile
+|--------------------------------------------------------------------------
+*/
+
+@media (max-width: 639px) {
+
+    body {
+        overflow-x: hidden;
+    }
+
+
+    #kategori,
+    #freelancer {
+        scroll-margin-top: 84px;
+    }
+
+
+    main,
+    body > div {
+        max-width: 100%;
+    }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Reduced motion
+|--------------------------------------------------------------------------
+*/
+
+@media (prefers-reduced-motion: reduce) {
+
+    .pk-home-reveal {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+
+}
+
+</style>

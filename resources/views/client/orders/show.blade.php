@@ -1,372 +1,778 @@
-<x-layouts.client title="Detail Pesanan">
 
-    @php
-
-        $serviceTitle =
-
-            $order->items->first()?->service_title
-
-            ?? 'Pesanan Jasa';
-
-        $freelancer = $order->freelancerProfile;
-
-        $freelancerName =
-
-            $freelancer?->user?->name
-
-            ?? 'Freelancer';
-
-        $freelancerInitial = strtoupper(
-
-            substr($freelancerName, 0, 1)
-
-        );
-
-        $freelancerAvatar = $freelancer?->avatar
-
-            ? asset('storage/' . $freelancer->avatar)
-
-            : null;
-
-
-        $statusConfig = match ($order->status) {
-
-            'pending_payment' => [
-
-                'label' => 'Menunggu pembayaran',
-
-                'icon' => 'bi-credit-card',
-
-                'class' => 'border-[#F2DDAF] bg-[#FFF9EA] text-[#9A6800]',
-
-                'dot' => 'bg-[#D99A19]',
-
-            ],
-
-            'paid' => [
-
-                'label' => 'Pembayaran diterima',
-
-                'icon' => 'bi-check-circle',
-
-                'class' => 'border-[#CFE0F1] bg-[#F3F8FC] text-[#3C6F9F]',
-
-                'dot' => 'bg-[#5B91C0]',
-
-            ],
-
-            'in_progress' => [
-
-                'label' => 'Sedang dikerjakan',
-
-                'icon' => 'bi-arrow-repeat',
-
-                'class' => 'border-[#CDE7D7] bg-[#EAF7EF] text-[#168A4D]',
-
-                'dot' => 'bg-[#35C978]',
-
-            ],
-
-            'delivered' => [
-
-                'label' => 'Menunggu pemeriksaan',
-
-                'icon' => 'bi-file-earmark-check',
-
-                'class' => 'border-[#E7D9C8] bg-[#FFF8EF] text-[#A96B20]',
-
-                'dot' => 'bg-[#D48A32]',
-
-            ],
-
-            'revision' => [
-
-                'label' => 'Dalam revisi',
-
-                'icon' => 'bi-arrow-repeat',
-
-                'class' => 'border-[#E8D8ED] bg-[#FAF4FC] text-[#895597]',
-
-                'dot' => 'bg-[#B77BC7]',
-
-            ],
-
-            'completed' => [
-
-                'label' => 'Selesai',
-
-                'icon' => 'bi-check-circle-fill',
-
-                'class' => 'border-[#CDE7D7] bg-[#EAF7EF] text-[#168A4D]',
-
-                'dot' => 'bg-[#35C978]',
-
-            ],
-
-            'cancelled' => [
-
-                'label' => 'Dibatalkan',
-
-                'icon' => 'bi-x-circle',
-
-                'class' => 'border-[#F0D5D5] bg-[#FFF6F6] text-[#B84E4E]',
-
-                'dot' => 'bg-[#D16B6B]',
-
-            ],
-
-            default => [
-
-                'label' => ucfirst(
-
-                    str_replace('_', ' ', $order->status)
-
-                ),
-
-                'icon' => 'bi-info-circle',
-
-                'class' => 'border-[#E1E7E3] bg-[#F7F9F8] text-[#66766E]',
-
-                'dot' => 'bg-[#A3AEA9]',
-
-            ],
-
-        };
-
-
-        $cancelableStatuses = [
-
-            'pending_payment',
-
-            'paid',
-
-            'in_progress',
-
-            'revision',
-
-        ];
-
-        $canRequestCancellation = in_array(
-
+@php
+    $serviceItem = $order->items->first();
+    $serviceTitle = $serviceItem?->service_title ?? 'Pesanan Jasa';
+
+    $freelancerProfile = $order->freelancerProfile;
+    $freelancer = $freelancerProfile?->user;
+
+    $freelancerName = $freelancer?->name ?? 'Freelancer';
+    $freelancerInitial = strtoupper(
+        substr(trim($freelancerName), 0, 1)
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Freelancer avatar
+    |--------------------------------------------------------------------------
+    */
+    $freelancerAvatar = data_get($freelancerProfile, 'avatar')
+        ?? data_get($freelancer, 'avatar')
+        ?? data_get($freelancer, 'avatar_url')
+        ?? data_get($freelancer, 'profile_photo_url');
+
+    $freelancerAvatarUrl = null;
+
+    if ($freelancerAvatar) {
+        if (
+            filter_var($freelancerAvatar, FILTER_VALIDATE_URL) ||
+            str_starts_with($freelancerAvatar, 'data:image/')
+        ) {
+            $freelancerAvatarUrl = $freelancerAvatar;
+        } elseif (str_starts_with($freelancerAvatar, '/')) {
+            $freelancerAvatarUrl = asset(
+                ltrim($freelancerAvatar, '/')
+            );
+        } elseif (
+            str_starts_with($freelancerAvatar, 'storage/') ||
+            str_starts_with($freelancerAvatar, 'uploads/')
+        ) {
+            $freelancerAvatarUrl = asset($freelancerAvatar);
+        } else {
+            $freelancerAvatarUrl = asset(
+                'storage/' . ltrim($freelancerAvatar, '/')
+            );
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Service image
+    |--------------------------------------------------------------------------
+    */
+    $serviceImage = data_get($serviceItem?->service, 'image_url')
+        ?? data_get($serviceItem?->service, 'image')
+        ?? data_get($serviceItem?->service, 'thumbnail_url')
+        ?? data_get($serviceItem?->service, 'thumbnail')
+        ?? data_get($serviceItem?->service, 'cover');
+
+    $serviceImageUrl = null;
+
+    if ($serviceImage) {
+        if (
+            filter_var($serviceImage, FILTER_VALIDATE_URL) ||
+            str_starts_with($serviceImage, 'data:image/')
+        ) {
+            $serviceImageUrl = $serviceImage;
+        } elseif (str_starts_with($serviceImage, '/')) {
+            $serviceImageUrl = asset(
+                ltrim($serviceImage, '/')
+            );
+        } elseif (
+            str_starts_with($serviceImage, 'storage/') ||
+            str_starts_with($serviceImage, 'uploads/')
+        ) {
+            $serviceImageUrl = asset($serviceImage);
+        } else {
+            $serviceImageUrl = asset(
+                'storage/' . ltrim($serviceImage, '/')
+            );
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Status
+    |--------------------------------------------------------------------------
+    */
+    $statusConfig = match ($order->status) {
+        'pending_payment' => [
+            'label' => 'Menunggu pembayaran',
+            'short' => 'Belum Bayar',
+            'dot' => 'bg-amber-500',
+            'badge' => 'border-amber-200 bg-amber-50 text-amber-700',
+            'soft' => 'bg-amber-50',
+            'accent' => 'text-amber-700',
+        ],
+
+        'paid' => [
+            'label' => 'Pembayaran diterima',
+            'short' => 'Dibayar',
+            'dot' => 'bg-blue-500',
+            'badge' => 'border-blue-200 bg-blue-50 text-blue-700',
+            'soft' => 'bg-blue-50',
+            'accent' => 'text-blue-700',
+        ],
+
+        'in_progress' => [
+            'label' => 'Sedang dikerjakan',
+            'short' => 'Dikerjakan',
+            'dot' => 'bg-indigo-500',
+            'badge' => 'border-indigo-200 bg-indigo-50 text-indigo-700',
+            'soft' => 'bg-indigo-50',
+            'accent' => 'text-indigo-700',
+        ],
+
+        'delivered' => [
+            'label' => 'Menunggu pemeriksaan',
+            'short' => 'Dikirim',
+            'dot' => 'bg-violet-500',
+            'badge' => 'border-violet-200 bg-violet-50 text-violet-700',
+            'soft' => 'bg-violet-50',
+            'accent' => 'text-violet-700',
+        ],
+
+        'revision' => [
+            'label' => 'Sedang direvisi',
+            'short' => 'Revisi',
+            'dot' => 'bg-orange-500',
+            'badge' => 'border-orange-200 bg-orange-50 text-orange-700',
+            'soft' => 'bg-orange-50',
+            'accent' => 'text-orange-700',
+        ],
+
+        'completed' => [
+            'label' => 'Pesanan selesai',
+            'short' => 'Selesai',
+            'dot' => 'bg-emerald-500',
+            'badge' => 'border-emerald-200 bg-emerald-50 text-emerald-700',
+            'soft' => 'bg-emerald-50',
+            'accent' => 'text-emerald-700',
+        ],
+
+        'cancelled' => [
+            'label' => 'Pesanan dibatalkan',
+            'short' => 'Dibatalkan',
+            'dot' => 'bg-rose-500',
+            'badge' => 'border-rose-200 bg-rose-50 text-rose-700',
+            'soft' => 'bg-rose-50',
+            'accent' => 'text-rose-700',
+        ],
+
+        default => [
+            'label' => ucfirst(
+                str_replace('_', ' ', $order->status ?? 'Tidak diketahui')
+            ),
+            'short' => ucfirst(
+                str_replace('_', ' ', $order->status ?? 'Unknown')
+            ),
+            'dot' => 'bg-slate-400',
+            'badge' => 'border-slate-200 bg-slate-50 text-slate-700',
+            'soft' => 'bg-slate-50',
+            'accent' => 'text-slate-700',
+        ],
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cancellation
+    |--------------------------------------------------------------------------
+    */
+    $cancelableStatuses = [
+        'pending_payment',
+        'paid',
+        'in_progress',
+        'revision',
+    ];
+
+    $canRequestCancellation = in_array(
+        $order->status,
+        $cancelableStatuses,
+        true
+    );
+
+    $latestCancellationRequest = $order->latestCancellationRequest;
+    $cancellationStatus = $latestCancellationRequest?->status;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dispute
+    |--------------------------------------------------------------------------
+    */
+    $activeDispute = $order->activeDispute;
+
+    $disputableStatuses = [
+        'paid',
+        'in_progress',
+        'delivered',
+        'revision',
+    ];
+
+    $canRequestDispute = in_array(
+        $order->status,
+        $disputableStatuses,
+        true
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Refund
+    |--------------------------------------------------------------------------
+    */
+    $latestRefund = $order->latestRefund;
+    $refundStatus = $latestRefund?->status;
+    $refundAmount = (float) (
+        $latestRefund?->amount
+        ?? $order->total
+        ?? 0
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Review
+    |--------------------------------------------------------------------------
+    */
+    $hasReview = $order->review !== null;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment
+    |--------------------------------------------------------------------------
+    */
+    $paymentStatusLabel = match ($order->payment?->status) {
+        'paid' => 'Lunas',
+        'pending' => 'Belum dibayar',
+        'refund_pending' => 'Menunggu refund',
+        'refunded' => 'Dana dikembalikan',
+        'cancelled' => 'Dibatalkan',
+        default => $order->payment
+            ? ucfirst(
+                str_replace(
+                    '_',
+                    ' ',
+                    $order->payment->status
+                )
+            )
+            : 'Belum tersedia',
+    };
+
+    $paymentStatusClass = match ($order->payment?->status) {
+        'paid', 'refunded'
+            => 'border-emerald-200 bg-emerald-50 text-emerald-700',
+
+        'pending'
+            => 'border-amber-200 bg-amber-50 text-amber-700',
+
+        'refund_pending'
+            => 'border-blue-200 bg-blue-50 text-blue-700',
+
+        'cancelled'
+            => 'border-slate-200 bg-slate-50 text-slate-600',
+
+        default
+            => 'border-slate-200 bg-slate-50 text-slate-600',
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Project progress
+    |--------------------------------------------------------------------------
+    */
+    $progress = [
+        [
+            'key' => 'created',
+            'label' => 'Pesanan dibuat',
+            'active' => true,
+        ],
+
+        [
+            'key' => 'paid',
+            'label' => 'Pembayaran',
+            'active' => in_array(
+                $order->status,
+                [
+                    'paid',
+                    'in_progress',
+                    'delivered',
+                    'revision',
+                    'completed',
+                ],
+                true
+            ) || in_array(
+                $order->payment?->status,
+                [
+                    'paid',
+                    'refund_pending',
+                    'refunded',
+                ],
+                true
+            ),
+        ],
+
+        [
+            'key' => 'working',
+            'label' => 'Pengerjaan',
+            'active' => in_array(
+                $order->status,
+                [
+                    'in_progress',
+                    'delivered',
+                    'revision',
+                    'completed',
+                ],
+                true
+            ),
+        ],
+
+        [
+            'key' => 'delivery',
+            'label' => 'Delivery',
+            'active' => in_array(
+                $order->status,
+                [
+                    'delivered',
+                    'revision',
+                    'completed',
+                ],
+                true
+            ),
+        ],
+
+        [
+            'key' => 'done',
+            'label' => 'Selesai',
+            'active' => $order->status === 'completed',
+        ],
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Activity feed
+    |--------------------------------------------------------------------------
+    */
+    $activities = [];
+
+    $activities[] = [
+        'title' => 'Pesanan dibuat',
+        'description' => 'Pesanan berhasil dibuat dan masuk ke proses pembayaran.',
+        'date' => $order->created_at,
+        'tone' => 'blue',
+        'icon' => 'order',
+    ];
+
+    if (
+        $order->payment ||
+        in_array(
             $order->status,
-
-            $cancelableStatuses,
-
+            [
+                'paid',
+                'in_progress',
+                'delivered',
+                'revision',
+                'completed',
+            ],
             true
+        )
+    ) {
+        $activities[] = [
+            'title' => $order->payment?->status === 'refunded'
+                ? 'Pembayaran dikembalikan'
+                : 'Pembayaran dikonfirmasi',
+            'description' => $order->payment?->status === 'refunded'
+                ? 'Pembayaran pada order ini sudah masuk ke proses pengembalian dana.'
+                : 'Pembayaran telah tercatat dan pesanan dapat diproses.',
+            'date' => $order->payment?->paid_at
+                ?? $order->payment?->updated_at
+                ?? $order->updated_at,
+            'tone' => 'blue',
+            'icon' => 'payment',
+        ];
+    }
 
-        );
+    if (
+        in_array(
+            $order->status,
+            [
+                'in_progress',
+                'delivered',
+                'revision',
+                'completed',
+            ],
+            true
+        )
+    ) {
+        $activities[] = [
+            'title' => 'Freelancer mulai mengerjakan',
+            'description' => 'Project mulai dikerjakan berdasarkan brief dan kebutuhan pesanan.',
+            'date' => $order->updated_at,
+            'tone' => 'indigo',
+            'icon' => 'work',
+        ];
+    }
 
+    if (
+        in_array(
+            $order->status,
+            [
+                'delivered',
+                'revision',
+                'completed',
+            ],
+            true
+        )
+    ) {
+        $activities[] = [
+            'title' => 'Hasil pekerjaan dikirim',
+            'description' => 'Freelancer telah mengirimkan hasil pekerjaan untuk diperiksa.',
+            'date' => $order->updated_at,
+            'tone' => 'violet',
+            'icon' => 'delivery',
+        ];
+    }
 
-        $latestRefund = $order->latestRefund;
-        $refundStatus = $latestRefund?->status;
-        $refundAmount = (float) ($latestRefund?->amount ?? $order->total);
+    if ($order->status === 'revision') {
+        $activities[] = [
+            'title' => 'Revisi sedang diproses',
+            'description' => 'Freelancer sedang mengerjakan permintaan revisi.',
+            'date' => $order->updated_at,
+            'tone' => 'orange',
+            'icon' => 'revision',
+        ];
+    }
 
-        $timeline = [
-            [
-                'label' => 'Pembayaran',
-                'description' => $order->status === 'cancelled' && $order->payment?->status === 'refunded'
-                    ? 'Pembayaran sebelumnya berhasil dilakukan dan dana telah dikembalikan.'
-                    : 'Pesanan berhasil dibuat dan menunggu proses pembayaran.',
-                'icon' => 'bi-credit-card',
-                'active' => in_array($order->status, ['pending_payment', 'paid', 'in_progress', 'delivered', 'revision', 'completed'], true)
-                    || in_array($order->payment?->status, ['paid', 'refund_pending', 'refunded'], true),
-            ],
-            [
-                'label' => 'Pengerjaan',
-                'description' => 'Freelancer mulai mengerjakan kebutuhan pesananmu.',
-                'icon' => 'bi-briefcase',
-                'active' => in_array($order->status, ['in_progress', 'delivered', 'revision', 'completed'], true),
-            ],
-            [
-                'label' => 'Hasil pekerjaan',
-                'description' => 'Freelancer mengirimkan hasil pekerjaan untuk diperiksa.',
-                'icon' => 'bi-file-earmark-check',
-                'active' => in_array($order->status, ['delivered', 'revision', 'completed'], true),
-            ],
-            [
-                'label' => 'Pesanan selesai',
-                'description' => 'Pekerjaan telah disetujui dan pesanan selesai.',
-                'icon' => 'bi-check-lg',
-                'active' => $order->status === 'completed',
-            ],
+    if ($order->status === 'completed') {
+        $activities[] = [
+            'title' => 'Pesanan selesai',
+            'description' => 'Project telah selesai dan order ditutup.',
+            'date' => $order->updated_at,
+            'tone' => 'emerald',
+            'icon' => 'completed',
+        ];
+    }
+
+    if ($order->status === 'cancelled') {
+        $activities[] = [
+            'title' => 'Pesanan dibatalkan',
+            'description' => $order->cancel_reason
+                ?: 'Pesanan ini telah dibatalkan.',
+            'date' => $order->updated_at,
+            'tone' => 'rose',
+            'icon' => 'cancelled',
         ];
 
-        if ($order->status === 'cancelled') {
-            $timeline[] = [
-                'label' => 'Pembatalan',
-                'description' => 'Pesanan telah dibatalkan dan tidak dapat diproses kembali.',
-                'icon' => 'bi-x-circle',
-                'active' => true,
-            ];
-
-            $timeline[] = [
-                'label' => 'Refund',
-                'description' => match ($refundStatus) {
-                    'refunded' => 'Dana pembayaran telah berhasil dikembalikan kepada client.',
-                    'pending', 'processing' => 'Pengembalian dana sedang diproses oleh admin.',
-                    'rejected' => 'Pengembalian dana belum berhasil diselesaikan.',
-                    default => 'Belum ada proses refund yang tercatat.',
+        if ($refundStatus) {
+            $activities[] = [
+                'title' => match ($refundStatus) {
+                    'pending' => 'Refund menunggu proses',
+                    'processing' => 'Refund sedang diproses',
+                    'refunded' => 'Refund selesai',
+                    'rejected' => 'Refund belum berhasil',
+                    default => 'Status refund diperbarui',
                 },
-                'icon' => 'bi-arrow-counterclockwise',
-                'active' => in_array($refundStatus, ['pending', 'processing', 'refunded', 'rejected'], true),
+                'description' => match ($refundStatus) {
+                    'pending' => 'Pengembalian dana sedang menunggu proses.',
+                    'processing' => 'Pengembalian dana sedang diproses.',
+                    'refunded' => 'Dana berhasil dikembalikan kepada client.',
+                    'rejected' => 'Pengajuan refund belum berhasil diselesaikan.',
+                    default => 'Status refund telah diperbarui.',
+                },
+                'date' => $latestRefund?->completed_at
+                    ?? $latestRefund?->updated_at,
+                'tone' => $refundStatus === 'refunded'
+                    ? 'emerald'
+                    : 'blue',
+                'icon' => 'refund',
             ];
         }
+    }
 
-        $hasReview = $order->review !== null;
+    $activityTone = [
+        'blue' => [
+            'icon' => 'border-blue-200 bg-blue-50 text-blue-600',
+            'marker' => 'bg-blue-500',
+        ],
+        'indigo' => [
+            'icon' => 'border-indigo-200 bg-indigo-50 text-indigo-600',
+            'marker' => 'bg-indigo-500',
+        ],
+        'violet' => [
+            'icon' => 'border-violet-200 bg-violet-50 text-violet-600',
+            'marker' => 'bg-violet-500',
+        ],
+        'orange' => [
+            'icon' => 'border-orange-200 bg-orange-50 text-orange-600',
+            'marker' => 'bg-orange-500',
+        ],
+        'emerald' => [
+            'icon' => 'border-emerald-200 bg-emerald-50 text-emerald-600',
+            'marker' => 'bg-emerald-500',
+        ],
+        'rose' => [
+            'icon' => 'border-rose-200 bg-rose-50 text-rose-600',
+            'marker' => 'bg-rose-500',
+        ],
+    ];
 
-    @endphp
+    /*
+    |--------------------------------------------------------------------------
+    | Current action
+    |--------------------------------------------------------------------------
+    */
+    $primaryAction = match ($order->status) {
+        'pending_payment' => [
+            'label' => 'Lanjutkan Pembayaran',
+            'url' => route(
+                'client.orders.checkout',
+                $order
+            ),
+        ],
 
-    <div class="min-h-screen bg-[#F8FCF9]">
+        'delivered' => [
+            'label' => 'Periksa Hasil',
+            'url' => route(
+                'client.delivery.show',
+                $order
+            ),
+        ],
 
-        <div class="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
+        'revision' => [
+            'label' => 'Lihat Progress Revisi',
+            'url' => route(
+                'client.delivery.show',
+                $order
+            ),
+        ],
+
+        'completed' => [
+            'label' => $hasReview
+                ? 'Lihat Pesanan'
+                : 'Beri Review',
+            'url' => $hasReview
+                ? route(
+                    'client.orders.show',
+                    $order
+                )
+                : route(
+                    'client.reviews.create',
+                    $order
+                ),
+        ],
+
+        default => [
+            'label' => 'Kirim Pesan',
+            'url' => route(
+                'client.messages.index'
+            ),
+        ],
+    };
+@endphp
+
+<x-layouts.marketplace title="Detail Pesanan - ProKerja">
+
+    <div class="min-h-screen bg-[#F8FAFC]">
+
+        <div class="mx-auto w-full max-w-7xl px-4 py-5 pb-28 sm:px-6 sm:py-7 lg:px-8 lg:pb-10">
 
             {{-- =========================================================
-
-                TOP BAR
-
+                BACK / ACTION
             ========================================================== --}}
-
             <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
                 <a
-
                     href="{{ route('client.orders.index') }}"
-
-                    class="inline-flex w-fit items-center gap-2 text-xs font-medium text-[#71837B] transition hover:text-[#0F6B3A]"
-
+                    class="inline-flex w-fit items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-[#2563EB]"
                 >
-
-                    <i class="bi bi-arrow-left text-[12px]"></i>
+                    <span class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-sm">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                            <path d="M19 12H5"/>
+                            <path d="m12 19-7-7 7-7"/>
+                        </svg>
+                    </span>
 
                     Kembali ke pesanan
-
                 </a>
 
                 <div class="flex flex-wrap items-center gap-2">
 
-                    <span class="text-[10px] text-[#99A59F]">
-
-                        Order {{ $order->order_number }}
-
+                    <span class="text-xs font-medium text-slate-400">
+                        {{ $order->order_number }}
                     </span>
 
-                    <a
+                    @if (Route::has('client.orders.invoice'))
+                        <a
+                            href="{{ route('client.orders.invoice', $order) }}"
+                            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-[#2563EB]"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M6 3h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2V5a2 2 0 0 1 2-2Z"/>
+                                <path d="M9 8h6M9 12h6"/>
+                            </svg>
 
-                        href="{{ route('client.orders.invoice', $order) }}"
-
-                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D8E5DD] bg-white px-4 py-2.5 text-[10px] font-semibold text-[#52685F] transition hover:border-[#BBD9C6] hover:bg-[#F4FAF6] hover:text-[#1E9E5A]"
-
-                    >
-
-                        <i class="bi bi-receipt"></i>
-
-                        Invoice
-
-                    </a>
+                            Invoice
+                        </a>
+                    @endif
 
                 </div>
 
             </div>
 
+
             {{-- =========================================================
-
-                ALERT SUCCESS
-
+                ALERTS
             ========================================================== --}}
-
             @if(session('success'))
+                <div class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 sm:px-5">
+                    <div class="flex items-start gap-3">
 
-                <div class="mb-5 overflow-hidden rounded-xl border border-[#CDE8D7] bg-white shadow-[0_4px_16px_rgba(18,49,40,0.04)]">
-
-                    <div class="flex items-center gap-3 px-4 py-3.5">
-
-                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF7EF]">
-
-                            <i class="bi bi-check-lg text-sm text-[#1E9E5A]"></i>
-
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m5 12 4 4L19 6"/>
+                            </svg>
                         </div>
 
-                        <p class="text-sm text-[#355248]">
+                        <div>
+                            <p class="text-sm font-bold text-emerald-800">
+                                Berhasil
+                            </p>
 
-                            {{ session('success') }}
-
-                        </p>
+                            <p class="mt-0.5 text-sm leading-6 text-emerald-700">
+                                {{ session('success') }}
+                            </p>
+                        </div>
 
                     </div>
-
                 </div>
-
             @endif
-
-            {{-- =========================================================
-
-                ALERT ERROR
-
-            ========================================================== --}}
 
             @if(session('error'))
+                <div class="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 sm:px-5">
+                    <div class="flex items-start gap-3">
 
-                <div class="mb-5 overflow-hidden rounded-xl border border-red-100 bg-white shadow-[0_4px_16px_rgba(18,49,40,0.04)]">
-
-                    <div class="flex items-center gap-3 px-4 py-3.5">
-
-                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50">
-
-                            <i class="bi bi-exclamation-lg text-sm text-red-500"></i>
-
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-rose-600">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m8 8 8 8M16 8 8 16"/>
+                            </svg>
                         </div>
 
-                        <p class="text-sm text-red-600">
+                        <div>
+                            <p class="text-sm font-bold text-rose-800">
+                                Terjadi masalah
+                            </p>
 
-                            {{ session('error') }}
-
-                        </p>
+                            <p class="mt-0.5 text-sm leading-6 text-rose-700">
+                                {{ session('error') }}
+                            </p>
+                        </div>
 
                     </div>
-
                 </div>
-
             @endif
 
-            {{-- =========================================================
-
-                VALIDATION ERRORS
-
-            ========================================================== --}}
-
             @if($errors->any())
+                <div class="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 sm:px-5">
+                    <div class="flex items-start gap-3">
 
-                <div class="mb-5 overflow-hidden rounded-xl border border-red-100 bg-white shadow-[0_4px_16px_rgba(18,49,40,0.04)]">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-rose-600">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M12 8v5"/>
+                                <path d="M12 16h.01"/>
+                            </svg>
+                        </div>
 
-                    <div class="px-4 py-3.5">
+                        <div>
+                            <p class="text-sm font-bold text-rose-800">
+                                Periksa kembali informasi berikut.
+                            </p>
 
-                        <div class="flex items-start gap-3">
+                            <div class="mt-1 space-y-1">
+                                @foreach($errors->all() as $error)
+                                    <p class="text-sm leading-5 text-rose-700">
+                                        {{ $error }}
+                                    </p>
+                                @endforeach
+                            </div>
+                        </div>
 
-                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50">
+                    </div>
+                </div>
+            @endif
 
-                                <i class="bi bi-exclamation-lg text-sm text-red-500"></i>
+
+            {{-- =========================================================
+                MAIN ORDER HEADER
+            ========================================================== --}}
+            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+
+                <div class="p-5 sm:p-6 lg:p-7">
+
+                    <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+
+                        <div class="flex min-w-0 flex-1 gap-4 sm:gap-5">
+
+                            {{-- service image --}}
+                            <div class="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 sm:h-24 sm:w-24">
+
+                                @if($serviceImageUrl)
+
+                                    <img
+                                        src="{{ $serviceImageUrl }}"
+                                        alt="{{ $serviceTitle }}"
+                                        class="h-full w-full object-cover"
+                                    >
+
+                                @else
+
+                                    <div class="flex h-full w-full items-center justify-center bg-[#EFF6FF] text-[#2563EB]">
+                                        <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                            <rect x="3" y="4" width="18" height="17" rx="2"/>
+                                            <path d="M7 8h10M7 12h7M7 16h5"/>
+                                        </svg>
+                                    </div>
+
+                                @endif
 
                             </div>
 
-                            <div>
 
-                                <p class="text-sm font-medium text-red-600">
+                            <div class="min-w-0">
 
-                                    Terdapat kesalahan pada form.
+                                <div class="flex flex-wrap items-center gap-2">
 
-                                </p>
+                                    <span class="text-xs font-bold uppercase tracking-[0.12em] text-[#2563EB]">
+                                        Pesanan
+                                    </span>
 
-                                <div class="mt-1 space-y-0.5">
+                                    <span class="text-xs text-slate-300">
+                                        •
+                                    </span>
 
-                                    @foreach($errors->all() as $error)
+                                    <span class="text-xs text-slate-400">
+                                        {{ $order->order_number }}
+                                    </span>
 
-                                        <p class="text-xs text-red-500">
+                                </div>
 
-                                            {{ $error }}
+                                <h1 class="mt-2 max-w-4xl text-xl font-bold leading-7 tracking-tight text-slate-900 sm:text-2xl sm:leading-8">
+                                    {{ $serviceTitle }}
+                                </h1>
 
-                                        </p>
+                                <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
 
-                                    @endforeach
+                                    <span class="inline-flex items-center gap-2">
+                                        <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                            <circle cx="12" cy="7" r="4"/>
+                                            <path d="M4 21a8 8 0 0 1 16 0"/>
+                                        </svg>
+                                        {{ $freelancerName }}
+                                    </span>
+
+                                    <span class="inline-flex items-center gap-2">
+                                        <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                            <circle cx="12" cy="12" r="9"/>
+                                            <path d="M12 7v5l3 2"/>
+                                        </svg>
+                                        {{ $order->delivery_days }} hari
+                                    </span>
+
+                                    @if($order->due_at)
+                                        <span class="inline-flex items-center gap-2">
+                                            <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                <rect x="3" y="4" width="18" height="17" rx="2"/>
+                                                <path d="M16 2v4M8 2v4M3 9h18"/>
+                                            </svg>
+                                            Deadline {{ $order->due_at->format('d M Y') }}
+                                        </span>
+                                    @endif
 
                                 </div>
 
@@ -374,107 +780,73 @@
 
                         </div>
 
+
+                        {{-- status --}}
+                        <div class="shrink-0">
+
+                            <span class="inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-bold {{ $statusConfig['badge'] }}">
+
+                                <span class="h-2 w-2 rounded-full {{ $statusConfig['dot'] }}"></span>
+
+                                {{ $statusConfig['short'] }}
+
+                            </span>
+
+                        </div>
+
                     </div>
 
                 </div>
 
-            @endif
 
-            {{-- =========================================================
+                {{-- progress --}}
+                <div class="border-t border-slate-100 px-5 py-5 sm:px-6 lg:px-7">
 
-                ORDER HEADER
+                    <div class="overflow-x-auto">
 
-            ========================================================== --}}
+                        <div class="flex min-w-[650px] items-center">
 
-            <section class="overflow-hidden rounded-3xl border border-[#E1EAE5] bg-white shadow-[0_8px_28px_rgba(18,49,40,0.045)]">
+                            @foreach($progress as $step)
 
-                <div class="px-5 py-6 sm:px-7 lg:px-8 lg:py-7">
+                                @php
+                                    $isLast = $loop->last;
+                                @endphp
 
-                    <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                                <div class="flex flex-1 items-center">
 
-                        {{-- Information --}}
+                                    <div class="flex min-w-0 items-center gap-2.5">
 
-                        <div class="min-w-0">
+                                        <span
+                                            class="
+                                                flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2
+                                                {{ $step['active']
+                                                    ? 'border-[#2563EB] bg-[#2563EB] text-white'
+                                                    : 'border-slate-200 bg-white text-slate-300'
+                                                }}
+                                            "
+                                        >
+                                            @if($step['active'])
+                                                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                                    <path d="m5 12 4 4L19 6"/>
+                                                </svg>
+                                            @else
+                                                <span class="h-2 w-2 rounded-full bg-current"></span>
+                                            @endif
+                                        </span>
 
-                            <div class="flex flex-wrap items-center gap-2">
+                                        <span class="min-w-0 text-xs font-semibold {{ $step['active'] ? 'text-slate-800' : 'text-slate-400' }}">
+                                            {{ $step['label'] }}
+                                        </span>
 
-                                <span class="inline-flex items-center gap-1.5 rounded-full bg-[#F3F7F5] px-2.5 py-1 text-[9px] font-medium text-[#7F8E87]">
+                                    </div>
 
-                                    <i class="bi bi-hash text-[8px]"></i>
+                                    @if(!$isLast)
+                                        <div class="mx-3 h-px flex-1 {{ $step['active'] ? 'bg-blue-200' : 'bg-slate-200' }}"></div>
+                                    @endif
 
-                                    {{ $order->order_number }}
+                                </div>
 
-                                </span>
-
-                                <span class="text-[10px] text-[#A0AAA5]">
-
-                                    Dibuat
-
-                                    {{ $order->created_at?->format('d M Y, H:i') }}
-
-                                </span>
-
-                            </div>
-
-                            <h1 class="mt-4 max-w-3xl text-xl font-semibold leading-8 tracking-[-0.03em] text-[#123128] sm:text-2xl">
-
-                                {{ $serviceTitle }}
-
-                            </h1>
-
-                            <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
-
-                                <span class="inline-flex items-center gap-1.5 text-[10px] text-[#7F8F87]">
-
-                                    <i class="bi bi-person text-[#1E9E5A]"></i>
-
-                                    {{ $freelancerName }}
-
-                                </span>
-
-                                <span class="inline-flex items-center gap-1.5 text-[10px] text-[#7F8F87]">
-
-                                    <i class="bi bi-clock text-[#1E9E5A]"></i>
-
-                                    {{ $order->delivery_days }} hari pengerjaan
-
-                                </span>
-
-                                @if($order->due_at)
-
-                                    <span class="inline-flex items-center gap-1.5 text-[10px] text-[#7F8F87]">
-
-                                        <i class="bi bi-calendar-event text-[#1E9E5A]"></i>
-
-                                        Deadline
-
-                                        {{ $order->due_at->format('d M Y') }}
-
-                                    </span>
-
-                                @endif
-
-                            </div>
-
-                        </div>
-
-                        {{-- Status --}}
-
-                        <div class="shrink-0">
-
-                            <span
-
-                                class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-semibold {{ $statusConfig['class'] }}"
-
-                            >
-
-                                <span class="h-1.5 w-1.5 rounded-full {{ $statusConfig['dot'] }}"></span>
-
-                                <i class="bi {{ $statusConfig['icon'] }} text-[10px]"></i>
-
-                                {{ $statusConfig['label'] }}
-
-                            </span>
+                            @endforeach
 
                         </div>
 
@@ -484,611 +856,330 @@
 
             </section>
 
-            {{-- =========================================================
-
-                CANCELLATION STATUS / ACTION
-
-            ========================================================== --}}
-
-            @if($order->status === 'cancelled')
-
-                <section class="mt-5 overflow-hidden rounded-2xl border border-[#F0D5D5] bg-[#FFF6F6]">
-
-                    <div class="px-5 py-5 sm:px-6">
-
-                        <div class="flex items-start gap-4">
-
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#B84E4E] shadow-sm">
-                                <i class="bi bi-x-circle text-lg"></i>
-                            </div>
-
-                            <div class="min-w-0 flex-1">
-                                <p class="text-sm font-semibold text-[#8E4141]">Pesanan dibatalkan</p>
-                                <p class="mt-1 text-xs leading-5 text-[#A26767]">Order ini sudah dibatalkan dan tidak dapat diproses kembali.</p>
-
-                                @if($order->cancel_reason)
-                                    <div class="mt-3 rounded-xl bg-white/80 px-4 py-3">
-                                        <p class="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#A26767]">Alasan pembatalan</p>
-                                        <p class="mt-1 whitespace-pre-line text-xs leading-6 text-[#7D5A5A]">{{ $order->cancel_reason }}</p>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-
-                        @if($refundStatus === 'refunded')
-                            <div class="mt-5 rounded-2xl border border-[#CDE7D7] bg-white px-4 py-4 sm:px-5">
-                                <div class="flex items-start gap-3">
-                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A]">
-                                        <i class="bi bi-arrow-counterclockwise text-[15px]"></i>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-[#123128]">Refund selesai</p>
-                                        <p class="mt-1 text-xs leading-5 text-[#527066]">
-                                            Dana sebesar <span class="font-semibold text-[#168A4D]">Rp {{ number_format($refundAmount, 0, ',', '.') }}</span> telah berhasil dikembalikan.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="mt-4 grid grid-cols-1 gap-3 rounded-xl bg-[#F8FBF9] px-4 py-3 sm:grid-cols-2">
-                                    <div>
-                                        <p class="text-[9px] uppercase tracking-[0.14em] text-[#97A39E]">Nomor refund</p>
-                                        <p class="mt-1 break-all text-[10px] font-semibold text-[#355248]">{{ $latestRefund?->refund_number ?? '-' }}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-[9px] uppercase tracking-[0.14em] text-[#97A39E]">Refund selesai</p>
-                                        <p class="mt-1 text-[10px] font-semibold text-[#355248]">{{ $latestRefund?->completed_at?->format('d M Y, H:i') ?? '-' }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        @elseif(in_array($refundStatus, ['pending', 'processing'], true))
-                            <div class="mt-5 rounded-2xl border border-[#D6E3F2] bg-white px-4 py-4 sm:px-5">
-                                <div class="flex items-start gap-3">
-                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF5FF] text-[#315A91]">
-                                        <i class="bi bi-arrow-repeat text-[15px]"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-semibold text-[#123128]">Refund sedang diproses</p>
-                                        <p class="mt-1 text-xs leading-5 text-[#62766D]">
-                                            Pengembalian dana sebesar <span class="font-semibold text-[#315A91]">Rp {{ number_format($refundAmount, 0, ',', '.') }}</span> sedang diproses oleh admin.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        @elseif($refundStatus === 'rejected')
-                            <div class="mt-5 rounded-2xl border border-red-100 bg-white px-4 py-4 sm:px-5">
-                                <div class="flex items-start gap-3">
-                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500">
-                                        <i class="bi bi-exclamation-circle text-[15px]"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-semibold text-[#8E4141]">Refund belum selesai</p>
-                                        <p class="mt-1 text-xs leading-5 text-[#7D5A5A]">Pengajuan refund belum berhasil diselesaikan. Periksa informasi refund untuk detail lebih lanjut.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-
-                    </div>
-                </section>
-
-            @elseif($canRequestCancellation)
-
-                <section class="mt-5 overflow-hidden rounded-2xl border border-[#E9DCC4] bg-[#FFF9EA]">
-
-                    <div class="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-
-                        <div class="flex items-start gap-4">
-
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#B37A21] shadow-sm">
-
-                                <i class="bi bi-x-circle text-lg"></i>
-
-                            </div>
-
-                            <div>
-
-                                <p class="text-sm font-semibold text-[#76520F]">
-
-                                    Ingin membatalkan pesanan?
-
-                                </p>
-
-                                <p class="mt-1 max-w-xl text-xs leading-5 text-[#987544]">
-
-                                    Kamu dapat mengajukan pembatalan dan menjelaskan alasannya. Pengajuan akan ditinjau oleh admin.
-
-                                </p>
-
-                            </div>
-
-                        </div>
-
-                        <a
-
-                            href="{{ route('client.orders.cancellation.create', $order) }}"
-
-                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D9B96E] bg-white px-4 text-xs font-semibold text-[#76520F] transition hover:border-[#C89F42] hover:bg-[#FFF4D8]"
-
-                        >
-
-                            <i class="bi bi-x-circle text-[12px]"></i>
-
-                            Ajukan Pembatalan
-
-                        </a>
-
-                    </div>
-
-                </section>
-
-            @endif
 
             {{-- =========================================================
-
-                DELIVERY
-
+                MAIN WORKSPACE
             ========================================================== --}}
-
-            @if(in_array($order->status, ['delivered', 'revision'], true))
-
-                <section class="mt-5 overflow-hidden rounded-2xl border border-[#CFE7D7] bg-[#EAF7EF]">
-
-                    <div class="flex flex-col gap-5 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-
-                        <div class="flex items-start gap-4">
-
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#1E9E5A] shadow-sm">
-
-                                <i class="bi bi-file-earmark-check text-lg"></i>
-
-                            </div>
-
-                            <div>
-
-                                @if($order->status === 'revision')
-
-                                    <p class="text-xs font-semibold text-[#123128]">
-
-                                        Freelancer sedang mengerjakan revisi
-
-                                    </p>
-
-                                    <p class="mt-1 text-xs leading-5 text-[#527066]">
-
-                                        Tunggu freelancer mengirimkan hasil revisi berikutnya.
-
-                                    </p>
-
-                                @else
-
-                                    <p class="text-xs font-semibold text-[#123128]">
-
-                                        Hasil pekerjaan sudah dikirim
-
-                                    </p>
-
-                                    <p class="mt-1 text-xs leading-5 text-[#527066]">
-
-                                        Periksa hasil yang dikirim freelancer sebelum menyetujui pesanan.
-
-                                    </p>
-
-                                @endif
-
-                            </div>
-
-                        </div>
-
-                        <a
-
-                            href="{{ route('client.delivery.show', $order) }}"
-
-                            class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#1E9E5A] px-4 text-xs font-semibold text-white transition hover:bg-[#0F6B3A]"
-
-                        >
-
-                            <i class="bi bi-eye text-[12px]"></i>
-
-                            Lihat Delivery
-
-                        </a>
-
-                    </div>
-
-                </section>
-
-            @endif
-
-            {{-- =========================================================
-
-                COMPLETED / REVIEW
-
-            ========================================================== --}}
-
-            @if($order->status === 'completed')
-
-                <section class="mt-5 overflow-hidden rounded-2xl border border-[#CFE7D7] bg-[#EAF7EF]">
-
-                    <div class="flex flex-col gap-5 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-
-                        <div class="flex items-start gap-4">
-
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#1E9E5A] shadow-sm">
-
-                                @if($hasReview)
-
-                                    <i class="bi bi-star-fill text-lg"></i>
-
-                                @else
-
-                                    <i class="bi bi-check-circle-fill text-lg"></i>
-
-                                @endif
-
-                            </div>
-
-                            <div>
-
-                                @if($hasReview)
-
-                                    <p class="text-xs font-semibold text-[#123128]">
-
-                                        Order sudah selesai
-
-                                    </p>
-
-                                    <p class="mt-1 text-xs leading-5 text-[#527066]">
-
-                                        Review kamu sudah diberikan kepada freelancer.
-
-                                    </p>
-
-                                @else
-
-                                    <p class="text-xs font-semibold text-[#123128]">
-
-                                        Order sudah selesai
-
-                                    </p>
-
-                                    <p class="mt-1 text-xs leading-5 text-[#527066]">
-
-                                        Bagikan pengalamanmu setelah menggunakan jasa freelancer ini.
-
-                                    </p>
-
-                                @endif
-
-                            </div>
-
-                        </div>
-
-                        @if(!$hasReview)
-
-                            <a
-
-                                href="{{ route('client.reviews.create', $order) }}"
-
-                                class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#1E9E5A] px-4 text-xs font-semibold text-white transition hover:bg-[#0F6B3A]"
-
-                            >
-
-                                <i class="bi bi-star-fill text-[11px]"></i>
-
-                                Beri Review
-
-                            </a>
-
-                        @else
-
-                            <span class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-xs font-semibold text-[#1E9E5A]">
-
-                                <i class="bi bi-check-circle-fill text-[11px]"></i>
-
-                                Sudah direview
-
-                            </span>
-
-                        @endif
-
-                    </div>
-
-                </section>
-
-            @endif
-
-            {{-- =========================================================
-
-                MAIN GRID
-
-            ========================================================== --}}
-
             <div class="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
 
                 {{-- =====================================================
-
-                    LEFT
-
+                    PRIMARY CONTENT
                 ====================================================== --}}
+                <main class="min-w-0">
 
-                <div class="space-y-5">
+                    {{-- -------------------------------------------------
+                        ACTIVITY / UPDATE FEED
+                    -------------------------------------------------- --}}
+                    <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
 
-                    {{-- Freelancer --}}
+                        <div class="border-b border-slate-100 px-5 py-5 sm:px-6 lg:px-7">
 
-                    <section class="rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_5px_18px_rgba(18,49,40,0.035)] sm:p-6">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
 
-                        <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                                        Update Pesanan
+                                    </p>
 
-                            <div>
+                                    <h2 class="mt-1 text-xl font-bold tracking-tight text-slate-900">
+                                        Perkembangan project
+                                    </h2>
 
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
+                                    <p class="mt-1 text-sm leading-6 text-slate-500">
+                                        Ikuti perubahan dan perkembangan order kamu dari awal sampai selesai.
+                                    </p>
+                                </div>
 
-                                    Freelancer
-
-                                </p>
-
-                                <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-
-                                    Dikerjakan oleh
-
-                                </h2>
+                                <span class="text-xs font-medium text-slate-400">
+                                    {{ count($activities) }} aktivitas
+                                </span>
 
                             </div>
-
-                            <i class="bi bi-person-check text-[#A0ADA7]"></i>
 
                         </div>
 
-                        <div class="mt-5 flex items-center justify-between gap-4">
 
-                            <div class="flex min-w-0 items-center gap-3">
+                        <div class="px-5 py-6 sm:px-6 lg:px-7 lg:py-7">
 
-                                <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EAF7EF] text-sm font-semibold text-[#1E9E5A]">
+                            <div class="relative">
 
-                                    @if($freelancerAvatar)
+                                {{-- timeline connector --}}
+                                <div class="absolute bottom-7 left-4 top-7 w-px bg-slate-200"></div>
 
-                                        <img
+                                <div class="space-y-0">
 
-                                            src="{{ $freelancerAvatar }}"
+                                    @foreach($activities as $activity)
 
-                                            alt="{{ $freelancerName }}"
+                                        @php
+                                            $tone = $activityTone[$activity['tone']]
+                                                ?? $activityTone['blue'];
+                                        @endphp
 
-                                            class="h-full w-full object-cover"
+                                        <div class="relative flex gap-4 pb-8 last:pb-0 sm:gap-5">
 
-                                        >
+                                            {{-- marker --}}
+                                            <div class="relative z-10 shrink-0">
 
-                                    @else
+                                                <div class="flex h-8 w-8 items-center justify-center rounded-full border bg-white shadow-sm {{ $tone['icon'] }}">
 
-                                        {{ $freelancerInitial }}
+                                                    @switch($activity['icon'])
 
-                                    @endif
+                                                        @case('order')
+                                                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                                <rect x="6" y="4" width="12" height="17" rx="2"/>
+                                                                <path d="M9 4a3 3 0 0 1 6 0"/>
+                                                                <path d="M9 9h6M9 13h6M9 17h4"/>
+                                                            </svg>
+                                                            @break
 
-                                </div>
+                                                        @case('payment')
+                                                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                                                                <path d="M3 10h18"/>
+                                                            </svg>
+                                                            @break
 
-                                <div class="min-w-0">
+                                                        @case('work')
+                                                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                                <rect x="3" y="7" width="18" height="13" rx="2"/>
+                                                                <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                                            </svg>
+                                                            @break
 
-                                    <p class="truncate text-sm font-semibold text-[#18382E]">
+                                                        @case('delivery')
+                                                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                                <path d="m22 2-7 20-4-9-9-4 20-7Z"/>
+                                                                <path d="M22 2 11 13"/>
+                                                            </svg>
+                                                            @break
 
-                                        {{ $freelancerName }}
+                                                        @case('revision')
+                                                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                                <path d="M20 11a8 8 0 0 0-14.9-3"/>
+                                                                <path d="M4 4v5h5"/>
+                                                                <path d="M4 13a8 8 0 0 0 14.9 3"/>
+                                                                <path d="M20 20v-5h-5"/>
+                                                            </svg>
+                                                            @break
 
-                                    </p>
+                                                        @case('completed')
+                                                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                                <circle cx="12" cy="12" r="9"/>
+                                                                <path d="m8 12 2.5 2.5L16 9"/>
+                                                            </svg>
+                                                            @break
 
-                                    <p class="mt-0.5 text-[10px] text-[#8B9992]">
+                                                        @case('cancelled')
+                                                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                                <path d="m8 8 8 8M16 8 8 16"/>
+                                                            </svg>
+                                                            @break
 
-                                        Freelancer JASAIN
+                                                        @case('refund')
+                                                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                                <path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/>
+                                                                <path d="M21 3v5h-5"/>
+                                                                <path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/>
+                                                                <path d="M3 21v-5h5"/>
+                                                            </svg>
+                                                            @break
 
-                                    </p>
+                                                        @default
+                                                            <span class="h-2 w-2 rounded-full bg-current"></span>
+
+                                                    @endswitch
+
+                                                </div>
+
+                                            </div>
+
+
+                                            {{-- activity content --}}
+                                            <div class="min-w-0 flex-1">
+
+                                                <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+
+                                                    <h3 class="text-sm font-bold text-slate-900 sm:text-base">
+                                                        {{ $activity['title'] }}
+                                                    </h3>
+
+                                                    @if($activity['date'])
+                                                        <time class="shrink-0 text-xs text-slate-400">
+                                                            {{ $activity['date']->format('d M Y, H:i') }}
+                                                        </time>
+                                                    @endif
+
+                                                </div>
+
+                                                <p class="mt-1.5 max-w-3xl text-sm leading-6 text-slate-500">
+                                                    {{ $activity['description'] }}
+                                                </p>
+
+
+                                                {{-- delivery CTA --}}
+                                                @if($activity['icon'] === 'delivery')
+
+                                                    <div class="mt-4 border-l-2 border-violet-100 pl-4">
+
+                                                        <p class="text-xs font-semibold text-slate-700">
+                                                            Hasil pekerjaan tersedia
+                                                        </p>
+
+                                                        <p class="mt-1 text-xs leading-5 text-slate-400">
+                                                            Periksa file dan detail hasil kerja dari freelancer.
+                                                        </p>
+
+                                                        <a
+                                                            href="{{ route('client.delivery.show', $order) }}"
+                                                            class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-violet-700 transition hover:text-violet-800"
+                                                        >
+                                                            Buka delivery
+                                                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                                                <path d="M5 12h14"/>
+                                                                <path d="m13 6 6 6-6 6"/>
+                                                            </svg>
+                                                        </a>
+
+                                                    </div>
+
+                                                @endif
+
+
+                                                {{-- revision --}}
+                                                @if($activity['icon'] === 'revision')
+
+                                                    <div class="mt-4 border-l-2 border-orange-100 pl-4">
+
+                                                        <p class="text-xs font-semibold text-slate-700">
+                                                            Revisi sedang diproses
+                                                        </p>
+
+                                                        <p class="mt-1 text-xs leading-5 text-slate-400">
+                                                            Freelancer sedang menindaklanjuti permintaan revisi.
+                                                        </p>
+
+                                                        <a
+                                                            href="{{ route('client.delivery.show', $order) }}"
+                                                            class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-orange-700 transition hover:text-orange-800"
+                                                        >
+                                                            Lihat progress
+                                                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                                                <path d="M5 12h14"/>
+                                                                <path d="m13 6 6 6-6 6"/>
+                                                            </svg>
+                                                        </a>
+
+                                                    </div>
+
+                                                @endif
+
+
+                                                {{-- completed --}}
+                                                @if($activity['icon'] === 'completed')
+
+                                                    <div class="mt-4 border-l-2 border-emerald-100 pl-4">
+
+                                                        @if($hasReview)
+
+                                                            <p class="text-xs font-semibold text-emerald-700">
+                                                                Review sudah diberikan
+                                                            </p>
+
+                                                            <p class="mt-1 text-xs leading-5 text-slate-400">
+                                                                Terima kasih sudah memberikan feedback kepada freelancer.
+                                                            </p>
+
+                                                        @else
+
+                                                            <p class="text-xs font-semibold text-slate-700">
+                                                                Bagikan pengalamanmu
+                                                            </p>
+
+                                                            <p class="mt-1 text-xs leading-5 text-slate-400">
+                                                                Beri review untuk membantu freelancer meningkatkan layanannya.
+                                                            </p>
+
+                                                            <a
+                                                                href="{{ route('client.reviews.create', $order) }}"
+                                                                class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-[#2563EB] transition hover:text-blue-700"
+                                                            >
+                                                                Beri review
+                                                                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                                                    <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4-1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/>
+                                                                </svg>
+                                                            </a>
+
+                                                        @endif
+
+                                                    </div>
+
+                                                @endif
+
+                                            </div>
+
+                                        </div>
+
+                                    @endforeach
 
                                 </div>
 
                             </div>
-
-                            <a
-
-                                href="{{ route('client.messages.index') }}"
-
-                                class="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-[#DDE7E1] px-3 text-[10px] font-semibold text-[#52685F] transition hover:border-[#BBD9C6] hover:bg-[#F4FAF6] hover:text-[#1E9E5A]"
-
-                            >
-
-                                <i class="bi bi-chat-dots text-[11px]"></i>
-
-                                Pesan
-
-                            </a>
 
                         </div>
 
                     </section>
 
-                    {{-- Detail Pesanan --}}
 
-                    <section class="rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_5px_18px_rgba(18,49,40,0.035)] sm:p-6">
+                    {{-- -------------------------------------------------
+                        PROJECT DETAILS
+                    -------------------------------------------------- --}}
+                    <section class="mt-5 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
 
-                        <div class="flex items-end justify-between">
+                        {{-- service --}}
+                        <div class="px-5 py-5 sm:px-6 lg:px-7">
 
-                            <div>
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
-
-                                    Order
-
-                                </p>
-
-                                <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-
-                                    Detail pesanan
-
-                                </h2>
-
-                            </div>
-
-                            <span class="text-[10px] text-[#98A49F]">
-
-                                {{ $order->items->count() }} item
-
-                            </span>
-
-                        </div>
-
-                        <div class="mt-5 overflow-hidden rounded-xl border border-[#E7EEE9]">
-
-                            @foreach($order->items as $item)
-
-                                <div class="flex items-start justify-between gap-4 px-4 py-4 {{ !$loop->last ? 'border-b border-[#EDF2EF]' : '' }}">
-
-                                    <div class="flex min-w-0 items-start gap-3">
-
-                                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F2F8F4] text-[#1E9E5A]">
-
-                                            <i class="bi bi-briefcase text-[13px]"></i>
-
-                                        </div>
-
-                                        <div class="min-w-0">
-
-                                            <p class="truncate text-xs font-semibold text-[#18382E]">
-
-                                                {{ $item->service_title }}
-
-                                            </p>
-
-                                            <p class="mt-1 text-[10px] text-[#909E98]">
-
-                                                {{ $item->quantity }}
-
-                                                ×
-
-                                                Rp {{ number_format((float) $item->unit_price, 0, ',', '.') }}
-
-                                            </p>
-
-                                        </div>
-
-                                    </div>
-
-                                    <p class="shrink-0 text-xs font-semibold text-[#18382E]">
-
-                                        Rp {{ number_format((float) $item->subtotal, 0, ',', '.') }}
-
-                                    </p>
-
-                                </div>
-
-                            @endforeach
-
-                        </div>
-
-                    </section>
-
-                    {{-- Requirements --}}
-
-                    <section class="rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_5px_18px_rgba(18,49,40,0.035)] sm:p-6">
-
-                        <div>
-
-                            <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
-
-                                Brief
-
+                            <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                                Detail Project
                             </p>
 
-                            <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-
-                                Kebutuhan pesanan
-
+                            <h2 class="mt-1 text-xl font-bold tracking-tight text-slate-900">
+                                Pesanan kamu
                             </h2>
 
-                        </div>
+                            <div class="mt-5 divide-y divide-slate-100">
 
-                        @if($order->requirements)
+                                @foreach($order->items as $item)
 
-                            <div class="mt-5 rounded-xl bg-[#F8FBF9] px-4 py-4">
+                                    <div class="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
 
-                                <p class="whitespace-pre-line text-xs leading-6 text-[#62766D]">
+                                        <div class="flex min-w-0 items-start gap-3">
 
-                                    {{ $order->requirements }}
+                                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]">
+                                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                    <rect x="3" y="5" width="18" height="14" rx="2"/>
+                                                    <path d="M7 9h10M7 13h7"/>
+                                                </svg>
+                                            </div>
 
-                                </p>
+                                            <div class="min-w-0">
 
-                            </div>
+                                                <p class="text-sm font-bold leading-6 text-slate-900">
+                                                    {{ $item->service_title }}
+                                                </p>
 
-                        @else
+                                                <p class="mt-1 text-xs text-slate-400">
+                                                    {{ $item->quantity }}
+                                                    ×
+                                                    Rp {{ number_format((float) $item->unit_price, 0, ',', '.') }}
+                                                </p>
 
-                            <div class="mt-5 rounded-xl border border-dashed border-[#DCE6E1] px-4 py-6 text-center">
-
-                                <i class="bi bi-file-text text-lg text-[#A0ADA7]"></i>
-
-                                <p class="mt-2 text-xs text-[#98A49E]">
-
-                                    Belum ada kebutuhan khusus yang ditambahkan.
-
-                                </p>
-
-                            </div>
-
-                        @endif
-
-                    </section>
-
-                    {{-- Timeline --}}
-
-                    <section class="rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_5px_18px_rgba(18,49,40,0.035)] sm:p-6">
-
-                        <div>
-
-                            <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
-
-                                Timeline
-
-                            </p>
-
-                            <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-
-                                Perjalanan pesanan
-
-                            </h2>
-
-                        </div>
-
-                        <div class="relative mt-6">
-
-                            <div class="absolute bottom-5 left-[17px] top-5 w-px bg-[#E1EAE5]"></div>
-
-                            <div class="space-y-6">
-
-                                @foreach($timeline as $step)
-
-                                    <div class="relative flex gap-4">
-
-                                        <div
-
-                                            class="relative z-10 flex h-[35px] w-[35px] shrink-0 items-center justify-center rounded-full border {{ $step['active'] ? 'border-[#BFE0CC] bg-[#EAF7EF] text-[#1E9E5A]' : 'border-[#E3E9E5] bg-white text-[#A5B0AB]' }}"
-
-                                        >
-
-                                            <i class="bi {{ $step['icon'] }} text-[12px]"></i>
+                                            </div>
 
                                         </div>
 
-                                        <div class="pt-0.5">
-
-                                            <p
-
-                                                class="text-xs font-semibold {{ $step['active'] ? 'text-[#18382E]' : 'text-[#9AA6A0]' }}"
-
-                                            >
-
-                                                {{ $step['label'] }}
-
-                                            </p>
-
-                                            <p class="mt-1 max-w-lg text-[10px] leading-5 text-[#8B9992]">
-
-                                                {{ $step['description'] }}
-
-                                            </p>
-
-                                        </div>
+                                        <p class="shrink-0 text-sm font-bold text-slate-900">
+                                            Rp {{ number_format((float) $item->subtotal, 0, ',', '.') }}
+                                        </p>
 
                                     </div>
 
@@ -1098,381 +1189,672 @@
 
                         </div>
 
-                    </section>
 
-                    {{-- Review Summary --}}
+                        {{-- brief --}}
+                        <div class="border-t border-slate-100 px-5 py-5 sm:px-6 lg:px-7">
 
-                    @if($hasReview)
+                            <p class="text-sm font-bold text-slate-900">
+                                Brief & kebutuhan
+                            </p>
 
-                        <section class="rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_5px_18px_rgba(18,49,40,0.035)] sm:p-6">
+                            @if($order->requirements)
 
-                            <div class="flex items-start justify-between gap-4">
+                                <div class="mt-4 rounded-2xl bg-slate-50 p-4 sm:p-5">
 
-                                <div>
-
-                                    <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
-
-                                        Review
-
+                                    <p class="whitespace-pre-line text-sm leading-7 text-slate-600">
+                                        {{ $order->requirements }}
                                     </p>
-
-                                    <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-
-                                        Review kamu
-
-                                    </h2>
 
                                 </div>
 
-                                <span class="inline-flex items-center gap-1.5 rounded-full bg-[#FFF9EA] px-2.5 py-1 text-[10px] font-semibold text-[#9A6800]">
+                            @else
 
-                                    <i class="bi bi-star-fill"></i>
+                                <div class="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
 
-                                    {{ $order->review->rating }}/5
+                                    <p class="text-sm font-semibold text-slate-600">
+                                        Tidak ada kebutuhan tambahan.
+                                    </p>
 
-                                </span>
-
-                            </div>
-
-                            @if($order->review->comment)
-
-                                <div class="mt-5 rounded-xl bg-[#F8FBF9] px-4 py-4">
-
-                                    <p class="whitespace-pre-line text-xs leading-6 text-[#62766D]">
-
-                                        "{{ $order->review->comment }}"
-
+                                    <p class="mt-1 text-xs text-slate-400">
+                                        Tidak ada brief tambahan yang tercatat pada order ini.
                                     </p>
 
                                 </div>
 
                             @endif
 
-                            <p class="mt-3 text-[10px] text-[#A0ADA7]">
-
-                                Diberikan pada
-
-                                {{ $order->review->created_at?->format('d M Y, H:i') }}
-
-                            </p>
-
-                        </section>
-
-                    @endif
-
-                </div>
-
-                {{-- =====================================================
-
-                    RIGHT
-
-                ====================================================== --}}
-
-                <aside class="space-y-5">
-
-                    {{-- Payment --}}
-
-                    <section class="rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_5px_18px_rgba(18,49,40,0.035)]">
-
-                        <div>
-
-                            <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
-
-                                Pembayaran
-
-                            </p>
-
-                            <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-
-                                Ringkasan biaya
-
-                            </h2>
-
                         </div>
-
-                        <div class="mt-5 space-y-3.5">
-
-                            <div class="flex items-center justify-between gap-4">
-
-                                <span class="text-xs text-[#7D8D86]">
-
-                                    Subtotal
-
-                                </span>
-
-                                <span class="text-xs font-medium text-[#355248]">
-
-                                    Rp {{ number_format((float) $order->subtotal, 0, ',', '.') }}
-
-                                </span>
-
-                            </div>
-
-                            <div class="flex items-center justify-between gap-4">
-
-                                <span class="text-xs text-[#7D8D86]">
-
-                                    Biaya platform
-
-                                </span>
-
-                                <span class="text-xs font-medium text-[#355248]">
-
-                                    Rp {{ number_format((float) $order->platform_fee, 0, ',', '.') }}
-
-                                </span>
-
-                            </div>
-
-                            <div class="border-t border-[#EDF2EF] pt-4">
-
-                                <div class="flex items-end justify-between gap-4">
-
-                                    <span class="text-xs font-medium text-[#52675E]">
-
-                                        Total pembayaran
-
-                                    </span>
-
-                                    <span class="text-lg font-semibold tracking-[-0.02em] text-[#123128]">
-
-                                        Rp {{ number_format((float) $order->total, 0, ',', '.') }}
-
-                                    </span>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        {{-- Invoice --}}
-
-                        <a
-
-                            href="{{ route('client.orders.invoice', $order) }}"
-
-                            class="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D8E5DD] bg-[#F8FBF9] px-4 text-xs font-semibold text-[#52685F] transition hover:border-[#BBD9C6] hover:bg-[#EAF7EF] hover:text-[#1E9E5A]"
-
-                        >
-
-                            <i class="bi bi-receipt"></i>
-
-                            Lihat Invoice
-
-                        </a>
 
                     </section>
 
-                    {{-- Payment Status --}}
 
-                    <section class="rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_5px_18px_rgba(18,49,40,0.035)]">
+                    {{-- -------------------------------------------------
+                        CANCELLATION STATES
+                    -------------------------------------------------- --}}
+                    @if($order->status === 'cancelled')
 
-                        <div>
+                        <section class="mt-5 rounded-3xl border border-rose-200 bg-rose-50 p-5 sm:p-6">
 
-                            <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
+                            <div class="flex items-start gap-4">
 
-                                Status
+                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-rose-600 shadow-sm">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <path d="m8 8 8 8M16 8 8 16"/>
+                                    </svg>
+                                </div>
 
-                            </p>
+                                <div class="min-w-0">
 
-                            <h2 class="mt-1 text-sm font-semibold text-[#123128]">
+                                    <h2 class="text-base font-bold text-rose-800">
+                                        Pesanan dibatalkan
+                                    </h2>
 
-                                Pembayaran
+                                    <p class="mt-1 text-sm leading-6 text-rose-700/80">
+                                        Pesanan ini sudah ditutup dan tidak dapat dilanjutkan.
+                                    </p>
 
-                            </h2>
+                                    @if($order->cancel_reason)
 
-                        </div>
+                                        <div class="mt-4 border-l-2 border-rose-200 pl-4">
 
-                        @if($order->payment)
+                                            <p class="text-xs font-bold text-rose-500">
+                                                Alasan pembatalan
+                                            </p>
 
-                            <div class="mt-5">
+                                            <p class="mt-1 whitespace-pre-line text-sm leading-6 text-slate-600">
+                                                {{ $order->cancel_reason }}
+                                            </p>
 
-                                <div class="flex items-center justify-between gap-3">
-
-                                    <span class="text-xs text-[#7D8D86]">
-
-                                        Status
-
-                                    </span>
-
-                                    @if($order->payment->status === 'paid')
-
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#EAF7EF] px-2.5 py-1 text-[9px] font-semibold text-[#1E9E5A]">
-
-                                            <span class="h-1.5 w-1.5 rounded-full bg-[#35C978]"></span>
-
-                                            Lunas
-
-                                        </span>
-
-                                    @elseif($order->payment->status === 'pending')
-
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#FFF9EA] px-2.5 py-1 text-[9px] font-semibold text-[#9A6800]">
-
-                                            <span class="h-1.5 w-1.5 rounded-full bg-[#D99A19]"></span>
-
-                                            Belum dibayar
-
-                                        </span>
-
-                                    @elseif($order->payment->status === 'refund_pending')
-
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#EEF5FF] px-2.5 py-1 text-[9px] font-semibold text-[#315A91]">
-
-                                            <span class="h-1.5 w-1.5 rounded-full bg-[#5B91C0]"></span>
-
-                                            Menunggu refund
-
-                                        </span>
-
-                                    @elseif($order->payment->status === 'refunded')
-
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#EAF7EF] px-2.5 py-1 text-[9px] font-semibold text-[#168A4D]">
-                                            <span class="h-1.5 w-1.5 rounded-full bg-[#35C978]"></span>
-                                            Dana dikembalikan
-                                        </span>
-
-                                    @elseif($order->payment->status === 'cancelled')
-
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[#F4F6F5] px-2.5 py-1 text-[9px] font-semibold text-[#66766E]">
-
-                                            <span class="h-1.5 w-1.5 rounded-full bg-[#A3AEA9]"></span>
-
-                                            Dibatalkan
-
-                                        </span>
-
-                                    @else
-
-                                        <span class="inline-flex items-center rounded-full bg-[#F4F6F5] px-2.5 py-1 text-[9px] font-semibold text-[#66766E]">
-
-                                            {{ ucfirst(str_replace('_', ' ', $order->payment->status)) }}
-
-                                        </span>
+                                        </div>
 
                                     @endif
 
                                 </div>
 
-                                <div class="mt-4 flex items-center justify-between gap-3">
+                            </div>
 
-                                    <span class="text-xs text-[#7D8D86]">
+                        </section>
 
-                                        Metode
+                    @elseif($cancellationStatus === 'pending_freelancer')
 
-                                    </span>
+                        <section class="mt-5 rounded-3xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
 
-                                    <span class="max-w-[170px] truncate text-right text-[10px] font-semibold text-[#355248]">
+                            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
-                                        {{ strtoupper($order->payment->payment_type ?? '-') }}
+                                <div class="flex items-start gap-4">
 
-                                    </span>
+                                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm">
+                                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                            <circle cx="12" cy="12" r="9"/>
+                                            <path d="M12 7v5l3 2"/>
+                                        </svg>
+                                    </div>
+
+                                    <div>
+                                        <h2 class="text-base font-bold text-amber-900">
+                                            Menunggu tanggapan freelancer
+                                        </h2>
+
+                                        <p class="mt-1 text-sm leading-6 text-amber-800/75">
+                                            Pengajuan pembatalan sudah dikirim.
+                                        </p>
+                                    </div>
 
                                 </div>
 
-                                @if($order->payment->transaction_id)
+                                <a
+                                    href="{{ route('client.orders.cancellation.create', $order) }}"
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+                                >
+                                    Lihat Pengajuan
+                                </a>
 
-                                    <div class="mt-4 flex items-start justify-between gap-3">
+                            </div>
 
-                                        <span class="text-xs text-[#7D8D86]">
+                        </section>
 
-                                            Transaksi
+                    @elseif($cancellationStatus === 'rejected_by_freelancer')
 
-                                        </span>
+                        <section class="mt-5 rounded-3xl border border-rose-200 bg-rose-50 p-5 sm:p-6">
 
-                                        <span class="max-w-[170px] break-all text-right text-[10px] font-semibold text-[#355248]">
+                            <div class="flex items-start gap-4">
 
-                                            {{ $order->payment->transaction_id }}
+                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-rose-600 shadow-sm">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <path d="m8 8 8 8M16 8 8 16"/>
+                                    </svg>
+                                </div>
 
-                                        </span>
+                                <div class="min-w-0">
 
-                                    </div>
+                                    <h2 class="text-base font-bold text-rose-800">
+                                        Pembatalan ditolak freelancer
+                                    </h2>
 
-                                @endif
+                                    <p class="mt-1 text-sm leading-6 text-rose-700/80">
+                                        Kamu dapat melanjutkan pengajuan melalui mediasi Admin.
+                                    </p>
 
-                                @if($order->payment->paid_at)
+                                    @if($latestCancellationRequest?->freelancer_note)
 
-                                    <div class="mt-4 flex items-start justify-between gap-3">
+                                        <div class="mt-4 border-l-2 border-rose-200 pl-4">
 
-                                        <span class="text-xs text-[#7D8D86]">
+                                            <p class="text-xs font-bold text-rose-500">
+                                                Tanggapan freelancer
+                                            </p>
 
-                                            Dibayar
+                                            <p class="mt-1 whitespace-pre-line text-sm leading-6 text-slate-600">
+                                                {{ $latestCancellationRequest->freelancer_note }}
+                                            </p>
 
-                                        </span>
-
-                                        <span class="text-right text-[10px] font-semibold text-[#355248]">
-
-                                            {{ $order->payment->paid_at->format('d M Y, H:i') }}
-
-                                        </span>
-
-                                    </div>
-
-                                @endif
-
-                                @if($latestRefund)
-
-                                    <div class="mt-4 overflow-hidden rounded-xl border border-[#DCE9E1] bg-[#F8FBF9]">
-                                        <div class="px-4 py-3">
-                                            <div class="flex items-center justify-between gap-3">
-                                                <span class="text-xs text-[#7D8D86]">Refund</span>
-                                                <span class="text-[10px] font-semibold text-[#355248]">
-                                                    {{ match($refundStatus) {
-                                                        'pending' => 'Menunggu diproses',
-                                                        'processing' => 'Sedang diproses',
-                                                        'refunded' => 'Selesai',
-                                                        'rejected' => 'Ditolak',
-                                                        default => ucfirst(str_replace('_', ' ', $refundStatus ?? 'Belum tersedia')),
-                                                    } }}
-                                                </span>
-                                            </div>
-                                            <div class="mt-2 flex items-center justify-between gap-3">
-                                                <span class="text-xs text-[#7D8D86]">Nominal</span>
-                                                <span class="text-xs font-semibold text-[#168A4D]">Rp {{ number_format($refundAmount, 0, ',', '.') }}</span>
-                                            </div>
-                                            @if($refundStatus === 'refunded' && $latestRefund->completed_at)
-                                                <div class="mt-2 flex items-start justify-between gap-3">
-                                                    <span class="text-xs text-[#7D8D86]">Selesai pada</span>
-                                                    <span class="text-right text-[10px] font-semibold text-[#355248]">{{ $latestRefund->completed_at->format('d M Y, H:i') }}</span>
-                                                </div>
-                                            @endif
                                         </div>
-                                    </div>
 
-                                @endif
-
-                                @if($order->status === 'pending_payment')
+                                    @endif
 
                                     <a
+                                        href="{{ route('client.orders.cancellation.create', $order) }}"
+                                        class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-rose-700 shadow-sm transition hover:bg-rose-100"
+                                    >
+                                        Ajukan Mediasi
+                                    </a>
 
-                                        href="{{ route('client.orders.checkout', $order) }}"
+                                </div>
 
-                                        class="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#1E9E5A] px-4 text-xs font-semibold text-white shadow-[0_5px_15px_rgba(30,158,90,0.14)] transition hover:bg-[#0F6B3A]"
+                            </div>
 
+                        </section>
+
+                    @elseif($cancellationStatus === 'mediation_pending')
+
+                        <section class="mt-5 rounded-3xl border border-blue-200 bg-blue-50 p-5 sm:p-6">
+
+                            <div class="flex items-start gap-4">
+
+                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <path d="M12 3 4 6v5c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-3Z"/>
+                                        <path d="m9 12 2 2 4-4"/>
+                                    </svg>
+                                </div>
+
+                                <div>
+
+                                    <h2 class="text-base font-bold text-blue-900">
+                                        Mediasi sedang ditinjau Admin
+                                    </h2>
+
+                                    <p class="mt-1 text-sm leading-6 text-blue-800/75">
+                                        Pengajuan pembatalan sedang ditinjau oleh Admin.
+                                    </p>
+
+                                    @if($latestCancellationRequest?->mediation_reason)
+
+                                        <div class="mt-4 border-l-2 border-blue-200 pl-4">
+
+                                            <p class="text-xs font-bold text-blue-500">
+                                                Alasan mediasi
+                                            </p>
+
+                                            <p class="mt-1 whitespace-pre-line text-sm leading-6 text-slate-600">
+                                                {{ $latestCancellationRequest->mediation_reason }}
+                                            </p>
+
+                                        </div>
+
+                                    @endif
+
+                                </div>
+
+                            </div>
+
+                        </section>
+
+                    @elseif($cancellationStatus === 'rejected_by_admin')
+
+                        <section class="mt-5 rounded-3xl border border-rose-200 bg-rose-50 p-5 sm:p-6">
+
+                            <div class="flex items-start gap-4">
+
+                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-rose-600 shadow-sm">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <path d="m8 8 8 8M16 8 8 16"/>
+                                    </svg>
+                                </div>
+
+                                <div>
+
+                                    <h2 class="text-base font-bold text-rose-800">
+                                        Mediasi ditolak Admin
+                                    </h2>
+
+                                    <p class="mt-1 text-sm leading-6 text-rose-700/80">
+                                        Order tetap berjalan seperti biasa.
+                                    </p>
+
+                                    @if($latestCancellationRequest?->admin_note)
+
+                                        <div class="mt-4 border-l-2 border-rose-200 pl-4">
+
+                                            <p class="text-xs font-bold text-rose-500">
+                                                Catatan Admin
+                                            </p>
+
+                                            <p class="mt-1 whitespace-pre-line text-sm leading-6 text-slate-600">
+                                                {{ $latestCancellationRequest->admin_note }}
+                                            </p>
+
+                                        </div>
+
+                                    @endif
+
+                                </div>
+
+                            </div>
+
+                        </section>
+
+                    @elseif(in_array($cancellationStatus, ['approved_by_freelancer', 'approved_by_admin'], true))
+
+                        <section class="mt-5 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 sm:p-6">
+
+                            <div class="flex items-start gap-4">
+
+                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-700 shadow-sm">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <path d="m8 12 2.5 2.5L16 9"/>
+                                    </svg>
+                                </div>
+
+                                <div>
+                                    <h2 class="text-base font-bold text-emerald-900">
+                                        Pembatalan disetujui
+                                    </h2>
+
+                                    <p class="mt-1 text-sm leading-6 text-emerald-800/75">
+                                        Pembatalan telah disetujui melalui proses yang berlaku.
+                                    </p>
+                                </div>
+
+                            </div>
+
+                        </section>
+
+                    @elseif($canRequestCancellation)
+
+                        <section class="mt-5 rounded-3xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
+
+                            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+                                <div class="flex items-start gap-4">
+
+                                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-amber-700 shadow-sm">
+                                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                            <circle cx="12" cy="12" r="9"/>
+                                            <path d="M8 12h8"/>
+                                        </svg>
+                                    </div>
+
+                                    <div>
+                                        <h2 class="text-base font-bold text-amber-900">
+                                            Perlu membatalkan pesanan?
+                                        </h2>
+
+                                        <p class="mt-1 text-sm leading-6 text-amber-800/75">
+                                            Kamu dapat mengajukan pembatalan pesanan.
+                                        </p>
+                                    </div>
+
+                                </div>
+
+                                <a
+                                    href="{{ route('client.orders.cancellation.create', $order) }}"
+                                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+                                >
+                                    Ajukan Pembatalan
+                                </a>
+
+                            </div>
+
+                        </section>
+
+                    @endif
+
+                </main>
+
+
+                {{-- =====================================================
+                    SIDEBAR
+                ====================================================== --}}
+                <aside class="min-w-0 space-y-5">
+
+                    {{-- -------------------------------------------------
+                        CURRENT ACTION
+                    -------------------------------------------------- --}}
+                    <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+
+                        <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                            Aksi berikutnya
+                        </p>
+
+                        <h2 class="mt-1 text-lg font-bold text-slate-900">
+                            {{ $statusConfig['label'] }}
+                        </h2>
+
+                        <p class="mt-2 text-sm leading-6 text-slate-500">
+
+                            @switch($order->status)
+
+                                @case('pending_payment')
+                                    Selesaikan pembayaran agar freelancer dapat mulai mengerjakan.
+                                    @break
+
+                                @case('paid')
+                                    Pesanan sudah dibayar dan menunggu proses pengerjaan.
+                                    @break
+
+                                @case('in_progress')
+                                    Freelancer sedang mengerjakan project kamu.
+                                    @break
+
+                                @case('delivered')
+                                    Periksa hasil pekerjaan yang sudah dikirim freelancer.
+                                    @break
+
+                                @case('revision')
+                                    Freelancer sedang memproses revisi yang diminta.
+                                    @break
+
+                                @case('completed')
+                                    Project sudah selesai diproses.
+                                    @break
+
+                                @case('cancelled')
+                                    Pesanan sudah tidak aktif.
+                                    @break
+
+                                @default
+                                    Lihat perkembangan terbaru pada aktivitas pesanan.
+                            @endswitch
+
+                        </p>
+
+                        @if($order->status !== 'cancelled')
+
+                            <a
+                                href="{{ $primaryAction['url'] }}"
+                                class="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700"
+                            >
+                                {{ $primaryAction['label'] }}
+
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                    <path d="M5 12h14"/>
+                                    <path d="m13 6 6 6-6 6"/>
+                                </svg>
+                            </a>
+
+                        @endif
+
+                        <a
+                            href="{{ route('client.messages.index') }}"
+                            class="mt-2 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-[#2563EB]"
+                        >
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.5 8.5 0 0 1-4.2-1.1L4 19l1.2-3.2A7.4 7.4 0 0 1 4.5 8 7.5 7.5 0 0 1 12 4.5c4.1 0 8 2.4 8 7Z"/>
+                                <path d="M8 10.5h.01M12 10.5h.01M16 10.5h.01"/>
+                            </svg>
+
+                            Pesan Freelancer
+                        </a>
+
+                    </section>
+
+
+                    {{-- -------------------------------------------------
+                        FREELANCER
+                    -------------------------------------------------- --}}
+                    <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+
+                        <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                            Freelancer
+                        </p>
+
+                        <div class="mt-4 flex items-center gap-3">
+
+                            <div class="h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-white bg-blue-100 shadow-sm">
+
+                                @if($freelancerAvatarUrl)
+
+                                    <img
+                                        src="{{ $freelancerAvatarUrl }}"
+                                        alt="{{ $freelancerName }}"
+                                        class="h-full w-full object-cover"
                                     >
 
-                                        <i class="bi bi-credit-card text-[12px]"></i>
+                                @else
 
-                                        Lanjutkan pembayaran
-
-                                    </a>
+                                    <div class="flex h-full w-full items-center justify-center text-sm font-bold text-blue-700">
+                                        {{ $freelancerInitial }}
+                                    </div>
 
                                 @endif
 
                             </div>
 
-                        @else
+                            <div class="min-w-0">
 
-                            <div class="mt-5 rounded-xl border border-dashed border-[#DCE6E1] px-4 py-5 text-center">
-
-                                <i class="bi bi-credit-card text-lg text-[#A3AEA8]"></i>
-
-                                <p class="mt-2 text-xs text-[#98A49E]">
-
-                                    Data pembayaran belum tersedia.
-
+                                <p class="truncate text-sm font-bold text-slate-900">
+                                    {{ $freelancerName }}
                                 </p>
+
+                                <p class="mt-0.5 text-xs text-slate-400">
+                                    Freelancer ProKerja
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    {{-- -------------------------------------------------
+                        PAYMENT SUMMARY
+                    -------------------------------------------------- --}}
+                    <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
+
+                        <div class="p-5 sm:p-6">
+
+                            <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                                Pembayaran
+                            </p>
+
+                            <h2 class="mt-1 text-lg font-bold text-slate-900">
+                                Ringkasan biaya
+                            </h2>
+
+                            <div class="mt-5 space-y-4">
+
+                                <div class="flex items-center justify-between gap-4">
+                                    <span class="text-sm text-slate-500">
+                                        Subtotal
+                                    </span>
+
+                                    <span class="text-sm font-semibold text-slate-800">
+                                        Rp {{ number_format((float) $order->subtotal, 0, ',', '.') }}
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center justify-between gap-4">
+                                    <span class="text-sm text-slate-500">
+                                        Biaya platform
+                                    </span>
+
+                                    <span class="text-sm font-semibold text-slate-800">
+                                        Rp {{ number_format((float) $order->platform_fee, 0, ',', '.') }}
+                                    </span>
+                                </div>
+
+                                <div class="border-t border-slate-100 pt-4">
+
+                                    <div class="flex items-end justify-between gap-4">
+
+                                        <span class="text-sm font-bold text-slate-700">
+                                            Total
+                                        </span>
+
+                                        <span class="text-xl font-bold tracking-tight text-slate-900">
+                                            Rp {{ number_format((float) $order->total, 0, ',', '.') }}
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="border-t border-slate-100 px-5 py-5 sm:px-6">
+
+                            <div class="flex items-center justify-between gap-3">
+
+                                <span class="text-sm text-slate-500">
+                                    Status
+                                </span>
+
+                                <span class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold {{ $paymentStatusClass }}">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+                                    {{ $paymentStatusLabel }}
+                                </span>
+
+                            </div>
+
+                            @if($order->payment)
+
+                                <div class="mt-4 space-y-4">
+
+                                    <div class="flex items-center justify-between gap-4">
+                                        <span class="text-sm text-slate-500">
+                                            Metode
+                                        </span>
+
+                                        <span class="max-w-[170px] truncate text-right text-sm font-semibold text-slate-800">
+                                            {{ strtoupper($order->payment->payment_type ?? '-') }}
+                                        </span>
+                                    </div>
+
+                                    @if($order->payment->transaction_id)
+
+                                        <div class="flex items-start justify-between gap-4">
+                                            <span class="text-sm text-slate-500">
+                                                Transaksi
+                                            </span>
+
+                                            <span class="max-w-[170px] break-all text-right text-xs font-semibold text-slate-700">
+                                                {{ $order->payment->transaction_id }}
+                                            </span>
+                                        </div>
+
+                                    @endif
+
+                                    @if($order->payment->paid_at)
+
+                                        <div class="flex items-center justify-between gap-4">
+                                            <span class="text-sm text-slate-500">
+                                                Dibayar
+                                            </span>
+
+                                            <span class="text-right text-xs font-semibold text-slate-700">
+                                                {{ $order->payment->paid_at->format('d M Y, H:i') }}
+                                            </span>
+                                        </div>
+
+                                    @endif
+
+                                </div>
+
+                            @endif
+
+                            @if($latestRefund)
+
+                                <div class="mt-5 rounded-2xl bg-slate-50 p-4">
+
+                                    <div class="flex items-center justify-between gap-3">
+
+                                        <span class="text-sm text-slate-500">
+                                            Refund
+                                        </span>
+
+                                        <span class="text-sm font-bold text-slate-800">
+                                            {{ match($refundStatus) {
+                                                'pending' => 'Menunggu',
+                                                'processing' => 'Diproses',
+                                                'refunded' => 'Selesai',
+                                                'rejected' => 'Ditolak',
+                                                default => ucfirst(
+                                                    str_replace(
+                                                        '_',
+                                                        ' ',
+                                                        $refundStatus ?? 'Tidak tersedia'
+                                                    )
+                                                ),
+                                            } }}
+                                        </span>
+
+                                    </div>
+
+                                    <div class="mt-3 flex items-center justify-between gap-3">
+
+                                        <span class="text-sm text-slate-500">
+                                            Nominal
+                                        </span>
+
+                                        <span class="text-sm font-bold text-emerald-700">
+                                            Rp {{ number_format($refundAmount, 0, ',', '.') }}
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                            @endif
+
+                            @if($order->status === 'pending_payment')
+
+                                <a
+                                    href="{{ route('client.orders.checkout', $order) }}"
+                                    class="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700"
+                                >
+                                    Lanjutkan Pembayaran
+
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                        <path d="M5 12h14"/>
+                                        <path d="m13 6 6 6-6 6"/>
+                                    </svg>
+                                </a>
+
+                            @endif
+
+                        </div>
+
+
+                        @if(Route::has('client.orders.invoice'))
+
+                            <div class="border-t border-slate-100 p-5 sm:p-6">
+
+                                <a
+                                    href="{{ route('client.orders.invoice', $order) }}"
+                                    class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-[#2563EB]"
+                                >
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <path d="M6 3h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2V5a2 2 0 0 1 2-2Z"/>
+                                        <path d="M9 8h6M9 12h6"/>
+                                    </svg>
+
+                                    Lihat Invoice
+                                </a>
 
                             </div>
 
@@ -1480,118 +1862,126 @@
 
                     </section>
 
-                    {{-- Cancellation --}}
 
-                    @if($canRequestCancellation)
+                    {{-- -------------------------------------------------
+                        DISPUTE
+                    -------------------------------------------------- --}}
+                    @if($activeDispute)
 
-                        <section class="rounded-2xl border border-[#E7DDC8] bg-[#FFF9EA] p-5">
+                        <section class="rounded-3xl border border-violet-200 bg-violet-50 p-5 sm:p-6">
 
-                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#B37A21] shadow-sm">
+                            <p class="text-xs font-bold uppercase tracking-[0.14em] text-violet-700">
+                                Perlindungan
+                            </p>
 
-                                <i class="bi bi-x-circle text-[15px]"></i>
-
-                            </div>
-
-                            <h2 class="mt-4 text-sm font-semibold text-[#123128]">
-
-                                Pembatalan pesanan
-
+                            <h2 class="mt-1 text-lg font-bold text-slate-900">
+                                Dispute sedang berjalan
                             </h2>
 
-                            <p class="mt-1.5 text-xs leading-5 text-[#7D6948]">
-
-                                Ajukan pembatalan bila pesanan tidak dapat dilanjutkan. Admin akan meninjau pengajuanmu.
-
+                            <p class="mt-2 text-sm leading-6 text-slate-600">
+                                Order ini sedang dalam proses penyelesaian sengketa.
                             </p>
 
                             <a
-
-                                href="{{ route('client.orders.cancellation.create', $order) }}"
-
-                                class="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white text-xs font-semibold text-[#76520F] shadow-sm transition hover:bg-[#FFF3D6] hover:text-[#9A6800]"
-
+                                href="{{ route('client.disputes.show', $activeDispute) }}"
+                                class="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-violet-700 shadow-sm transition hover:bg-violet-100"
                             >
+                                Lihat Dispute
 
-                                Ajukan Pembatalan
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path d="M5 12h14"/>
+                                    <path d="m13 6 6 6-6 6"/>
+                                </svg>
+                            </a>
 
-                                <i class="bi bi-arrow-right text-[10px]"></i>
+                        </section>
 
+                    @elseif($canRequestDispute && !in_array($cancellationStatus, ['pending_freelancer', 'mediation_pending'], true))
+
+                        <section class="rounded-3xl border border-violet-200 bg-violet-50 p-5 sm:p-6">
+
+                            <p class="text-xs font-bold uppercase tracking-[0.14em] text-violet-700">
+                                Perlindungan
+                            </p>
+
+                            <h2 class="mt-1 text-lg font-bold text-slate-900">
+                                Ada masalah dengan order?
+                            </h2>
+
+                            <p class="mt-2 text-sm leading-6 text-slate-600">
+                                Ajukan dispute jika ada masalah dengan project.
+                            </p>
+
+                            <a
+                                href="{{ route('client.orders.dispute.create', $order) }}"
+                                class="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-violet-700 shadow-sm transition hover:bg-violet-100"
+                            >
+                                Ajukan Dispute
+
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path d="M5 12h14"/>
+                                    <path d="m13 6 6 6-6 6"/>
+                                </svg>
                             </a>
 
                         </section>
 
                     @endif
 
-                    {{-- Deadline --}}
 
-                    <section class="rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_5px_18px_rgba(18,49,40,0.035)]">
+                    {{-- -------------------------------------------------
+                        DEADLINE
+                    -------------------------------------------------- --}}
+                    <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
 
-                        <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                            Pengerjaan
+                        </p>
 
-                            <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
-
-                                Pengerjaan
-
-                            </p>
-
-                            <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-
-                                Waktu pekerjaan
-
-                            </h2>
-
-                        </div>
+                        <h2 class="mt-1 text-lg font-bold text-slate-900">
+                            Waktu project
+                        </h2>
 
                         <div class="mt-5 space-y-4">
 
                             <div class="flex items-start gap-3">
 
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F3F8F5] text-[#1E9E5A]">
-
-                                    <i class="bi bi-calendar-event text-[13px]"></i>
-
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <rect x="3" y="4" width="18" height="17" rx="2"/>
+                                        <path d="M16 2v4M8 2v4M3 9h18"/>
+                                    </svg>
                                 </div>
 
-                                <div class="min-w-0">
-
-                                    <p class="text-[10px] text-[#97A39E]">
-
-                                        Batas pengerjaan
-
+                                <div>
+                                    <p class="text-xs text-slate-400">
+                                        Deadline
                                     </p>
 
-                                    <p class="mt-1 text-xs font-semibold text-[#355248]">
-
+                                    <p class="mt-1 text-sm font-bold text-slate-800">
                                         {{ $order->due_at?->format('d M Y, H:i') ?? '-' }}
-
                                     </p>
-
                                 </div>
 
                             </div>
 
                             <div class="flex items-start gap-3">
 
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F3F8F5] text-[#1E9E5A]">
-
-                                    <i class="bi bi-clock text-[13px]"></i>
-
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <path d="M12 7v5l3 2"/>
+                                    </svg>
                                 </div>
 
                                 <div>
-
-                                    <p class="text-[10px] text-[#97A39E]">
-
+                                    <p class="text-xs text-slate-400">
                                         Durasi
-
                                     </p>
 
-                                    <p class="mt-1 text-xs font-semibold text-[#355248]">
-
+                                    <p class="mt-1 text-sm font-bold text-slate-800">
                                         {{ $order->delivery_days }} hari
-
                                     </p>
-
                                 </div>
 
                             </div>
@@ -1600,58 +1990,35 @@
 
                     </section>
 
-                    {{-- Help --}}
 
-                    <section class="rounded-2xl border border-[#DCE9E1] bg-[#EAF7EF] p-5">
+                    {{-- -------------------------------------------------
+                        HELP
+                    -------------------------------------------------- --}}
+                    <section class="rounded-3xl border border-blue-100 bg-[#EFF6FF] p-5 sm:p-6">
 
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#1E9E5A] shadow-sm">
+                        <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                            Bantuan
+                        </p>
 
-                            <i class="bi bi-chat-dots text-[15px]"></i>
-
-                        </div>
-
-                        <h2 class="mt-4 text-sm font-semibold text-[#123128]">
-
+                        <h2 class="mt-1 text-lg font-bold text-slate-900">
                             Butuh bantuan?
-
                         </h2>
 
-                        @if($order->status === 'cancelled')
+                        <p class="mt-2 text-sm leading-6 text-slate-600">
+                            Gunakan pesan untuk berkomunikasi dengan freelancer terkait project.
+                        </p>
 
-                            <p class="mt-1.5 text-xs leading-5 text-[#63786E]">
+                        <a
+                            href="{{ route('client.messages.index') }}"
+                            class="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:text-[#2563EB]"
+                        >
+                            Buka Pesan
 
-                                Pesanan ini sudah ditutup. Untuk informasi terkait pembatalan atau refund, gunakan nomor order sebagai referensi.
-
-                            </p>
-
-                        @else
-
-                            <p class="mt-1.5 text-xs leading-5 text-[#63786E]">
-
-                                Hubungi freelancer melalui pesan untuk membahas detail pekerjaanmu.
-
-                            </p>
-
-                            @if($freelancer)
-
-
-                            <a
-
-                                href="{{ route('client.messages.index') }}"
-
-                                class="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white text-xs font-semibold text-[#355248] shadow-sm transition hover:text-[#1E9E5A]"
-
-                            >
-
-                                Buka pesan
-
-                                <i class="bi bi-arrow-right text-[10px]"></i>
-
-                            </a>
-
-                            @endif
-
-                        @endif
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M5 12h14"/>
+                                <path d="m13 6 6 6-6 6"/>
+                            </svg>
+                        </a>
 
                     </section>
 
@@ -1661,6 +2028,59 @@
 
         </div>
 
+
+        {{-- =============================================================
+            MOBILE ACTION BAR
+        ============================================================= --}}
+        <div class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-8px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+
+            <div class="mx-auto flex max-w-7xl gap-2">
+
+                <a
+                    href="{{ route('client.messages.index') }}"
+                    aria-label="Pesan freelancer"
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600"
+                >
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.5 8.5 0 0 1-4.2-1.1L4 19l1.2-3.2A7.4 7.4 0 0 1 4.5 8 7.5 7.5 0 0 1 12 4.5c4.1 0 8 2.4 8 7Z"/>
+                        <path d="M8 10.5h.01M12 10.5h.01M16 10.5h.01"/>
+                    </svg>
+                </a>
+
+                @if($order->status !== 'cancelled')
+
+                    <a
+                        href="{{ $primaryAction['url'] }}"
+                        class="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-sm shadow-blue-200"
+                    >
+                        {{ $primaryAction['label'] }}
+
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                            <path d="M5 12h14"/>
+                            <path d="m13 6 6 6-6 6"/>
+                        </svg>
+                    </a>
+
+                @else
+
+                    <a
+                        href="{{ route('client.orders.index') }}"
+                        class="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white"
+                    >
+                        Kembali ke Pesanan
+
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                            <path d="M5 12h14"/>
+                            <path d="m13 6 6 6-6 6"/>
+                        </svg>
+                    </a>
+
+                @endif
+
+            </div>
+
+        </div>
+
     </div>
 
-</x-layouts.client>
+</x-layouts.marketplace>

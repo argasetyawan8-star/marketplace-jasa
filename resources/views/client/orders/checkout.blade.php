@@ -1,125 +1,175 @@
-<x-layouts.client title="Checkout">
 
-    @php
-        $serviceTitle = $order->items->first()?->service_title ?? 'Pesanan Jasa';
+@php
+    $serviceItem = $order->items->first();
+    $service = $serviceItem?->service;
 
-        $freelancerName =
-            $order->freelancerProfile?->user?->name
-            ?? 'Freelancer';
+    $serviceTitle = $serviceItem?->service_title
+        ?? $service?->title
+        ?? 'Layanan ProKerja';
 
-        $freelancerHeadline =
-            $order->freelancerProfile?->headline
-            ?? 'Freelancer JASAIN';
+    $freelancerProfile = $order->freelancerProfile;
+    $freelancer = $freelancerProfile?->user;
 
-        $freelancerLocation =
-            $order->freelancerProfile?->location;
+    $freelancerName = $freelancer?->name ?? 'Freelancer';
+    $freelancerInitial = strtoupper(
+        substr(trim($freelancerName), 0, 1)
+    );
 
-        $freelancerInitial = strtoupper(
-            substr($freelancerName, 0, 1)
-        );
+    /*
+    |--------------------------------------------------------------------------
+    | Service image
+    |--------------------------------------------------------------------------
+    */
+    $serviceImage = data_get($service, 'thumbnail')
+        ?? data_get($service, 'image')
+        ?? data_get($service, 'image_url')
+        ?? data_get($service, 'thumbnail_url')
+        ?? data_get($service, 'cover');
 
-        $paymentStatus = match($order->payment?->status) {
+    $serviceImageUrl = null;
 
-            'pending' =>
-                [
-                    'label' => 'Menunggu pembayaran',
-                    'class' => 'bg-[#FFF9EA] text-[#996600]',
-                    'dot' => 'bg-[#D89B19]',
-                ],
+    if ($serviceImage) {
+        if (
+            filter_var($serviceImage, FILTER_VALIDATE_URL) ||
+            str_starts_with($serviceImage, 'data:image/')
+        ) {
+            $serviceImageUrl = $serviceImage;
+        } elseif (str_starts_with($serviceImage, '/')) {
+            $serviceImageUrl = asset(
+                ltrim($serviceImage, '/')
+            );
+        } elseif (
+            str_starts_with($serviceImage, 'storage/') ||
+            str_starts_with($serviceImage, 'uploads/')
+        ) {
+            $serviceImageUrl = asset($serviceImage);
+        } else {
+            $serviceImageUrl = asset(
+                'storage/' . ltrim($serviceImage, '/')
+            );
+        }
+    }
 
-            'settlement',
-            'capture',
-            'paid' =>
-                [
-                    'label' => 'Pembayaran berhasil',
-                    'class' => 'bg-[#EAF7EF] text-[#168A4D]',
-                    'dot' => 'bg-[#35C978]',
-                ],
+    /*
+    |--------------------------------------------------------------------------
+    | Freelancer avatar
+    |--------------------------------------------------------------------------
+    */
+    $freelancerAvatar = data_get($freelancerProfile, 'avatar')
+        ?? data_get($freelancer, 'avatar')
+        ?? data_get($freelancer, 'avatar_url')
+        ?? data_get($freelancer, 'profile_photo_url');
 
-            'deny' =>
-                [
-                    'label' => 'Pembayaran ditolak',
-                    'class' => 'bg-[#FFF5F5] text-[#B84E4E]',
-                    'dot' => 'bg-[#D16B6B]',
-                ],
+    $freelancerAvatarUrl = null;
 
-            'cancel' =>
-                [
-                    'label' => 'Pembayaran dibatalkan',
-                    'class' => 'bg-[#FFF5F5] text-[#B84E4E]',
-                    'dot' => 'bg-[#D16B6B]',
-                ],
+    if ($freelancerAvatar) {
+        if (
+            filter_var($freelancerAvatar, FILTER_VALIDATE_URL) ||
+            str_starts_with($freelancerAvatar, 'data:image/')
+        ) {
+            $freelancerAvatarUrl = $freelancerAvatar;
+        } elseif (str_starts_with($freelancerAvatar, '/')) {
+            $freelancerAvatarUrl = asset(
+                ltrim($freelancerAvatar, '/')
+            );
+        } elseif (
+            str_starts_with($freelancerAvatar, 'storage/') ||
+            str_starts_with($freelancerAvatar, 'uploads/')
+        ) {
+            $freelancerAvatarUrl = asset($freelancerAvatar);
+        } else {
+            $freelancerAvatarUrl = asset(
+                'storage/' . ltrim($freelancerAvatar, '/')
+            );
+        }
+    }
 
-            'expire' =>
-                [
-                    'label' => 'Pembayaran kedaluwarsa',
-                    'class' => 'bg-[#F5F6F5] text-[#6E7C75]',
-                    'dot' => 'bg-[#9DA8A2]',
-                ],
+    /*
+    |--------------------------------------------------------------------------
+    | Payment status
+    |--------------------------------------------------------------------------
+    */
+    $paymentStatus = $order->payment?->status;
 
-            default =>
-                [
-                    'label' => ucfirst($order->payment?->status ?? 'Pending'),
-                    'class' => 'bg-[#F5F7F6] text-[#697971]',
-                    'dot' => 'bg-[#9DA8A2]',
-                ],
+    $paymentLabel = match ($paymentStatus) {
+        'paid' => 'Sudah dibayar',
+        'pending' => 'Menunggu pembayaran',
+        'refund_pending' => 'Menunggu refund',
+        'refunded' => 'Dana dikembalikan',
+        'cancelled' => 'Dibatalkan',
+        default => $order->payment
+            ? ucfirst(
+                str_replace(
+                    '_',
+                    ' ',
+                    $paymentStatus
+                )
+            )
+            : 'Belum tersedia',
+    };
 
-        };
-    @endphp
+    $paymentBadge = match ($paymentStatus) {
+        'paid', 'refunded'
+            => 'border-emerald-200 bg-emerald-50 text-emerald-700',
 
+        'pending'
+            => 'border-amber-200 bg-amber-50 text-amber-700',
 
-    <div class="min-h-screen bg-[#F8FCF9]">
+        'refund_pending'
+            => 'border-blue-200 bg-blue-50 text-blue-700',
 
-        <div class="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
+        'cancelled'
+            => 'border-slate-200 bg-slate-50 text-slate-600',
 
+        default
+            => 'border-slate-200 bg-slate-50 text-slate-600',
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Current checkout state
+    |--------------------------------------------------------------------------
+    */
+    $isWaitingPayment = $order->status === 'pending_payment';
+    $isPaid = $order->status === 'paid';
+    $isCancelled = $order->status === 'cancelled';
+
+    $total = (float) ($order->total ?? 0);
+    $subtotal = (float) ($order->subtotal ?? 0);
+    $platformFee = (float) ($order->platform_fee ?? 0);
+@endphp
+
+<x-layouts.marketplace title="Checkout - ProKerja">
+
+    <div class="min-h-screen bg-[#F8FAFC]">
+
+        <div class="mx-auto w-full max-w-6xl px-4 py-5 pb-28 sm:px-6 sm:py-7 lg:px-8 lg:pb-10">
 
             {{-- =========================================================
-                HEADER
+                TOP NAVIGATION
             ========================================================== --}}
-            <div class="mb-7">
+            <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
                 <a
                     href="{{ route('client.orders.show', $order) }}"
-                    class="inline-flex items-center gap-2 text-xs font-medium text-[#71837B] transition hover:text-[#0F6B3A]"
+                    class="inline-flex w-fit items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-[#2563EB]"
                 >
-                    <i class="bi bi-arrow-left text-[12px]"></i>
-                    Kembali ke detail order
+                    <span class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-sm">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                            <path d="M19 12H5"/>
+                            <path d="m12 19-7-7 7-7"/>
+                        </svg>
+                    </span>
+
+                    Kembali ke order
                 </a>
 
-
-                <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-
-                    <div>
-
-                        <div class="flex items-center gap-2">
-
-                            <span class="h-1.5 w-1.5 rounded-full bg-[#1E9E5A]"></span>
-
-                            <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#1E9E5A]">
-                                Secure Checkout
-                            </p>
-
-                        </div>
-
-                        <h1 class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[#123128] sm:text-[28px]">
-                            Checkout
-                        </h1>
-
-                        <p class="mt-2 max-w-xl text-sm leading-6 text-[#7B8C84]">
-                            Periksa kembali detail pesanan sebelum menyelesaikan pembayaran.
-                        </p>
-
-                    </div>
-
-
-                    <div class="inline-flex items-center gap-2 text-[10px] text-[#8A9992]">
-
-                        <i class="bi bi-shield-check text-[#1E9E5A]"></i>
-
-                        Pembayaran aman
-
-                    </div>
-
+                <div class="flex items-center gap-2 text-xs text-slate-400">
+                    <span>Order</span>
+                    <span>•</span>
+                    <span class="font-semibold text-slate-600">
+                        {{ $order->order_number }}
+                    </span>
                 </div>
 
             </div>
@@ -130,17 +180,25 @@
             ========================================================== --}}
             @if(session('success'))
 
-                <div class="mb-6 overflow-hidden rounded-xl border border-[#CDE8D7] bg-white shadow-[0_4px_16px_rgba(18,49,40,0.04)]">
+                <div class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 sm:px-5">
 
-                    <div class="flex items-center gap-3 px-4 py-3.5">
+                    <div class="flex items-start gap-3">
 
-                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF7EF]">
-                            <i class="bi bi-check-lg text-sm text-[#1E9E5A]"></i>
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m5 12 4 4L19 6"/>
+                            </svg>
                         </div>
 
-                        <p class="text-sm text-[#355248]">
-                            {{ session('success') }}
-                        </p>
+                        <div>
+                            <p class="text-sm font-bold text-emerald-800">
+                                Berhasil
+                            </p>
+
+                            <p class="mt-0.5 text-sm leading-6 text-emerald-700">
+                                {{ session('success') }}
+                            </p>
+                        </div>
 
                     </div>
 
@@ -151,17 +209,25 @@
 
             @if(session('error'))
 
-                <div class="mb-6 overflow-hidden rounded-xl border border-red-100 bg-white shadow-[0_4px_16px_rgba(18,49,40,0.04)]">
+                <div class="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 sm:px-5">
 
-                    <div class="flex items-center gap-3 px-4 py-3.5">
+                    <div class="flex items-start gap-3">
 
-                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50">
-                            <i class="bi bi-exclamation-lg text-sm text-red-500"></i>
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-rose-600">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m8 8 8 8M16 8 8 16"/>
+                            </svg>
                         </div>
 
-                        <p class="text-sm text-red-600">
-                            {{ session('error') }}
-                        </p>
+                        <div>
+                            <p class="text-sm font-bold text-rose-800">
+                                Pembayaran belum berhasil
+                            </p>
+
+                            <p class="mt-0.5 text-sm leading-6 text-rose-700">
+                                {{ session('error') }}
+                            </p>
+                        </div>
 
                     </div>
 
@@ -171,65 +237,97 @@
 
 
             {{-- =========================================================
-                CHECKOUT GRID
+                PAGE HEADER
             ========================================================== --}}
-            <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+            <div class="mb-6">
+
+                <div class="flex flex-wrap items-center gap-2">
+
+                    <span class="inline-flex items-center gap-2 rounded-full bg-[#EFF6FF] px-3 py-1.5 text-xs font-bold text-[#2563EB]">
+                        <span class="h-1.5 w-1.5 rounded-full bg-[#2563EB]"></span>
+                        Checkout
+                    </span>
+
+                    <span class="text-xs text-slate-400">
+                        Langkah terakhir sebelum project dimulai
+                    </span>
+
+                </div>
+
+                <h1 class="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                    Konfirmasi pesanan
+                </h1>
+
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+                    Periksa kembali layanan, freelancer, kebutuhan project, dan total pembayaran sebelum menyelesaikan pesanan.
+                </p>
+
+            </div>
+
+
+            {{-- =========================================================
+                CHECKOUT LAYOUT
+            ========================================================== --}}
+            <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
 
 
                 {{-- =====================================================
-                    LEFT
+                    LEFT CONTENT
                 ====================================================== --}}
-                <div class="space-y-5">
+                <main class="min-w-0 space-y-5">
 
 
-                    {{-- Order detail --}}
-                    <section class="overflow-hidden rounded-2xl border border-[#E1EAE5] bg-white shadow-[0_6px_22px_rgba(18,49,40,0.035)]">
+                    {{-- -------------------------------------------------
+                        SERVICE
+                    -------------------------------------------------- --}}
+                    <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
 
-                        <div class="flex items-center justify-between border-b border-[#E9EFEB] px-5 py-4 sm:px-6">
+                        <div class="border-b border-slate-100 px-5 py-5 sm:px-6">
 
-                            <div>
+                            <div class="flex items-center justify-between gap-4">
 
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
-                                    Pesanan
-                                </p>
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                                        Pesanan
+                                    </p>
 
-                                <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-                                    Detail pesanan
-                                </h2>
+                                    <h2 class="mt-1 text-lg font-bold text-slate-900">
+                                        Jasa yang kamu pesan
+                                    </h2>
+                                </div>
+
+                                <span class="text-xs font-medium text-slate-400">
+                                    {{ $order->items->count() }} item
+                                </span>
 
                             </div>
-
-
-                            <span class="rounded-full bg-[#F4F7F5] px-2.5 py-1 text-[9px] font-medium text-[#7D8C85]">
-                                {{ $order->order_number }}
-                            </span>
 
                         </div>
 
 
-                        <div class="divide-y divide-[#EDF2EF]">
+                        <div class="p-5 sm:p-6">
 
-                            @forelse($order->items as $item)
+                            @foreach($order->items as $item)
 
-                                <div class="flex gap-4 px-5 py-5 sm:px-6">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
 
-                                    {{-- Thumbnail --}}
-                                    <div class="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-xl bg-[#EAF7EF]">
+                                    <div class="h-24 w-full shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 sm:h-24 sm:w-24">
 
-                                        @if($item->service?->thumbnail)
+                                        @if($serviceImageUrl && $loop->first)
 
                                             <img
-                                                src="{{ asset('storage/' . $item->service->thumbnail) }}"
+                                                src="{{ $serviceImageUrl }}"
                                                 alt="{{ $item->service_title }}"
                                                 class="h-full w-full object-cover"
                                             >
 
                                         @else
 
-                                            <div class="flex h-full w-full items-center justify-center text-[#1E9E5A]">
-
-                                                <i class="bi bi-image text-xl"></i>
-
+                                            <div class="flex h-full w-full items-center justify-center bg-[#EFF6FF] text-[#2563EB]">
+                                                <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                                    <rect x="3" y="4" width="18" height="17" rx="2"/>
+                                                    <path d="M7 8h10M7 12h7M7 16h5"/>
+                                                </svg>
                                             </div>
 
                                         @endif
@@ -237,37 +335,38 @@
                                     </div>
 
 
-                                    {{-- Content --}}
                                     <div class="min-w-0 flex-1">
 
-                                        <h3 class="text-sm font-semibold leading-6 text-[#18382E]">
+                                        <p class="text-base font-bold leading-6 text-slate-900 sm:text-lg">
                                             {{ $item->service_title }}
-                                        </h3>
+                                        </p>
 
+                                        <div class="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
 
-                                        <div class="mt-2 flex flex-wrap gap-x-4 gap-y-2">
-
-                                            <span class="inline-flex items-center gap-1.5 text-[10px] text-[#8A9992]">
-
-                                                <i class="bi bi-box text-[#1E9E5A]"></i>
-
+                                            <span>
                                                 Qty {{ $item->quantity }}
-
                                             </span>
 
+                                            <span>
+                                                {{ $item->delivery_days }} hari pengerjaan
+                                            </span>
 
-                                            <span class="inline-flex items-center gap-1.5 text-[10px] text-[#8A9992]">
-
-                                                <i class="bi bi-clock text-[#1E9E5A]"></i>
-
-                                                {{ $item->delivery_days }} hari
-
+                                            <span>
+                                                Rp {{ number_format((float) $item->unit_price, 0, ',', '.') }}/item
                                             </span>
 
                                         </div>
 
+                                    </div>
 
-                                        <p class="mt-3 text-sm font-semibold text-[#123128]">
+
+                                    <div class="shrink-0 sm:text-right">
+
+                                        <p class="text-xs text-slate-400">
+                                            Subtotal
+                                        </p>
+
+                                        <p class="mt-1 text-lg font-bold text-slate-900">
                                             Rp {{ number_format((float) $item->subtotal, 0, ',', '.') }}
                                         </p>
 
@@ -275,74 +374,65 @@
 
                                 </div>
 
-                            @empty
+                            @endforeach
 
-                                <div class="px-5 py-8 sm:px-6">
+                        </div>
 
-                                    <p class="text-sm text-[#8A9992]">
-                                        Tidak ada item dalam order.
+                    </section>
+
+
+                    {{-- -------------------------------------------------
+                        FREELANCER
+                    -------------------------------------------------- --}}
+                    <section class="border-b border-slate-200 bg-white px-5 py-5 shadow-sm sm:px-6">
+
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+                            <div class="flex min-w-0 items-center gap-3">
+
+                                <div class="h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-white bg-blue-100 shadow-sm">
+
+                                    @if($freelancerAvatarUrl)
+
+                                        <img
+                                            src="{{ $freelancerAvatarUrl }}"
+                                            alt="{{ $freelancerName }}"
+                                            class="h-full w-full object-cover"
+                                        >
+
+                                    @else
+
+                                        <div class="flex h-full w-full items-center justify-center text-sm font-bold text-blue-700">
+                                            {{ $freelancerInitial }}
+                                        </div>
+
+                                    @endif
+
+                                </div>
+
+                                <div class="min-w-0">
+
+                                    <p class="text-xs text-slate-400">
+                                        Freelancer
+                                    </p>
+
+                                    <p class="mt-0.5 truncate text-sm font-bold text-slate-900">
+                                        {{ $freelancerName }}
                                     </p>
 
                                 </div>
 
-                            @endforelse
-
-                        </div>
-
-                    </section>
-
-
-                    {{-- Freelancer --}}
-                    <section class="rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_6px_22px_rgba(18,49,40,0.035)] sm:p-6">
-
-                        <div class="flex items-center justify-between">
-
-                            <div>
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
-                                    Freelancer
-                                </p>
-
-                                <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-                                    Penyedia jasa
-                                </h2>
-
                             </div>
 
-                            <i class="bi bi-person-check text-[#A0ADA7]"></i>
+                            <div class="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
 
-                        </div>
+                                <svg class="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                    <path d="m5 12 4 4L19 6"/>
+                                </svg>
 
-
-                        <div class="mt-5 flex items-center gap-4">
-
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#EAF7EF] text-sm font-semibold text-[#1E9E5A]">
-                                {{ $freelancerInitial }}
-                            </div>
-
-
-                            <div class="min-w-0 flex-1">
-
-                                <h3 class="truncate text-sm font-semibold text-[#18382E]">
-                                    {{ $freelancerName }}
-                                </h3>
-
-                                <p class="mt-1 truncate text-xs text-[#7F8E87]">
-                                    {{ $freelancerHeadline }}
-                                </p>
-
-
-                                @if($freelancerLocation)
-
-                                    <p class="mt-2 flex items-center gap-1.5 text-[10px] text-[#96A39D]">
-
-                                        <i class="bi bi-geo-alt text-[#1E9E5A]"></i>
-
-                                        {{ $freelancerLocation }}
-
-                                    </p>
-
-                                @endif
+                                <span class="text-xs font-semibold text-slate-600">
+                                    Freelancer pilihanmu
+                                </span>
 
                             </div>
 
@@ -351,16 +441,18 @@
                     </section>
 
 
-                    {{-- Requirements --}}
-                    <section class="rounded-2xl border border-[#E1EAE5] bg-white shadow-[0_6px_22px_rgba(18,49,40,0.035)]">
+                    {{-- -------------------------------------------------
+                        REQUIREMENTS
+                    -------------------------------------------------- --}}
+                    <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
 
-                        <div class="border-b border-[#E9EFEB] px-5 py-4 sm:px-6">
+                        <div class="border-b border-slate-100 px-5 py-5 sm:px-6">
 
-                            <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
-                                Brief
+                            <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                                Project
                             </p>
 
-                            <h2 class="mt-1 text-sm font-semibold text-[#123128]">
+                            <h2 class="mt-1 text-lg font-bold text-slate-900">
                                 Detail kebutuhan
                             </h2>
 
@@ -371,9 +463,9 @@
 
                             @if($order->requirements)
 
-                                <div class="rounded-xl border border-[#DCEAE1] bg-[#F7FBF8] px-4 py-4">
+                                <div class="rounded-2xl bg-slate-50 p-4 sm:p-5">
 
-                                    <p class="whitespace-pre-line text-xs leading-6 text-[#62766D]">
+                                    <p class="whitespace-pre-line text-sm leading-7 text-slate-600">
                                         {{ $order->requirements }}
                                     </p>
 
@@ -381,12 +473,21 @@
 
                             @else
 
-                                <div class="rounded-xl border border-dashed border-[#DCE6E1] px-4 py-6 text-center">
+                                <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-9 text-center">
 
-                                    <i class="bi bi-file-text text-lg text-[#A4AEA9]"></i>
+                                    <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm">
+                                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                            <path d="M7 3h10a2 2 0 0 1 2 2v14l-7-3-7 3V5a2 2 0 0 1 2-2Z"/>
+                                            <path d="M9 8h6M9 12h6"/>
+                                        </svg>
+                                    </div>
 
-                                    <p class="mt-2 text-xs text-[#95A19B]">
-                                        Tidak ada detail kebutuhan tambahan.
+                                    <p class="mt-3 text-sm font-semibold text-slate-600">
+                                        Tidak ada kebutuhan tambahan.
+                                    </p>
+
+                                    <p class="mt-1 text-xs leading-5 text-slate-400">
+                                        Freelancer akan menggunakan detail layanan sebagai acuan pengerjaan.
                                     </p>
 
                                 </div>
@@ -398,26 +499,80 @@
                     </section>
 
 
-                    {{-- Security information --}}
-                    <section class="rounded-2xl border border-[#D8E9DF] bg-[#EAF7EF] p-5 sm:p-6">
+                    {{-- -------------------------------------------------
+                        SERVICE DELIVERY INFO
+                    -------------------------------------------------- --}}
+                    <section class="rounded-3xl border border-slate-200 bg-white shadow-sm">
 
-                        <div class="flex items-start gap-4">
+                        <div class="px-5 py-5 sm:px-6">
 
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#1E9E5A] shadow-sm">
-                                <i class="bi bi-shield-check text-[16px]"></i>
+                            <div class="flex items-center justify-between gap-3">
+
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                                        Informasi
+                                    </p>
+
+                                    <h2 class="mt-1 text-lg font-bold text-slate-900">
+                                        Ketentuan pengerjaan
+                                    </h2>
+                                </div>
+
                             </div>
 
 
-                            <div>
+                            <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
 
-                                <h2 class="text-sm font-semibold text-[#123128]">
-                                    Pembayaran terlindungi
-                                </h2>
+                                <div class="rounded-2xl bg-slate-50 p-4">
 
-                                <p class="mt-1.5 text-xs leading-5 text-[#60756B]">
-                                    Pembayaran diproses melalui sistem pembayaran marketplace.
-                                    Dana mengikuti alur pesanan hingga pekerjaan selesai sesuai proses JASAIN.
-                                </p>
+                                    <div class="flex items-center gap-3">
+
+                                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563EB] shadow-sm">
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                <circle cx="12" cy="12" r="9"/>
+                                                <path d="M12 7v5l3 2"/>
+                                            </svg>
+                                        </div>
+
+                                        <div>
+                                            <p class="text-xs text-slate-400">
+                                                Durasi pengerjaan
+                                            </p>
+
+                                            <p class="mt-1 text-sm font-bold text-slate-900">
+                                                {{ $order->delivery_days }} hari
+                                            </p>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="rounded-2xl bg-slate-50 p-4">
+
+                                    <div class="flex items-center gap-3">
+
+                                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#2563EB] shadow-sm">
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                <rect x="3" y="4" width="18" height="17" rx="2"/>
+                                                <path d="M16 2v4M8 2v4M3 9h18"/>
+                                            </svg>
+                                        </div>
+
+                                        <div>
+                                            <p class="text-xs text-slate-400">
+                                                Estimasi selesai
+                                            </p>
+
+                                            <p class="mt-1 text-sm font-bold text-slate-900">
+                                                {{ $order->due_at?->format('d M Y') ?? '-' }}
+                                            </p>
+                                        </div>
+
+                                    </div>
+
+                                </div>
 
                             </div>
 
@@ -425,217 +580,214 @@
 
                     </section>
 
-                </div>
-
+                </main>
 
 
                 {{-- =====================================================
-                    RIGHT
+                    PAYMENT SIDEBAR
                 ====================================================== --}}
-                <aside>
+                <aside class="min-w-0">
 
-                    <div class="sticky top-24 space-y-5">
+                    <div class="space-y-5 lg:sticky lg:top-24">
 
+                        {{-- -------------------------------------------------
+                            ORDER SUMMARY
+                        -------------------------------------------------- --}}
+                        <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
 
-                        {{-- Payment summary --}}
-                        <section class="overflow-hidden rounded-2xl border border-[#DDE8E2] bg-white shadow-[0_9px_28px_rgba(18,49,40,0.06)]">
+                            <div class="border-b border-slate-100 px-5 py-5 sm:px-6">
 
-                            <div class="border-b border-[#E9EFEB] px-5 py-4">
-
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
-                                    Checkout
+                                <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                                    Ringkasan
                                 </p>
 
-                                <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-                                    Ringkasan pembayaran
+                                <h2 class="mt-1 text-xl font-bold text-slate-900">
+                                    Total pembayaran
                                 </h2>
 
                             </div>
 
 
-                            <div class="p-5">
+                            <div class="p-5 sm:p-6">
+
+                                <div class="space-y-4">
+
+                                    <div class="flex items-center justify-between gap-4">
+                                        <span class="text-sm text-slate-500">
+                                            Subtotal
+                                        </span>
+
+                                        <span class="text-sm font-semibold text-slate-800">
+                                            Rp {{ number_format($subtotal, 0, ',', '.') }}
+                                        </span>
+                                    </div>
 
 
-                                {{-- Service --}}
-                                <div class="flex items-start justify-between gap-5">
+                                    <div class="flex items-center justify-between gap-4">
+                                        <span class="text-sm text-slate-500">
+                                            Biaya platform
+                                        </span>
 
-                                    <span class="max-w-[200px] text-xs leading-5 text-[#74867D]">
-                                        {{ $serviceTitle }}
-                                    </span>
-
-                                    <span class="shrink-0 text-xs font-medium text-[#355248]">
-                                        Rp {{ number_format((float) $order->subtotal, 0, ',', '.') }}
-                                    </span>
-
-                                </div>
+                                        <span class="text-sm font-semibold text-slate-800">
+                                            Rp {{ number_format($platformFee, 0, ',', '.') }}
+                                        </span>
+                                    </div>
 
 
-                                {{-- Subtotal --}}
-                                <div class="mt-4 flex items-center justify-between gap-4">
+                                    <div class="border-t border-slate-100 pt-4">
 
-                                    <span class="text-xs text-[#7D8D86]">
-                                        Subtotal
-                                    </span>
+                                        <div class="flex items-end justify-between gap-4">
 
-                                    <span class="text-xs font-medium text-[#355248]">
-                                        Rp {{ number_format((float) $order->subtotal, 0, ',', '.') }}
-                                    </span>
+                                            <span class="text-sm font-bold text-slate-700">
+                                                Total
+                                            </span>
 
-                                </div>
+                                            <span class="text-2xl font-bold tracking-tight text-slate-900">
+                                                Rp {{ number_format($total, 0, ',', '.') }}
+                                            </span>
 
+                                        </div>
 
-                                {{-- Platform fee --}}
-                                <div class="mt-3.5 flex items-center justify-between gap-4">
-
-                                    <span class="flex items-center gap-1.5 text-xs text-[#7D8D86]">
-
-                                        Biaya platform
-
-                                        <i
-                                            class="bi bi-info-circle text-[10px] text-[#A4AEA9]"
-                                            title="Biaya penggunaan platform"
-                                        ></i>
-
-                                    </span>
-
-                                    <span class="text-xs font-medium text-[#355248]">
-                                        Rp {{ number_format((float) $order->platform_fee, 0, ',', '.') }}
-                                    </span>
+                                    </div>
 
                                 </div>
 
 
-                                {{-- Total --}}
-                                <div class="mt-5 border-t border-[#E8EFEB] pt-5">
+                                {{-- payment status --}}
+                                <div class="mt-5 rounded-2xl border px-4 py-4 {{ $paymentBadge }}">
 
-                                    <div class="flex items-end justify-between gap-4">
+                                    <div class="flex items-start gap-3">
+
+                                        <div class="mt-0.5">
+
+                                            @if($paymentStatus === 'paid')
+
+                                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                                    <circle cx="12" cy="12" r="9"/>
+                                                    <path d="m8 12 2.5 2.5L16 9"/>
+                                                </svg>
+
+                                            @elseif($paymentStatus === 'pending')
+
+                                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                                    <circle cx="12" cy="12" r="9"/>
+                                                    <path d="M12 7v5l3 2"/>
+                                                </svg>
+
+                                            @else
+
+                                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                                    <circle cx="12" cy="12" r="9"/>
+                                                    <path d="M12 11v5"/>
+                                                    <path d="M12 8h.01"/>
+                                                </svg>
+
+                                            @endif
+
+                                        </div>
+
 
                                         <div>
 
-                                            <p class="text-xs font-medium text-[#53685F]">
-                                                Total pembayaran
+                                            <p class="text-sm font-bold">
+                                                {{ $paymentLabel }}
                                             </p>
 
-                                            <p class="mt-1 text-[10px] text-[#98A49F]">
-                                                Sudah termasuk biaya platform
+                                            <p class="mt-1 text-xs leading-5 opacity-80">
+
+                                                @if($isWaitingPayment)
+                                                    Selesaikan pembayaran agar freelancer dapat mulai mengerjakan project.
+
+                                                @elseif($isPaid)
+                                                    Pembayaran sudah diterima dan order siap diproses freelancer.
+
+                                                @elseif($isCancelled)
+                                                    Order ini sudah dibatalkan.
+
+                                                @else
+                                                    Status pembayaran akan diperbarui setelah proses selesai.
+                                                @endif
+
                                             </p>
 
                                         </div>
-
-
-                                        <p class="text-xl font-semibold tracking-[-0.025em] text-[#1E9E5A]">
-                                            Rp {{ number_format((float) $order->total, 0, ',', '.') }}
-                                        </p>
 
                                     </div>
 
                                 </div>
 
 
-                                {{-- Payment status --}}
-                                <div class="mt-5 rounded-xl border border-[#E6ECE8] bg-[#F9FBFA] p-3.5">
+                                {{-- =================================================
+                                    DEVELOPMENT PAYMENT SIMULATOR
+                                ================================================== --}}
+                                @if($isWaitingPayment)
 
-                                    <div class="flex items-center justify-between gap-3">
+                                    <div class="mt-5">
 
-                                        <span class="text-[10px] font-medium text-[#7D8D86]">
-                                            Status pembayaran
-                                        </span>
-
-
-                                        <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-semibold {{ $paymentStatus['class'] }}">
-
-                                            <span class="h-1.5 w-1.5 rounded-full {{ $paymentStatus['dot'] }}"></span>
-
-                                            {{ $paymentStatus['label'] }}
-
-                                        </span>
-
-                                    </div>
-
-                                </div>
-
-
-                                {{-- Pay button --}}
-                                @if($order->status === 'pending_payment')
-
-                                    @if(app()->environment('local'))
-
-                                        <div class="mt-6 rounded-xl border border-dashed border-[#BFE0CC] bg-[#F5FBF7] p-4">
-
-                                            <div class="flex items-start gap-3">
-
-                                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EAF7EF] text-[#1E9E5A]">
-                                                    <i class="bi bi-wrench-adjustable-circle text-sm"></i>
-                                                </div>
-
-                                                <div>
-                                                    <p class="text-xs font-semibold text-[#355248]">
-                                                        Mode Development
-                                                    </p>
-
-                                                    <p class="mt-1 text-[10px] leading-5 text-[#71837B]">
-                                                        Payment gateway belum dihubungkan. Gunakan simulator untuk menguji alur order.
-                                                    </p>
-                                                </div>
-
-                                            </div>
-
-                                            <form
-                                                action="{{ route('client.orders.payment.simulate', $order) }}"
-                                                method="POST"
-                                                class="mt-4"
-                                            >
-                                                @csrf
-
-                                                <button
-                                                    type="submit"
-                                                    onclick="return confirm('Simulasikan pembayaran berhasil untuk order ini?')"
-                                                    class="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#1E9E5A] px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0F6B3A]"
-                                                >
-                                                    <i class="bi bi-check-circle"></i>
-                                                    Simulasikan Pembayaran Berhasil
-                                                </button>
-                                            </form>
-
-                                            <p class="mt-3 text-center text-[10px] leading-4 text-[#8B9992]">
-                                                Tombol ini hanya tersedia pada environment lokal.
-                                            </p>
-
-                                        </div>
-
-                                    @else
-
-                                        <button
-                                            type="button"
-                                            disabled
-                                            class="mt-6 flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-gray-200 px-4 py-3 text-sm font-semibold text-gray-500"
+                                        <form
+                                            action="{{ route('client.orders.payment.simulate', $order) }}"
+                                            method="POST"
                                         >
-                                            <i class="bi bi-credit-card"></i>
-                                            Bayar sekarang
-                                        </button>
 
-                                        <p class="mt-3 text-center text-xs leading-5 text-gray-400">
-                                            Payment gateway akan kita hubungkan pada tahap berikutnya.
-                                        </p>
+                                            @csrf
 
-                                    @endif
+                                            <button
+                                                type="submit"
+                                                class="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-4 text-sm font-bold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700 active:scale-[0.99]"
+                                            >
 
-                                @elseif($order->status === 'paid')
+                                                <svg class="h-4 w-4 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                                    <rect x="3" y="5" width="18" height="14" rx="2"/>
+                                                    <path d="M3 10h18"/>
+                                                </svg>
 
-                                    <div class="mt-6 rounded-xl border border-green-200 bg-green-50 p-4">
+                                                Selesaikan Pembayaran
+
+                                                <svg class="h-4 w-4 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+                                                    <path d="M5 12h14"/>
+                                                    <path d="m13 6 6 6-6 6"/>
+                                                </svg>
+
+                                            </button>
+
+                                        </form>
+
+                                        <div class="mt-3 flex items-start gap-2">
+
+                                            <svg class="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                <circle cx="12" cy="12" r="9"/>
+                                                <path d="M12 11v5"/>
+                                                <path d="M12 8h.01"/>
+                                            </svg>
+
+                                            <p class="text-xs leading-5 text-slate-400">
+                                                Mode pembayaran pengembangan. Gateway pembayaran ProKerja akan menggunakan Xendit pada tahap integrasi final.
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+                                @elseif($isPaid)
+
+                                    <div class="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
 
                                         <div class="flex items-start gap-3">
 
-                                            <i class="bi bi-check-circle-fill mt-0.5 text-[#16A34A]"></i>
+                                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600">
+                                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="m5 12 4 4L19 6"/>
+                                                </svg>
+                                            </div>
 
                                             <div>
 
-                                                <p class="text-sm font-medium text-green-800">
+                                                <p class="text-sm font-bold text-emerald-800">
                                                     Pembayaran berhasil
                                                 </p>
 
-                                                <p class="mt-1 text-xs leading-5 text-green-700">
-                                                    Order sudah dibayar dan akan diproses oleh freelancer.
+                                                <p class="mt-1 text-xs leading-5 text-emerald-700">
+                                                    Order sudah dibayar. Freelancer dapat mulai mengerjakan project.
                                                 </p>
 
                                             </div>
@@ -646,99 +798,127 @@
 
                                 @endif
 
-                            </div>
 
-                        </section>
+                                {{-- secure information --}}
+                                <div class="mt-5 space-y-3">
 
+                                    <div class="flex items-center gap-3">
 
-                        {{-- Order mini info --}}
-                        <section class="rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_5px_18px_rgba(18,49,40,0.035)]">
+                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                <path d="M12 3 4 6v5c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-3Z"/>
+                                                <path d="m9 12 2 2 4-4"/>
+                                            </svg>
+                                        </div>
 
-                            <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
-                                Informasi order
-                            </p>
-
-
-                            <div class="mt-4 space-y-3.5">
-
-                                <div class="flex items-center justify-between gap-4">
-
-                                    <span class="text-xs text-[#8A9992]">
-                                        Nomor order
-                                    </span>
-
-                                    <span class="text-[10px] font-semibold text-[#355248]">
-                                        {{ $order->order_number }}
-                                    </span>
-
-                                </div>
-
-
-                                <div class="flex items-center justify-between gap-4">
-
-                                    <span class="text-xs text-[#8A9992]">
-                                        Durasi pengerjaan
-                                    </span>
-
-                                    <span class="text-[10px] font-semibold text-[#355248]">
-                                        {{ $order->delivery_days }} hari
-                                    </span>
-
-                                </div>
-
-
-                                @if($order->due_at)
-
-                                    <div class="flex items-center justify-between gap-4">
-
-                                        <span class="text-xs text-[#8A9992]">
-                                            Deadline
-                                        </span>
-
-                                        <span class="text-[10px] font-semibold text-[#355248]">
-                                            {{ $order->due_at->format('d M Y') }}
-                                        </span>
+                                        <p class="text-xs leading-5 text-slate-500">
+                                            Transaksi dilindungi oleh sistem ProKerja.
+                                        </p>
 
                                     </div>
 
-                                @endif
+                                    <div class="flex items-center gap-3">
+
+                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                                <path d="M20 12a8 8 0 1 1-2.34-5.66"/>
+                                                <path d="M20 4v6h-6"/>
+                                            </svg>
+                                        </div>
+
+                                        <p class="text-xs leading-5 text-slate-500">
+                                            Riwayat order dapat dilihat kapan saja dari detail pesanan.
+                                        </p>
+
+                                    </div>
+
+                                </div>
 
                             </div>
 
                         </section>
 
 
-                        {{-- Need help --}}
-                        <section class="rounded-2xl border border-[#DCE9E1] bg-[#F2F9F4] p-5">
+                        {{-- -------------------------------------------------
+                            FREELANCER
+                        -------------------------------------------------- --}}
+                        <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
 
-                            <div class="flex items-center gap-3">
+                            <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                                Freelancer
+                            </p>
 
-                                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#1E9E5A] shadow-sm">
-                                    <i class="bi bi-chat-dots text-[14px]"></i>
+                            <div class="mt-4 flex items-center gap-3">
+
+                                <div class="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-blue-100">
+
+                                    @if($freelancerAvatarUrl)
+
+                                        <img
+                                            src="{{ $freelancerAvatarUrl }}"
+                                            alt="{{ $freelancerName }}"
+                                            class="h-full w-full object-cover"
+                                        >
+
+                                    @else
+
+                                        <div class="flex h-full w-full items-center justify-center text-sm font-bold text-blue-700">
+                                            {{ $freelancerInitial }}
+                                        </div>
+
+                                    @endif
+
                                 </div>
 
-                                <div>
+                                <div class="min-w-0">
 
-                                    <p class="text-xs font-semibold text-[#18382E]">
-                                        Butuh bantuan?
+                                    <p class="truncate text-sm font-bold text-slate-900">
+                                        {{ $freelancerName }}
                                     </p>
 
-                                    <p class="mt-0.5 text-[10px] text-[#83938B]">
-                                        Hubungi freelancer melalui pesan.
+                                    <p class="mt-0.5 text-xs text-slate-400">
+                                        Freelancer ProKerja
                                     </p>
 
                                 </div>
 
                             </div>
 
+                        </section>
 
-                            <a
-                                href="{{ route('client.messages.index') }}"
-                                class="mt-4 flex h-10 items-center justify-center gap-2 rounded-xl bg-white text-[10px] font-semibold text-[#355248] shadow-sm transition hover:text-[#1E9E5A]"
-                            >
-                                Buka pesan
-                                <i class="bi bi-arrow-right text-[9px]"></i>
-                            </a>
+
+                        {{-- -------------------------------------------------
+                            ORDER ID
+                        -------------------------------------------------- --}}
+                        <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+
+                            <p class="text-xs font-bold uppercase tracking-[0.14em] text-[#2563EB]">
+                                Referensi
+                            </p>
+
+                            <div class="mt-4 space-y-4">
+
+                                <div class="flex items-center justify-between gap-4">
+                                    <span class="text-sm text-slate-500">
+                                        Nomor order
+                                    </span>
+
+                                    <span class="text-right text-xs font-bold text-slate-800">
+                                        {{ $order->order_number }}
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center justify-between gap-4">
+                                    <span class="text-sm text-slate-500">
+                                        Dibuat
+                                    </span>
+
+                                    <span class="text-right text-xs font-semibold text-slate-700">
+                                        {{ $order->created_at?->format('d M Y, H:i') }}
+                                    </span>
+                                </div>
+
+                            </div>
 
                         </section>
 
@@ -752,150 +932,4 @@
 
     </div>
 
-
-    {{-- =========================================================
-        PAYMENT SCRIPT
-        Backend payment flow tetap dipertahankan
-    ========================================================== --}}
-    @if($order->status === 'pending_payment')
-
-        <script
-            src="{{ config('midtrans.is_production')
-                ? 'https://app.midtrans.com/snap/snap.js'
-                : 'https://app.sandbox.midtrans.com/snap/snap.js' }}"
-            data-client-key="{{ config('midtrans.client_key') }}"
-        ></script>
-
-
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-
-                const payButton = document.getElementById('pay-button');
-                const payButtonText = document.getElementById('pay-button-text');
-                const paymentMessage = document.getElementById('payment-message');
-
-                if (!payButton) {
-                    return;
-                }
-
-
-                payButton.addEventListener('click', async function () {
-
-                    payButton.disabled = true;
-
-                    payButtonText.textContent = 'Menyiapkan pembayaran...';
-
-                    paymentMessage.classList.add('hidden');
-                    paymentMessage.textContent = '';
-
-
-                    try {
-
-                        const response = await fetch(
-                            '{{ route('client.orders.payment.token', $order) }}',
-                            {
-                                method: 'POST',
-
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json',
-                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                                },
-
-                                body: JSON.stringify({})
-                            }
-                        );
-
-
-                        const data = await response.json();
-
-
-                        if (!response.ok || !data.success || !data.token) {
-
-                            throw new Error(
-                                data.message ||
-                                'Gagal menyiapkan pembayaran.'
-                            );
-
-                        }
-
-
-                        window.snap.pay(
-                            data.token,
-                            {
-
-                                onSuccess: function () {
-
-                                    window.location.href =
-                                        '{{ route('client.orders.show', $order) }}';
-
-                                },
-
-
-                                onPending: function () {
-
-                                    window.location.href =
-                                        '{{ route('client.orders.show', $order) }}';
-
-                                },
-
-
-                                onError: function () {
-
-                                    paymentMessage.textContent =
-                                        'Pembayaran gagal diproses. Silakan coba lagi.';
-
-                                    paymentMessage.classList.remove('hidden');
-
-                                    resetPaymentButton();
-
-                                },
-
-
-                                onClose: function () {
-
-                                    resetPaymentButton();
-
-                                }
-
-                            }
-                        );
-
-
-                    } catch (error) {
-
-                        console.error(
-                            'Payment error:',
-                            error
-                        );
-
-
-                        paymentMessage.textContent =
-                            error.message ||
-                            'Terjadi kesalahan saat menyiapkan pembayaran.';
-
-                        paymentMessage.classList.remove('hidden');
-
-
-                        resetPaymentButton();
-
-                    }
-
-                });
-
-
-                function resetPaymentButton() {
-
-                    payButton.disabled = false;
-
-                    payButtonText.textContent =
-                        'Bayar sekarang';
-
-                }
-
-            });
-        </script>
-
-    @endif
-
-</x-layouts.client>
+</x-layouts.marketplace>

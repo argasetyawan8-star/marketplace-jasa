@@ -1,360 +1,665 @@
 @php
-    $user = auth()->user();
 
-    $profile = $user?->profile;
+use Illuminate\Support\Facades\Route;
 
-    $avatarUrl = $profile?->avatar
-        ? asset('storage/' . $profile->avatar)
-        : null;
+/*
+|--------------------------------------------------------------------------
+| CLIENT NAVIGATION
+|--------------------------------------------------------------------------
+*/
 
-    $initial = strtoupper(
-        substr($user?->name ?: 'U', 0, 1)
-    );
+$isAuthenticated = auth()->check();
 
-    // Active states
-    $isHome = request()->routeIs('marketplace.home');
+$user = $isAuthenticated ? auth()->user() : null;
 
-    $isSearch =
-        request()->routeIs('marketplace.search')
-        || request()->routeIs('marketplace.category')
-        || request()->routeIs('marketplace.service')
-        || request()->routeIs('marketplace.freelancer');
 
-    $isJobBoard = request()->routeIs('marketplace.jobs.*');
+/*
+|--------------------------------------------------------------------------
+| Marketplace URLs
+|--------------------------------------------------------------------------
+*/
 
-    $isDashboard = request()->routeIs('client.dashboard');
+$homeUrl = route('marketplace.home');
 
-    $isOrders = request()->routeIs('client.orders.*');
+$searchUrl = route('marketplace.search');
 
-    $isFavorites = request()->routeIs('client.favorites.*');
 
-    $isMessages = request()->routeIs('client.messages.*');
+/*
+|--------------------------------------------------------------------------
+| Client URLs
+|--------------------------------------------------------------------------
+*/
 
-    $isProfile = request()->routeIs('profile.*');
+$dashboardUrl = route('client.dashboard');
+
+$ordersUrl = route('client.orders.index');
+
+$messagesUrl = route('client.messages.index');
+
+$favoritesUrl = route('client.favorites.index');
+
+$projectsUrl = route('client.jobs.index');
+
+$profileUrl = route('profile.show');
+
+$notificationsUrl = route('notifications.index');
+
+
+/*
+|--------------------------------------------------------------------------
+| Current Page State
+|--------------------------------------------------------------------------
+*/
+
+$isHome = request()->routeIs('marketplace.home');
+
+$isSearch =
+    request()->routeIs('marketplace.search') ||
+    request()->routeIs('marketplace.category') ||
+    request()->routeIs('marketplace.service') ||
+    request()->routeIs('marketplace.freelancer.show');
+
+$isProjects =
+    request()->routeIs('client.jobs.*') ||
+    request()->routeIs('marketplace.jobs.*');
+
+$isOrders =
+    request()->routeIs('client.orders.*');
+
+$isFavorites =
+    request()->routeIs('client.favorites.*');
+
+$isMessages =
+    request()->routeIs('client.messages.*');
+
+$isDashboard =
+    request()->routeIs('client.dashboard');
+
+$isProfile =
+    request()->routeIs('profile.*');
+
+$isNotifications =
+    request()->routeIs('notifications.*');
+
 @endphp
 
 
-<header
-    x-data="{ mobileMenuOpen: false }"
-    class="sticky top-0 z-50 border-b border-[#E4ECE7] bg-white/95 backdrop-blur-xl"
+{{-- ================================================================
+     NAVIGATION WRAPPER
+     ================================================================ --}}
+
+<div
+    x-data="{
+        moreOpen: false,
+        profileOpen: false,
+        categoryOpen: false,
+        mobileProfileOpen: false
+    }"
+
+    @keydown.escape.window="
+        moreOpen = false;
+        profileOpen = false;
+        categoryOpen = false;
+        mobileProfileOpen = false;
+    "
+
+    @click.outside="
+        moreOpen = false;
+        profileOpen = false;
+        categoryOpen = false;
+        mobileProfileOpen = false;
+    "
+
+    class="relative z-[100]"
 >
 
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-        {{-- =========================================================
-            NAVBAR
-        ========================================================== --}}
+    {{-- ================================================================
+         DESKTOP NAVBAR
+         ================================================================ --}}
 
-        <div class="flex h-[68px] items-center justify-between">
+    <header
+        id="pk-navbar-desktop"
+        class="pk-navbar fixed inset-x-0 top-0 z-[100] hidden h-[72px] w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-xl lg:block"
+    >
 
-            {{-- =====================================================
-                LEFT
-            ====================================================== --}}
+        <div class="mx-auto flex h-full w-full max-w-[1280px] items-center px-6">
 
-            <div class="flex min-w-0 items-center gap-7 lg:gap-9">
 
-                {{-- BRAND --}}
+            {{-- ========================================================
+                 LOGO
+                 ======================================================== --}}
+
+            <a
+                href="{{ $homeUrl }}"
+                class="group flex shrink-0 items-center gap-2.5"
+                aria-label="ProKerja Beranda"
+            >
+
+                <span
+                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-lg font-extrabold text-white shadow-sm transition duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md"
+                >
+                    P
+                </span>
+
+                <span class="flex min-w-0 flex-col leading-none">
+
+                    <span
+                        class="text-[17px] font-bold tracking-[-0.02em] text-slate-900"
+                    >
+                        ProKerja
+                    </span>
+
+                    <span
+                        class="mt-1 text-[9px] font-medium uppercase tracking-[0.08em] text-slate-400"
+                    >
+                        Temukan Talenta. Wujudkan Kerja.
+                    </span>
+
+                </span>
+
+            </a>
+
+
+            {{-- ========================================================
+                 MAIN NAVIGATION
+                 ======================================================== --}}
+
+            <nav class="ml-10 flex h-full items-center gap-1">
+
+
+                {{-- Beranda --}}
 
                 <a
-                    href="{{ route('marketplace.home') }}"
-                    class="group flex shrink-0 items-center gap-2.5"
+                    href="{{ $homeUrl }}"
+                    class="pk-navbar-link {{ $isHome ? 'is-active' : '' }}"
                 >
-
-                    <div
-                        class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1E9E5A] text-white shadow-[0_4px_12px_rgba(30,158,90,0.15)] transition duration-200 group-hover:bg-[#0F6B3A]"
-                    >
-                        <span class="text-[15px] font-semibold">
-                            J
-                        </span>
-                    </div>
-
-                    <div class="hidden sm:block">
-
-                        <p class="text-[16px] font-semibold tracking-[-0.035em] text-[#123128]">
-                            JASAIN
-                        </p>
-
-                        <p class="-mt-0.5 text-[8px] font-medium uppercase tracking-[0.16em] text-[#8A9992]">
-                            Marketplace Jasa
-                        </p>
-
-                    </div>
-
+                    Beranda
                 </a>
 
 
-                {{-- =================================================
-                    DESKTOP NAVIGATION
-                ================================================== --}}
+                {{-- Cari Jasa --}}
 
-                <nav class="hidden items-center gap-1 lg:flex">
+                <a
+                    href="{{ $searchUrl }}"
+                    class="pk-navbar-link {{ $isSearch ? 'is-active' : '' }}"
+                >
+                    Cari Jasa
+                </a>
 
-                    {{-- Beranda --}}
+
+                {{-- Job Board --}}
+
+                <a
+                    href="{{ $projectsUrl }}"
+                    class="pk-navbar-link {{ $isProjects ? 'is-active' : '' }}"
+                >
+                    Job Board
+                </a>
+
+
+                {{-- Pesanan --}}
+
+                <a
+                    href="{{ $ordersUrl }}"
+                    class="pk-navbar-link {{ $isOrders ? 'is-active' : '' }}"
+                >
+                    Pesanan
+                </a>
+
+
+                {{-- Favorit --}}
+
+                <a
+                    href="{{ $favoritesUrl }}"
+                    class="pk-navbar-link {{ $isFavorites ? 'is-active' : '' }}"
+                >
+                    Favorit
+                </a>
+
+            </nav>
+
+
+            {{-- ========================================================
+                 RIGHT SIDE
+                 ======================================================== --}}
+
+            <div class="ml-auto flex items-center gap-2">
+
+                @auth
+
+
+                    {{-- ==================================================
+                         NOTIFICATION
+                         ================================================== --}}
 
                     <a
-                        href="{{ route('marketplace.home') }}"
-                        class="
-                            group flex h-9 items-center gap-2 rounded-lg px-3
-                            text-xs font-medium transition duration-200
-                            {{ $isHome
-                                ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                                : 'text-[#697B73] hover:bg-[#F5F9F7] hover:text-[#123128]' }}
-                        "
+                        href="{{ $notificationsUrl }}"
+                        class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition duration-200 hover:bg-blue-50 hover:text-blue-600 {{ $isNotifications ? 'bg-blue-50 text-blue-600' : '' }}"
+                        aria-label="Notifikasi"
                     >
-                        <i
-                            class="bi bi-house{{ $isHome ? '-fill' : '' }} text-[12px] transition"
-                        ></i>
 
-                        Beranda
+                        <i class="bi bi-bell text-[19px]"></i>
+
+                        <span
+                            id="pk-notification-badge"
+                            class="absolute right-1.5 top-1.5 hidden min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold leading-4 text-white"
+                        >
+                            0
+                        </span>
+
                     </a>
 
 
-                    {{-- Cari Jasa --}}
+                    {{-- ==================================================
+                         PROFILE
+                         ================================================== --}}
+
+                    <div class="relative ml-1">
+
+                        <button
+                            type="button"
+
+                            @click="
+                                profileOpen = !profileOpen;
+                                categoryOpen = false;
+                            "
+
+                            class="flex items-center gap-2 rounded-xl px-2 py-1.5 transition duration-200 hover:bg-slate-100"
+
+                            :aria-expanded="profileOpen.toString()"
+                        >
+
+                            {{-- Avatar --}}
+
+                            <span
+                                class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-sm font-bold text-blue-700"
+                            >
+
+                                @if (filled($user?->avatar))
+
+                                    <img
+                                        src="{{ asset('storage/' . ltrim($user->avatar, '/')) }}"
+                                        alt="{{ $user->name }}"
+                                        class="h-full w-full object-cover"
+                                    >
+
+                                @else
+
+                                    {{ strtoupper(mb_substr($user?->name ?? 'U', 0, 1)) }}
+
+                                @endif
+
+                            </span>
+
+
+                            {{-- Name --}}
+
+                            <span
+                                class="hidden max-w-[140px] truncate text-sm font-semibold text-slate-700 xl:block"
+                            >
+                                {{ $user?->name ?? 'Akun' }}
+                            </span>
+
+
+                            {{-- Chevron --}}
+
+                            <i
+                                class="bi bi-chevron-down text-[11px] text-slate-400 transition-transform duration-200"
+                                :class="{ 'rotate-180': profileOpen }"
+                            ></i>
+
+                        </button>
+
+
+                        {{-- ==================================================
+                             PROFILE DROPDOWN
+                             ================================================== --}}
+
+                        <div
+                            x-cloak
+                            x-show="profileOpen"
+
+                            x-transition:enter="transition ease-out duration-150"
+                            x-transition:enter-start="translate-y-1 opacity-0"
+                            x-transition:enter-end="translate-y-0 opacity-100"
+
+                            x-transition:leave="transition ease-in duration-100"
+                            x-transition:leave-start="translate-y-0 opacity-100"
+                            x-transition:leave-end="translate-y-1 opacity-0"
+
+                            class="absolute right-0 top-[52px] w-[285px] overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10"
+                        >
+
+
+                            {{-- Account Header --}}
+
+                            <div class="mb-1 rounded-xl bg-slate-50 px-3.5 py-3">
+
+                                <p
+                                    class="truncate text-sm font-bold text-slate-900"
+                                >
+                                    {{ $user?->name ?? 'Akun' }}
+                                </p>
+
+                                <p
+                                    class="mt-0.5 truncate text-xs text-slate-500"
+                                >
+                                    Client
+                                </p>
+
+                            </div>
+
+
+                            {{-- Dashboard --}}
+
+                            <a
+                                href="{{ $dashboardUrl }}"
+                                @click="profileOpen = false"
+                                class="pk-mobile-more-item"
+                            >
+
+                                <span class="pk-mobile-more-icon">
+                                    <i class="bi bi-speedometer2"></i>
+                                </span>
+
+                                <span>
+                                    Dashboard
+                                </span>
+
+                            </a>
+
+
+                            {{-- Favorit --}}
+
+                            <a
+                                href="{{ $favoritesUrl }}"
+                                @click="profileOpen = false"
+                                class="pk-mobile-more-item"
+                            >
+
+                                <span class="pk-mobile-more-icon">
+                                    <i class="bi bi-heart"></i>
+                                </span>
+
+                                <span>
+                                    Favorit
+                                </span>
+
+                            </a>
+
+
+                            {{-- Pesan --}}
+
+                            <a
+                                href="{{ $messagesUrl }}"
+                                @click="profileOpen = false"
+                                class="pk-mobile-more-item"
+                            >
+
+                                <span class="pk-mobile-more-icon">
+                                    <i class="bi bi-chat-dots"></i>
+                                </span>
+
+                                <span>
+                                    Pesan
+                                </span>
+
+                            </a>
+
+
+                            {{-- Proyek Saya --}}
+
+                            <a
+                                href="{{ $projectsUrl }}"
+                                @click="profileOpen = false"
+                                class="pk-mobile-more-item"
+                            >
+
+                                <span class="pk-mobile-more-icon">
+                                    <i class="bi bi-kanban"></i>
+                                </span>
+
+                                <span>
+                                    Proyek Saya
+                                </span>
+
+                            </a>
+
+
+                            {{-- Profil --}}
+
+                            <a
+                                href="{{ $profileUrl }}"
+                                @click="profileOpen = false"
+                                class="pk-mobile-more-item"
+                            >
+
+                                <span class="pk-mobile-more-icon">
+                                    <i class="bi bi-person"></i>
+                                </span>
+
+                                <span>
+                                    Profil
+                                </span>
+
+                            </a>
+
+
+                            {{-- Notifikasi --}}
+
+                            <a
+                                href="{{ $notificationsUrl }}"
+                                @click="profileOpen = false"
+                                class="pk-mobile-more-item"
+                            >
+
+                                <span class="pk-mobile-more-icon">
+                                    <i class="bi bi-bell"></i>
+                                </span>
+
+                                <span>
+                                    Notifikasi
+                                </span>
+
+                            </a>
+
+
+                            {{-- Divider --}}
+
+                            <div class="my-2 border-t border-slate-100"></div>
+
+
+                            {{-- Logout --}}
+
+                            <form
+                                method="POST"
+                                action="{{ route('logout') }}"
+                            >
+
+                                @csrf
+
+                                <button
+                                    type="submit"
+                                    class="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                                >
+
+                                    <span
+                                        class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50"
+                                    >
+                                        <i class="bi bi-box-arrow-right"></i>
+                                    </span>
+
+                                    <span>
+                                        Keluar
+                                    </span>
+
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+
+                @else
+
+
+                    {{-- ==================================================
+                         GUEST
+                         ================================================== --}}
 
                     <a
-                        href="{{ route('marketplace.search') }}"
-                        class="
-                            group flex h-9 items-center gap-2 rounded-lg px-3
-                            text-xs font-medium transition duration-200
-                            {{ $isSearch
-                                ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                                : 'text-[#697B73] hover:bg-[#F5F9F7] hover:text-[#123128]' }}
-                        "
+                        href="{{ route('login') }}"
+                        class="inline-flex h-10 items-center rounded-xl px-4 text-sm font-semibold text-slate-700 transition duration-200 hover:bg-slate-100 hover:text-blue-600"
                     >
-                        <i class="bi bi-search text-[12px]"></i>
-
-                        Cari Jasa
+                        Masuk
                     </a>
 
 
-                    {{-- Job Board --}}
-
                     <a
-                        href="{{ route('marketplace.jobs.index') }}"
-                        class="
-                            group flex h-9 items-center gap-2 rounded-lg px-3
-                            text-xs font-medium transition duration-200
-                            {{ $isJobBoard
-                                ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                                : 'text-[#697B73] hover:bg-[#F5F9F7] hover:text-[#123128]' }}
-                        "
+                        href="{{ route('register') }}"
+                        class="inline-flex h-10 items-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-blue-700 hover:shadow-md"
                     >
-                        <i
-                            class="bi bi-briefcase{{ $isJobBoard ? '-fill' : '' }} text-[12px]"
-                        ></i>
-
-                        Job Board
+                        Daftar
                     </a>
 
 
-                    {{-- Dashboard --}}
-
-                    <a
-                        href="{{ route('client.dashboard') }}"
-                        class="
-                            group flex h-9 items-center gap-2 rounded-lg px-3
-                            text-xs font-medium transition duration-200
-                            {{ $isDashboard
-                                ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                                : 'text-[#697B73] hover:bg-[#F5F9F7] hover:text-[#123128]' }}
-                        "
-                    >
-                        <i
-                            class="bi bi-grid{{ $isDashboard ? '-fill' : '' }} text-[12px]"
-                        ></i>
-
-                        Dashboard
-                    </a>
-
-
-                    {{-- Pesanan --}}
-
-                    <a
-                        href="{{ route('client.orders.index') }}"
-                        class="
-                            group flex h-9 items-center gap-2 rounded-lg px-3
-                            text-xs font-medium transition duration-200
-                            {{ $isOrders
-                                ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                                : 'text-[#697B73] hover:bg-[#F5F9F7] hover:text-[#123128]' }}
-                        "
-                    >
-                        <i
-                            class="bi bi-bag{{ $isOrders ? '-fill' : '' }} text-[12px]"
-                        ></i>
-
-                        Pesanan
-                    </a>
-
-
-                    {{-- Favorit --}}
-
-                    <a
-                        href="{{ route('client.favorites.index') }}"
-                        class="
-                            group flex h-9 items-center gap-2 rounded-lg px-3
-                            text-xs font-medium transition duration-200
-                            {{ $isFavorites
-                                ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                                : 'text-[#697B73] hover:bg-[#F5F9F7] hover:text-[#123128]' }}
-                        "
-                    >
-                        <i
-                            class="bi bi-heart{{ $isFavorites ? '-fill' : '' }} text-[12px]"
-                        ></i>
-
-                        Favorit
-                    </a>
-
-                </nav>
+                @endauth
 
             </div>
 
+        </div>
 
-            {{-- =====================================================
-                RIGHT
-            ====================================================== --}}
+    </header>
 
-            <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
 
-                {{-- Search Button --}}
+    {{-- ================================================================
+         DESKTOP SPACER
+         ================================================================ --}}
 
-                <a
-                    href="{{ route('marketplace.search') }}"
-                    class="flex h-9 w-9 items-center justify-center rounded-lg text-[#71837B] transition duration-200 hover:bg-[#F3F8F5] hover:text-[#1E9E5A]"
-                    title="Cari jasa"
+    <div class="hidden h-[72px] lg:block"></div>
+
+
+    {{-- ================================================================
+         MOBILE TOP NAVBAR
+         ================================================================ --}}
+
+    <header
+        id="pk-navbar-mobile"
+        class="fixed inset-x-0 top-0 z-[110] border-b border-slate-200/80 bg-white/95 backdrop-blur-xl lg:hidden"
+    >
+
+        <div class="flex h-[64px] items-center justify-between px-4">
+
+
+            {{-- ========================================================
+                 MOBILE LOGO
+                 ======================================================== --}}
+
+            <a
+                href="{{ $homeUrl }}"
+                class="flex items-center gap-2"
+                aria-label="ProKerja Beranda"
+            >
+
+                <span
+                    class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-blue-600 text-base font-extrabold text-white"
                 >
-                    <i class="bi bi-search text-[14px]"></i>
-                </a>
+                    P
+                </span>
 
-
-                {{-- Message --}}
-
-                <a
-                    href="{{ route('client.messages.index') }}"
-                    class="
-                        relative flex h-9 w-9 items-center justify-center
-                        rounded-lg transition duration-200
-                        {{ $isMessages
-                            ? 'bg-[#EAF7EF] text-[#1E9E5A]'
-                            : 'text-[#71837B] hover:bg-[#F3F8F5] hover:text-[#1E9E5A]' }}
-                    "
-                    title="Pesan"
-                >
-
-                    <i
-                        class="bi bi-chat-dots{{ $isMessages ? '-fill' : '' }} text-[15px]"
-                    ></i>
-
-                    {{-- Notification dot --}}
+                <span class="flex flex-col leading-none">
 
                     <span
-                        class="absolute right-[7px] top-[6px] h-1.5 w-1.5 rounded-full bg-[#35C978]"
-                    ></span>
+                        class="text-[16px] font-bold tracking-[-0.02em] text-slate-900"
+                    >
+                        ProKerja
+                    </span>
 
-                </a>
+                    <span
+                        class="mt-1 text-[8px] font-medium uppercase tracking-[0.06em] text-slate-400"
+                    >
+                        Wujudkan Kerja
+                    </span>
+
+                </span>
+
+            </a>
 
 
-                {{-- Divider --}}
+            {{-- ========================================================
+                 MOBILE ACTIONS
+                 ======================================================== --}}
 
-                <div class="mx-1 hidden h-7 w-px bg-[#E8EFEB] sm:block"></div>
+            <div class="flex items-center gap-1">
+
+                @auth
+
+                    {{-- ==================================================
+                         PROYEK / JOB BOARD
+                         ================================================== --}}
+
+                    <a
+                        href="{{ $projectsUrl }}"
+                        class="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition hover:bg-blue-50 hover:text-blue-600 {{ $isProjects ? 'bg-blue-50 text-blue-600' : '' }}"
+                        aria-label="Proyek"
+                        title="Proyek"
+                    >
+
+                        <i
+                            class="bi bi-briefcase{{ $isProjects ? '-fill' : '' }} text-[18px]"
+                        ></i>
+
+                    </a>
 
 
-                {{-- Profile --}}
+                    {{-- ==================================================
+                         NOTIFICATION
+                         ================================================== --}}
 
-                <a
-                    href="{{ route('profile.show') }}"
-                    class="
-                        group flex items-center gap-2 rounded-xl px-1.5 py-1
-                        transition duration-200 hover:bg-[#F6FAF8]
-                    "
-                >
+                    <a
+                        href="{{ $notificationsUrl }}"
+                        class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-blue-50 hover:text-blue-600 {{ $isNotifications ? 'bg-blue-50 text-blue-600' : '' }}"
+                        aria-label="Notifikasi"
+                    >
 
-                    {{-- Avatar --}}
-
-                    <div class="relative shrink-0">
-
-                        @if($avatarUrl)
-
-                            <img
-                                src="{{ $avatarUrl }}"
-                                alt="{{ $user->name }}"
-                                class="h-9 w-9 rounded-full object-cover ring-2 ring-white"
-                            >
-
-                        @else
-
-                            <div
-                                class="flex h-9 w-9 items-center justify-center rounded-full bg-[#EAF7EF] text-[11px] font-semibold text-[#1E9E5A]"
-                            >
-                                {{ $initial }}
-                            </div>
-
-                        @endif
-
-                        {{-- Online --}}
+                        <i class="bi bi-bell text-[18px]"></i>
 
                         <span
-                            class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#35C978]"
-                        ></span>
+                            id="pk-mobile-notification-badge"
+                            class="absolute right-1.5 top-1.5 hidden min-w-[15px] items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold leading-4 text-white"
+                        >
+                            0
+                        </span>
 
-                    </div>
+                    </a>
 
-
-                    {{-- User Info --}}
-
-                    <div class="hidden max-w-[125px] sm:block">
-
-                        <p class="truncate text-xs font-semibold text-[#18382E]">
-                            {{ $user->name }}
-                        </p>
-
-                        <p class="mt-0.5 text-[9px] font-medium text-[#8A9992]">
-                            Client
-                        </p>
-
-                    </div>
-
-                    <i
-                        class="bi bi-chevron-down hidden text-[9px] text-[#A1AEA8] sm:block"
-                    ></i>
-
-                </a>
+                @endauth
 
 
-                {{-- Logout --}}
-
-                <form
-                    method="POST"
-                    action="{{ route('logout') }}"
-                    class="hidden sm:block"
-                >
-
-                    @csrf
-
-                    <button
-                        type="submit"
-                        class="flex h-9 w-9 items-center justify-center rounded-lg text-[#899890] transition duration-200 hover:bg-red-50 hover:text-red-500"
-                        title="Keluar"
-                    >
-                        <i class="bi bi-box-arrow-right text-[15px]"></i>
-                    </button>
-
-                </form>
-
-
-                {{-- Mobile --}}
+                {{-- ==================================================
+                     MORE / THREE DOTS
+                     ================================================== --}}
 
                 <button
                     type="button"
-                    @click="mobileMenuOpen = !mobileMenuOpen"
-                    class="flex h-9 w-9 items-center justify-center rounded-lg text-[#697B73] transition duration-200 hover:bg-[#F3F8F5] hover:text-[#1E9E5A] lg:hidden"
-                    aria-label="Buka menu"
+
+                    @click="
+                        moreOpen = !moreOpen;
+                        mobileProfileOpen = false;
+                    "
+
+                    class="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+
+                    :aria-expanded="moreOpen.toString()"
+
+                    aria-label="Menu lainnya"
                 >
 
                     <i
-                        class="text-[17px]"
-                        :class="mobileMenuOpen ? 'bi bi-x-lg' : 'bi bi-list'"
+                        class="bi bi-three-dots-vertical text-[20px]"
                     ></i>
 
                 </button>
@@ -364,280 +669,1169 @@
         </div>
 
 
-        {{-- =========================================================
-            MOBILE MENU
-        ========================================================== --}}
+        {{-- ============================================================
+             MOBILE MORE PANEL
+             ============================================================ --}}
 
         <div
-            x-show="mobileMenuOpen"
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 -translate-y-2"
-            x-transition:enter-end="opacity-100 translate-y-0"
-            x-transition:leave="transition ease-in duration-150"
-            x-transition:leave-start="opacity-100 translate-y-0"
-            x-transition:leave-end="opacity-0 -translate-y-2"
-            class="border-t border-[#E9EFEB] py-3 lg:hidden"
+            x-cloak
+            x-show="moreOpen"
+
+            x-transition:enter="transition ease-out duration-150"
+            x-transition:enter-start="-translate-y-2 opacity-0"
+            x-transition:enter-end="translate-y-0 opacity-100"
+
+            x-transition:leave="transition ease-in duration-100"
+            x-transition:leave-start="translate-y-0 opacity-100"
+            x-transition:leave-end="-translate-y-2 opacity-0"
+
+            class="border-t border-slate-100 bg-white px-4 pb-4 pt-3 shadow-xl shadow-slate-900/10"
         >
 
-            <nav class="space-y-1">
+            <div class="grid grid-cols-2 gap-2">
 
-                {{-- Beranda --}}
+
+                {{-- ==================================================
+                     DASHBOARD
+                     ================================================== --}}
 
                 <a
-                    href="{{ route('marketplace.home') }}"
-                    class="
-                        flex h-11 items-center gap-3 rounded-xl px-3
-                        text-sm font-medium transition
-                        {{ $isHome
-                            ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                            : 'text-[#355248] hover:bg-[#F5F9F7]' }}
-                    "
+                    href="{{ $dashboardUrl }}"
+                    @click="moreOpen = false"
+                    class="pk-mobile-more-item"
                 >
 
-                    <i
-                        class="bi bi-house{{ $isHome ? '-fill' : '' }} w-5 text-center text-[15px] {{ $isHome ? 'text-[#1E9E5A]' : 'text-[#899A92]' }}"
-                    ></i>
+                    <span class="pk-mobile-more-icon">
+                        <i class="bi bi-speedometer2"></i>
+                    </span>
 
-                    <span>Beranda</span>
+                    <span>
+                        Dashboard
+                    </span>
 
                 </a>
 
 
-                {{-- Cari Jasa --}}
+                {{-- ==================================================
+                     FAVORIT
+                     ================================================== --}}
 
                 <a
-                    href="{{ route('marketplace.search') }}"
-                    class="
-                        flex h-11 items-center gap-3 rounded-xl px-3
-                        text-sm font-medium transition
-                        {{ $isSearch
-                            ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                            : 'text-[#355248] hover:bg-[#F5F9F7]' }}
-                    "
+                    href="{{ $favoritesUrl }}"
+                    @click="moreOpen = false"
+                    class="pk-mobile-more-item"
                 >
 
-                    <i
-                        class="bi bi-search w-5 text-center text-[15px] {{ $isSearch ? 'text-[#1E9E5A]' : 'text-[#899A92]' }}"
-                    ></i>
+                    <span class="pk-mobile-more-icon">
+                        <i class="bi bi-heart"></i>
+                    </span>
 
-                    <span>Cari Jasa</span>
+                    <span>
+                        Favorit
+                    </span>
 
                 </a>
 
 
-                {{-- Job Board --}}
+                
+
+
+                {{-- ==================================================
+                     PROYEK SAYA
+                     ================================================== --}}
 
                 <a
-                    href="{{ route('marketplace.jobs.index') }}"
-                    class="
-                        flex h-11 items-center gap-3 rounded-xl px-3
-                        text-sm font-medium transition
-                        {{ $isJobBoard
-                            ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                            : 'text-[#355248] hover:bg-[#F5F9F7]' }}
-                    "
+                    href="{{ $projectsUrl }}"
+                    @click="moreOpen = false"
+                    class="pk-mobile-more-item"
                 >
 
-                    <i
-                        class="bi bi-briefcase{{ $isJobBoard ? '-fill' : '' }} w-5 text-center text-[15px] {{ $isJobBoard ? 'text-[#1E9E5A]' : 'text-[#899A92]' }}"
-                    ></i>
+                    <span class="pk-mobile-more-icon">
+                        <i class="bi bi-kanban"></i>
+                    </span>
 
-                    <span>Job Board</span>
+                    <span>
+                        Proyek Saya
+                    </span>
 
                 </a>
 
 
-                {{-- Dashboard --}}
-
-                <a
-                    href="{{ route('client.dashboard') }}"
-                    class="
-                        flex h-11 items-center gap-3 rounded-xl px-3
-                        text-sm font-medium transition
-                        {{ $isDashboard
-                            ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                            : 'text-[#355248] hover:bg-[#F5F9F7]' }}
-                    "
-                >
-
-                    <i
-                        class="bi bi-grid{{ $isDashboard ? '-fill' : '' }} w-5 text-center text-[15px] {{ $isDashboard ? 'text-[#1E9E5A]' : 'text-[#899A92]' }}"
-                    ></i>
-
-                    <span>Dashboard</span>
-
-                </a>
+                
 
 
-                {{-- Pesanan --}}
-
-                <a
-                    href="{{ route('client.orders.index') }}"
-                    class="
-                        flex h-11 items-center gap-3 rounded-xl px-3
-                        text-sm font-medium transition
-                        {{ $isOrders
-                            ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                            : 'text-[#355248] hover:bg-[#F5F9F7]' }}
-                    "
-                >
-
-                    <i
-                        class="bi bi-bag{{ $isOrders ? '-fill' : '' }} w-5 text-center text-[15px] {{ $isOrders ? 'text-[#1E9E5A]' : 'text-[#899A92]' }}"
-                    ></i>
-
-                    <span>Pesanan</span>
-
-                </a>
-
-
-                {{-- Pesan --}}
-
-                <a
-                    href="{{ route('client.messages.index') }}"
-                    class="
-                        flex h-11 items-center gap-3 rounded-xl px-3
-                        text-sm font-medium transition
-                        {{ $isMessages
-                            ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                            : 'text-[#355248] hover:bg-[#F5F9F7]' }}
-                    "
-                >
-
-                    <i
-                        class="bi bi-chat-dots{{ $isMessages ? '-fill' : '' }} w-5 text-center text-[15px] {{ $isMessages ? 'text-[#1E9E5A]' : 'text-[#899A92]' }}"
-                    ></i>
-
-                    <span>Pesan</span>
-
-                    <span
-                        class="ml-auto h-1.5 w-1.5 rounded-full bg-[#35C978]"
-                    ></span>
-
-                </a>
-
-
-                {{-- Favorit --}}
-
-                <a
-                    href="{{ route('client.favorites.index') }}"
-                    class="
-                        flex h-11 items-center gap-3 rounded-xl px-3
-                        text-sm font-medium transition
-                        {{ $isFavorites
-                            ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                            : 'text-[#355248] hover:bg-[#F5F9F7]' }}
-                    "
-                >
-
-                    <i
-                        class="bi bi-heart{{ $isFavorites ? '-fill' : '' }} w-5 text-center text-[15px] {{ $isFavorites ? 'text-[#1E9E5A]' : 'text-[#899A92]' }}"
-                    ></i>
-
-                    <span>Favorit</span>
-
-                </a>
-
-
-                {{-- Profile --}}
-
-                <a
-                    href="{{ route('profile.show') }}"
-                    class="
-                        flex h-11 items-center gap-3 rounded-xl px-3
-                        text-sm font-medium transition
-                        {{ $isProfile
-                            ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                            : 'text-[#355248] hover:bg-[#F5F9F7]' }}
-                    "
-                >
-
-                    <i
-                        class="bi bi-person{{ $isProfile ? '-fill' : '' }} w-5 text-center text-[15px] {{ $isProfile ? 'text-[#1E9E5A]' : 'text-[#899A92]' }}"
-                    ></i>
-
-                    <span>Profil</span>
-
-                </a>
-
-
-                {{-- User Info --}}
-
-                <div
-                    class="mt-3 flex items-center gap-3 rounded-xl border border-[#E5ECE8] bg-[#F8FBF9] px-3 py-3"
-                >
-
-                    <div class="relative shrink-0">
-
-                        @if($avatarUrl)
-
-                            <img
-                                src="{{ $avatarUrl }}"
-                                alt="{{ $user->name }}"
-                                class="h-10 w-10 rounded-full object-cover"
-                            >
-
-                        @else
-
-                            <div
-                                class="flex h-10 w-10 items-center justify-center rounded-full bg-[#EAF7EF] text-xs font-semibold text-[#1E9E5A]"
-                            >
-                                {{ $initial }}
-                            </div>
-
-                        @endif
-
-                        <span
-                            class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#F8FBF9] bg-[#35C978]"
-                        ></span>
-
-                    </div>
-
-
-                    <div class="min-w-0">
-
-                        <p class="truncate text-sm font-semibold text-[#18382E]">
-                            {{ $user->name }}
-                        </p>
-
-                        <p class="mt-0.5 truncate text-[10px] text-[#899890]">
-                            {{ $user->email }}
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                {{-- Logout --}}
+                {{-- ==================================================
+                     LOGOUT
+                     ================================================== --}}
 
                 <form
                     method="POST"
                     action="{{ route('logout') }}"
-                    class="pt-2"
+                    class="col-span-2"
                 >
 
                     @csrf
 
                     <button
                         type="submit"
-                        class="flex h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium text-red-500 transition hover:bg-red-50"
+                        class="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-100"
                     >
 
-                        <i
-                            class="bi bi-box-arrow-right w-5 text-center text-[15px]"
-                        ></i>
+                        <i class="bi bi-box-arrow-right"></i>
 
-                        <span>Keluar</span>
+                        Keluar
 
                     </button>
 
                 </form>
 
-            </nav>
+            </div>
 
         </div>
 
+    </header>
+
+
+    {{-- ================================================================
+         MOBILE TOP SPACER
+         ================================================================ --}}
+
+    <div class="h-[64px] lg:hidden"></div>
+
+</div>
+
+
+{{-- ====================================================================
+     MOBILE BOTTOM NAVIGATION
+     PENTING:
+     NAVBAR INI BERADA DI LUAR WRAPPER x-data.
+     ==================================================================== --}}
+
+<nav
+    id="pk-mobile-bottom-nav"
+    class="pk-mobile-bottom-nav fixed inset-x-0 bottom-0 z-[9999] border-t border-slate-200/80 bg-white/95 shadow-[0_-8px_25px_rgba(15,23,42,0.06)] backdrop-blur-xl lg:hidden"
+    aria-label="Navigasi utama mobile"
+>
+
+    <div
+        class="mx-auto grid h-[72px] max-w-[520px] grid-cols-5"
+    >
+
+
+        {{-- ============================================================
+             HOME
+             ============================================================ --}}
+
+        <a
+            href="{{ $homeUrl }}"
+            class="flex items-center justify-center px-1 transition {{ $isHome ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600' }}"
+        >
+
+            <span
+                class="flex h-8 w-8 items-center justify-center rounded-xl {{ $isHome ? 'bg-blue-50' : '' }}"
+            >
+
+                <i
+                    class="bi bi-house{{ $isHome ? '-fill' : '' }} text-[18px]"
+                ></i>
+
+            </span>
+
+        </a>
+
+
+        {{-- ============================================================
+             CARI
+             ============================================================ --}}
+
+        <a
+            href="{{ $searchUrl }}"
+            class="flex items-center justify-center px-1 transition {{ $isSearch ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600' }}"
+        >
+
+            <span
+                class="flex h-8 w-8 items-center justify-center rounded-xl {{ $isSearch ? 'bg-blue-50' : '' }}"
+            >
+
+                <i class="bi bi-search text-[17px]"></i>
+
+            </span>
+
+        </a>
+
+
+        {{-- ============================================================
+             PESAN
+             ============================================================ --}}
+
+        <a
+            href="{{ $messagesUrl }}"
+            class="flex items-center justify-center px-1 transition {{ $isMessages ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600' }}"
+        >
+
+            <span
+                class="flex h-8 w-8 items-center justify-center rounded-xl {{ $isMessages ? 'bg-blue-50' : '' }}"
+            >
+
+                <i
+                    class="bi bi-chat-dots{{ $isMessages ? '-fill' : '' }} text-[18px]"
+                ></i>
+
+            </span>
+
+        </a>
+
+
+        {{-- ============================================================
+             PESANAN
+             ============================================================ --}}
+
+        <a
+            href="{{ $ordersUrl }}"
+            class="flex items-center justify-center px-1 transition {{ $isOrders ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600' }}"
+        >
+
+            <span
+                class="flex h-8 w-8 items-center justify-center rounded-xl {{ $isOrders ? 'bg-blue-50' : '' }}"
+            >
+
+                <i
+                    class="bi bi-bag{{ $isOrders ? '-fill' : '' }} text-[18px]"
+                ></i>
+
+            </span>
+
+        </a>
+
+
+        {{-- ============================================================
+             PROFIL
+             ============================================================ --}}
+
+        <a
+            href="{{ $profileUrl }}"
+            class="flex items-center justify-center px-1 transition {{ $isProfile ? 'text-blue-600' : 'text-slate-500 hover:text-blue-600' }}"
+        >
+
+            <span
+                class="flex h-8 w-8 items-center justify-center rounded-xl {{ $isProfile ? 'bg-blue-50' : '' }}"
+            >
+
+                <i
+                    class="bi bi-person{{ $isProfile ? '-fill' : '' }} text-[18px]"
+                ></i>
+
+            </span>
+
+        </a>
+
     </div>
 
-</header>
+</nav>
+
+
+{{-- ====================================================================
+     NOTIFICATION BADGE
+     ==================================================================== --}}
+
+@auth
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const desktopBadge =
+        document.getElementById('pk-notification-badge');
+
+    const mobileBadge =
+        document.getElementById('pk-mobile-notification-badge');
+
+
+    function updateNotificationBadge(count) {
+
+        const badges = [
+            desktopBadge,
+            mobileBadge
+        ].filter(Boolean);
+
+
+        badges.forEach(function (badge) {
+
+            if (count > 0) {
+
+                badge.textContent =
+                    count > 99 ? '99+' : count;
+
+                badge.classList.remove('hidden');
+
+                badge.classList.add('flex');
+
+            } else {
+
+                badge.classList.add('hidden');
+
+                badge.classList.remove('flex');
+
+            }
+
+        });
+
+    }
+
+
+    fetch(
+        @json(route('notifications.unread_count')),
+        {
+            method: 'GET',
+
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+
+            credentials: 'same-origin'
+        }
+    )
+
+    .then(function (response) {
+
+        if (!response.ok) {
+
+            throw new Error(
+                'Failed to load notification count.'
+            );
+
+        }
+
+        return response.json();
+
+    })
+
+    .then(function (data) {
+
+        const count = Number(
+            data.count ??
+            data.unread_count ??
+            data.unread ??
+            0
+        );
+
+
+        updateNotificationBadge(
+            Number.isFinite(count)
+                ? count
+                : 0
+        );
+
+    })
+
+    .catch(function () {
+
+        updateNotificationBadge(0);
+
+    });
+
+});
+
+</script>
+
+@endauth
+
+
+{{-- ====================================================================
+     MOBILE KEYBOARD HANDLER
+     ==================================================================== --}}
+
+<script>
+
+(function () {
+
+    function initMobileKeyboardNavigation() {
+
+        const bottomNav =
+            document.getElementById(
+                'pk-mobile-bottom-nav'
+            );
+
+        if (!bottomNav) {
+            return;
+        }
+
+
+        let keyboardOpen = false;
+
+        let normalViewportHeight = null;
+
+        let focusTimer = null;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Mobile
+        |--------------------------------------------------------------------------
+        */
+
+        function isMobile() {
+
+            return window.matchMedia(
+                '(max-width: 1023px)'
+            ).matches;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Editable
+        |--------------------------------------------------------------------------
+        */
+
+        function isEditable(element) {
+
+            if (!element) {
+                return false;
+            }
+
+
+            const tagName =
+                element.tagName
+                    ? element.tagName.toLowerCase()
+                    : '';
+
+
+            return (
+                tagName === 'input' ||
+                tagName === 'textarea' ||
+                element.isContentEditable === true
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | HIDE NAV
+        |--------------------------------------------------------------------------
+        */
+
+        function hideNav() {
+
+            if (!isMobile()) {
+                return;
+            }
+
+
+            keyboardOpen = true;
+
+
+            document.body.classList.add(
+                'pk-keyboard-open'
+            );
+
+
+            bottomNav.classList.add(
+                'pk-keyboard-hidden'
+            );
+
+
+            bottomNav.setAttribute(
+                'aria-hidden',
+                'true'
+            );
+
+
+            bottomNav.style.setProperty(
+                'display',
+                'none',
+                'important'
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SHOW NAV
+        |--------------------------------------------------------------------------
+        */
+
+        function showNav() {
+
+            keyboardOpen = false;
+
+
+            document.body.classList.remove(
+                'pk-keyboard-open'
+            );
+
+
+            bottomNav.classList.remove(
+                'pk-keyboard-hidden'
+            );
+
+
+            bottomNav.removeAttribute(
+                'aria-hidden'
+            );
+
+
+            bottomNav.style.removeProperty(
+                'display'
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET VIEWPORT HEIGHT
+        |--------------------------------------------------------------------------
+        */
+
+        function getViewportHeight() {
+
+            if (window.visualViewport) {
+
+                return window.visualViewport.height;
+
+            }
+
+            return window.innerHeight;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | INITIAL BASE HEIGHT
+        |--------------------------------------------------------------------------
+        */
+
+        function setNormalViewportHeight() {
+
+            const height =
+                getViewportHeight();
+
+
+            if (
+                !normalViewportHeight ||
+                height > normalViewportHeight
+            ) {
+
+                normalViewportHeight =
+                    height;
+
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CHECK KEYBOARD
+        |--------------------------------------------------------------------------
+        */
+
+        function checkKeyboard() {
+
+            if (!isMobile()) {
+
+                showNav();
+
+                return;
+
+            }
+
+
+            const currentHeight =
+                getViewportHeight();
+
+
+            if (!normalViewportHeight) {
+
+                normalViewportHeight =
+                    currentHeight;
+
+                return;
+
+            }
+
+
+            const difference =
+                normalViewportHeight -
+                currentHeight;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Keyboard terbuka
+            |--------------------------------------------------------------------------
+            */
+
+            if (difference > 100) {
+
+                hideNav();
+
+                return;
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Keyboard sudah kembali
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                difference <= 100 &&
+                keyboardOpen
+            ) {
+
+                setTimeout(function () {
+
+                    const latestHeight =
+                        getViewportHeight();
+
+                    const latestDifference =
+                        normalViewportHeight -
+                        latestHeight;
+
+
+                    if (
+                        latestDifference <= 100
+                    ) {
+
+                        showNav();
+
+                        normalViewportHeight =
+                            latestHeight;
+
+                    }
+
+                }, 150);
+
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | INPUT / TEXTAREA MENDAPAT FOCUS
+        |--------------------------------------------------------------------------
+        */
+
+        document.addEventListener(
+            'focusin',
+            function (event) {
+
+                if (!isMobile()) {
+                    return;
+                }
+
+
+                if (
+                    !isEditable(
+                        event.target
+                    )
+                ) {
+                    return;
+                }
+
+
+                clearTimeout(
+                    focusTimer
+                );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Langsung hilangkan navbar
+                |--------------------------------------------------------------------------
+                */
+
+                hideNav();
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Tunggu keyboard benar-benar muncul
+                |--------------------------------------------------------------------------
+                */
+
+                focusTimer =
+                    setTimeout(function () {
+
+                        setNormalViewportHeight();
+
+                        checkKeyboard();
+
+                    }, 250);
+
+            },
+            true
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | INPUT KEHILANGAN FOCUS
+        |--------------------------------------------------------------------------
+        */
+
+        document.addEventListener(
+            'focusout',
+            function () {
+
+                clearTimeout(
+                    focusTimer
+                );
+
+
+                setTimeout(function () {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Kalau user pindah ke input lain
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (
+                        isEditable(
+                            document.activeElement
+                        )
+                    ) {
+
+                        hideNav();
+
+                        return;
+
+                    }
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Tidak ada input aktif
+                    |--------------------------------------------------------------------------
+                    */
+
+                    showNav();
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Reset tinggi normal
+                    |--------------------------------------------------------------------------
+                    */
+
+                    setTimeout(function () {
+
+                        normalViewportHeight =
+                            getViewportHeight();
+
+                    }, 100);
+
+                }, 200);
+
+            },
+            true
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Visual Viewport
+        |--------------------------------------------------------------------------
+        */
+
+        if (window.visualViewport) {
+
+            window.visualViewport.addEventListener(
+                'resize',
+                function () {
+
+                    checkKeyboard();
+
+                }
+            );
+
+
+            window.visualViewport.addEventListener(
+                'scroll',
+                function () {
+
+                    if (keyboardOpen) {
+
+                        hideNav();
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Window Resize
+        |--------------------------------------------------------------------------
+        */
+
+        window.addEventListener(
+            'resize',
+            function () {
+
+                if (!isMobile()) {
+
+                    showNav();
+
+                    return;
+
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Jika sedang mengetik,
+                | navbar harus tetap hilang.
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    isEditable(
+                        document.activeElement
+                    )
+                ) {
+
+                    hideNav();
+
+                    return;
+
+                }
+
+
+                checkKeyboard();
+
+            }
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Orientation
+        |--------------------------------------------------------------------------
+        */
+
+        window.addEventListener(
+            'orientationchange',
+            function () {
+
+                showNav();
+
+                normalViewportHeight =
+                    null;
+
+
+                setTimeout(function () {
+
+                    setNormalViewportHeight();
+
+                }, 500);
+
+            }
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Initial
+        |--------------------------------------------------------------------------
+        */
+
+        setTimeout(function () {
+
+            setNormalViewportHeight();
+
+            checkKeyboard();
+
+        }, 300);
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | DOM READY
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        document.readyState === 'loading'
+    ) {
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            initMobileKeyboardNavigation
+        );
+
+    } else {
+
+        initMobileKeyboardNavigation();
+
+    }
+
+})();
+
+</script>
+
+
+<style>
+
+/* ========================================================================
+   ALPINE
+   ======================================================================== */
+
+[x-cloak] {
+    display: none !important;
+}
+
+
+/* ========================================================================
+   MOBILE BOTTOM NAV
+   ======================================================================== */
+
+#pk-mobile-bottom-nav {
+
+    position: fixed !important;
+
+    left: 0 !important;
+
+    right: 0 !important;
+
+    bottom: 0 !important;
+
+    width: 100% !important;
+
+    z-index: 9999 !important;
+
+}
+
+
+/* ========================================================================
+   SAFE AREA IPHONE
+   ======================================================================== */
+
+@media (max-width: 1023px) {
+
+    #pk-mobile-bottom-nav {
+
+        padding-bottom:
+            env(safe-area-inset-bottom);
+
+    }
+
+}
+
+
+/* ========================================================================
+   SAAT KEYBOARD AKTIF
+   ======================================================================== */
+
+body.pk-keyboard-open #pk-mobile-bottom-nav {
+
+    display: none !important;
+
+}
+
+
+/* ========================================================================
+   DESKTOP NAVBAR
+   ======================================================================== */
+
+.pk-navbar {
+
+    transition:
+        background-color 180ms ease,
+        box-shadow 180ms ease,
+        border-color 180ms ease;
+
+}
+
+
+.pk-navbar-link {
+
+    position: relative;
+
+    display: inline-flex;
+
+    height: 72px;
+
+    align-items: center;
+
+    padding: 0 14px;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    color: #64748b;
+
+    transition:
+        color 180ms ease,
+        background-color 180ms ease;
+
+}
+
+
+.pk-navbar-link:hover {
+
+    color: #2563eb;
+
+}
+
+
+.pk-navbar-link::after {
+
+    content: "";
+
+    position: absolute;
+
+    left: 14px;
+
+    right: 14px;
+
+    bottom: 13px;
+
+    height: 2px;
+
+    border-radius: 999px;
+
+    background: #2563eb;
+
+    opacity: 0;
+
+    transform: scaleX(0.35);
+
+    transition:
+        opacity 180ms ease,
+        transform 180ms ease;
+
+}
+
+
+.pk-navbar-link:hover::after,
+.pk-navbar-link.is-active::after {
+
+    opacity: 1;
+
+    transform: scaleX(1);
+
+}
+
+
+.pk-navbar-link.is-active {
+
+    color: #2563eb;
+
+}
+
+
+/* ========================================================================
+   MOBILE MORE MENU
+   ======================================================================== */
+
+.pk-mobile-more-item {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    min-height: 50px;
+
+    border-radius: 12px;
+
+    padding: 9px 10px;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    color: #334155;
+
+    transition:
+        background-color 160ms ease,
+        color 160ms ease,
+        transform 160ms ease;
+
+}
+
+
+.pk-mobile-more-item:hover {
+
+    background: #eff6ff;
+
+    color: #2563eb;
+
+    transform: translateY(-1px);
+
+}
+
+
+.pk-mobile-more-icon {
+
+    display: inline-flex;
+
+    width: 36px;
+
+    height: 36px;
+
+    flex: 0 0 36px;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background: #f1f5f9;
+
+    color: #64748b;
+
+    transition:
+        background-color 160ms ease,
+        color 160ms ease;
+
+}
+
+
+.pk-mobile-more-item:hover .pk-mobile-more-icon {
+
+    background: #dbeafe;
+
+    color: #2563eb;
+
+}
+
+
+/* ========================================================================
+   REDUCED MOTION
+   ======================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .pk-navbar,
+    .pk-navbar-link,
+    .pk-mobile-more-item,
+    .pk-mobile-more-icon {
+
+        transition: none !important;
+
+    }
+
+}
+
+</style>

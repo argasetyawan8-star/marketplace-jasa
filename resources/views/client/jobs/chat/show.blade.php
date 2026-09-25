@@ -1,9 +1,10 @@
-<x-layouts.client>
+<x-layouts.marketplace>
 
     @php
         $proposal = $conversation->proposal;
 
         $freelancer = $conversation->freelancerProfile;
+
         $freelancerUser = $freelancer?->user;
 
         $freelancerName =
@@ -20,50 +21,76 @@
         );
     @endphp
 
-    <main class="min-h-[calc(100vh-72px)] bg-[#F8FCF9]">
+    <main class="min-h-[calc(100vh-72px)] bg-[#F8FAFC]">
 
-        <section class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+        <section class="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
 
-            <a
-                href="{{ route('client.jobs.show', $job) }}"
-                class="inline-flex items-center gap-2 text-xs text-[#71837B] hover:text-[#0F6B3A]"
-            >
-                <i class="bi bi-arrow-left"></i>
-                Kembali ke Job
-            </a>
+            {{-- Back --}}
+            <div class="mb-5">
+                <a
+                    href="{{ route('client.jobs.show', $job) }}"
+                    class="group inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-[#2563EB]"
+                >
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition group-hover:border-blue-100 group-hover:bg-blue-50 group-hover:text-[#2563EB]">
+                        <i class="bi bi-arrow-left"></i>
+                    </span>
 
-            <div class="mt-5 overflow-hidden rounded-xl border border-[#DDE7E2] bg-white">
+                    Kembali ke Job
+                </a>
+            </div>
 
-                {{-- Header --}}
-                <div class="flex items-center justify-between gap-4 border-b border-[#E8EFEB] px-5 py-4 sm:px-6">
+            {{-- Chat Card --}}
+            <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+
+                {{-- =====================================================
+                    CHAT HEADER
+                ====================================================== --}}
+                <div class="flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-4 sm:px-6">
 
                     <div class="flex min-w-0 items-center gap-3">
 
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#EAF7EF] text-sm font-semibold text-[#0F6B3A]">
+                        {{-- Avatar --}}
+                        <div class="relative shrink-0">
 
-                            @if($freelancerAvatar)
+                            <div class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-blue-50 text-sm font-bold text-[#2563EB] ring-1 ring-blue-100">
 
-                                <img
-                                    src="{{ $freelancerAvatar }}"
-                                    alt="{{ $freelancerName }}"
-                                    class="h-full w-full object-cover"
-                                >
+                                @if($freelancerAvatar)
 
-                            @else
+                                    <img
+                                        src="{{ $freelancerAvatar }}"
+                                        alt="{{ $freelancerName }}"
+                                        class="h-full w-full object-cover"
+                                    >
 
-                                {{ $freelancerInitial }}
+                                @else
 
-                            @endif
+                                    {{ $freelancerInitial }}
+
+                                @endif
+
+                            </div>
+
+                            {{-- Online indicator --}}
+                            <span class="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500"></span>
 
                         </div>
 
+                        {{-- Freelancer Info --}}
                         <div class="min-w-0">
 
-                            <p class="truncate text-sm font-semibold text-[#123128]">
-                                {{ $freelancerName }}
-                            </p>
+                            <div class="flex items-center gap-2">
 
-                            <p class="truncate text-[11px] text-[#81918B]">
+                                <p class="truncate text-sm font-bold text-slate-900 sm:text-base">
+                                    {{ $freelancerName }}
+                                </p>
+
+                                <span class="hidden rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-semibold text-[#2563EB] sm:inline-flex">
+                                    Freelancer
+                                </span>
+
+                            </div>
+
+                            <p class="mt-0.5 truncate text-xs text-slate-500">
                                 {{ $job->title }}
                             </p>
 
@@ -71,36 +98,73 @@
 
                     </div>
 
-                    <span class="hidden rounded-md bg-[#F1F7F3] px-2.5 py-1 text-[10px] font-semibold text-[#0F6B3A] sm:inline-flex">
-                        Job Chat
-                    </span>
+                    {{-- Chat Label --}}
+                    <div class="hidden shrink-0 items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 sm:flex">
+
+                        <span class="h-1.5 w-1.5 rounded-full bg-[#2563EB]"></span>
+
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-[#2563EB]">
+                            Job Chat
+                        </span>
+
+                    </div>
 
                 </div>
 
 
-                {{-- Proposal summary --}}
-                <div class="border-b border-[#E8EFEB] bg-[#FBFDFC] px-5 py-4 sm:px-6">
+                {{-- =====================================================
+                    PROPOSAL SUMMARY
+                ====================================================== --}}
+                <div class="border-b border-slate-100 bg-slate-50/70 px-4 py-4 sm:px-6">
 
-                    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
-                        <div>
-                            <span class="text-[#899790]">
-                                Proposal
-                            </span>
+                        <div class="flex items-center gap-2">
 
-                            <span class="ml-1.5 font-semibold text-[#0F6B3A]">
-                                Rp {{ number_format((float) $proposal->price, 0, ',', '.') }}
-                            </span>
+                            <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#2563EB] shadow-sm ring-1 ring-slate-200">
+                                <i class="bi bi-file-earmark-text"></i>
+                            </div>
+
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                                    Proposal
+                                </p>
+
+                                <p class="text-xs font-semibold text-slate-800">
+                                    Penawaran freelancer
+                                </p>
+                            </div>
+
                         </div>
 
-                        <div>
-                            <span class="text-[#899790]">
-                                Durasi
-                            </span>
+                        <div class="flex flex-wrap items-center gap-2">
 
-                            <span class="ml-1.5 font-medium text-[#304B40]">
-                                {{ $proposal->delivery_days }} hari
-                            </span>
+                            {{-- Price --}}
+                            <div class="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
+
+                                <p class="text-[9px] font-medium uppercase tracking-wider text-blue-500">
+                                    Harga
+                                </p>
+
+                                <p class="mt-0.5 text-sm font-bold text-[#2563EB]">
+                                    Rp {{ number_format((float) $proposal->price, 0, ',', '.') }}
+                                </p>
+
+                            </div>
+
+                            {{-- Duration --}}
+                            <div class="rounded-xl border border-slate-200 bg-white px-3 py-2">
+
+                                <p class="text-[9px] font-medium uppercase tracking-wider text-slate-400">
+                                    Durasi
+                                </p>
+
+                                <p class="mt-0.5 text-sm font-semibold text-slate-700">
+                                    {{ $proposal->delivery_days }} hari
+                                </p>
+
+                            </div>
+
                         </div>
 
                     </div>
@@ -108,10 +172,12 @@
                 </div>
 
 
-                {{-- Messages --}}
+                {{-- =====================================================
+                    MESSAGES
+                ====================================================== --}}
                 <div
                     id="job-chat-messages"
-                    class="h-[55vh] space-y-4 overflow-y-auto px-5 py-5 sm:px-6"
+                    class="h-[55vh] min-h-[420px] space-y-5 overflow-y-auto bg-white px-4 py-5 sm:px-6"
                 >
 
                     @forelse($conversation->messages as $message)
@@ -122,21 +188,29 @@
 
                         <div class="flex {{ $mine ? 'justify-end' : 'justify-start' }}">
 
-                            <div class="max-w-[82%] sm:max-w-[70%]">
+                            <div class="max-w-[88%] sm:max-w-[70%]">
 
+                                {{-- Message --}}
                                 <div
                                     class="
-                                        rounded-2xl px-4 py-3 text-sm leading-6
+                                        rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm
+                                        transition
                                         {{ $mine
-                                            ? 'rounded-br-md bg-[#0F6B3A] text-white'
-                                            : 'rounded-bl-md bg-[#F1F5F3] text-[#304B40]'
+                                            ? 'rounded-br-md bg-[#2563EB] text-white shadow-blue-100'
+                                            : 'rounded-bl-md border border-slate-200 bg-slate-50 text-slate-700'
                                         }}
                                     "
                                 >
                                     {{ $message->body }}
                                 </div>
 
-                                <p class="mt-1 px-1 text-[10px] text-[#9AA7A1] {{ $mine ? 'text-right' : '' }}">
+                                {{-- Time --}}
+                                <p
+                                    class="
+                                        mt-1.5 px-1 text-[10px] text-slate-400
+                                        {{ $mine ? 'text-right' : '' }}
+                                    "
+                                >
                                     {{ $message->created_at->format('H:i') }}
                                 </p>
 
@@ -146,21 +220,28 @@
 
                     @empty
 
-                        <div class="flex h-full items-center justify-center text-center">
+                        {{-- Empty Chat --}}
+                        <div class="flex h-full min-h-[380px] items-center justify-center px-6 text-center">
 
-                            <div>
+                            <div class="max-w-sm">
 
-                                <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-[#F1F6F3] text-[#82958B]">
-                                    <i class="bi bi-chat-dots"></i>
+                                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-xl text-[#2563EB]">
+                                    <i class="bi bi-chat-square-text"></i>
                                 </div>
 
-                                <p class="mt-3 text-sm font-semibold text-[#123128]">
+                                <h3 class="mt-4 text-sm font-bold text-slate-900">
                                     Mulai diskusi
+                                </h3>
+
+                                <p class="mt-1.5 text-xs leading-5 text-slate-500">
+                                    Diskusikan detail pekerjaan, kebutuhan,
+                                    deadline, dan penawaran dengan freelancer.
                                 </p>
 
-                                <p class="mt-1 text-xs text-[#81918B]">
-                                    Diskusikan detail pekerjaan dan penawaran dengan freelancer.
-                                </p>
+                                <div class="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-[10px] font-medium text-slate-500">
+                                    <i class="bi bi-shield-check text-blue-500"></i>
+                                    Tetap komunikasikan pekerjaan melalui ProKerja
+                                </div>
 
                             </div>
 
@@ -171,13 +252,21 @@
                 </div>
 
 
-                {{-- Composer --}}
-                <div class="border-t border-[#E8EFEB] px-5 py-4 sm:px-6">
+                {{-- =====================================================
+                    COMPOSER
+                ====================================================== --}}
+                <div class="border-t border-slate-100 bg-slate-50/70 px-4 py-4 sm:px-6">
 
                     @if(session('success'))
 
-                        <div class="mb-3 text-xs text-[#0F6B3A]">
-                            {{ session('success') }}
+                        <div class="mb-3 flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-xs font-medium text-emerald-700">
+
+                            <i class="bi bi-check-circle"></i>
+
+                            <span>
+                                {{ session('success') }}
+                            </span>
+
                         </div>
 
                     @endif
@@ -185,29 +274,48 @@
                     <form
                         method="POST"
                         action="{{ route('client.jobs.chat.messages.store', [$job, $conversation]) }}"
-                        class="flex items-end gap-3"
+                        class="flex items-end gap-2 sm:gap-3"
                     >
 
                         @csrf
 
-                        <textarea
-                            name="body"
-                            rows="2"
-                            required
-                            maxlength="5000"
-                            placeholder="Tulis pesan..."
-                            class="min-h-[44px] flex-1 resize-none rounded-lg border border-[#DDE7E2] px-3 py-2.5 text-sm text-[#233D33] outline-none transition placeholder:text-[#A0ADA7] focus:border-[#1E9E5A] focus:ring-2 focus:ring-[#1E9E5A]/10"
-                        ></textarea>
+                        {{-- Message Input --}}
+                        <div class="relative flex-1">
 
+                            <textarea
+                                name="body"
+                                rows="2"
+                                required
+                                maxlength="5000"
+                                placeholder="Tulis pesan untuk freelancer..."
+                                class="min-h-[48px] w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 pr-12 text-sm leading-5 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#2563EB] focus:ring-4 focus:ring-blue-50"
+                            ></textarea>
+
+                        </div>
+
+                        {{-- Send --}}
                         <button
                             type="submit"
-                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#0F6B3A] text-white transition hover:bg-[#17894D]"
+                            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100"
                             title="Kirim pesan"
                         >
-                            <i class="bi bi-send"></i>
+                            <i class="bi bi-send-fill text-sm"></i>
                         </button>
 
                     </form>
+
+                    <div class="mt-2 flex items-center justify-between gap-3">
+
+                        <p class="text-[10px] text-slate-400">
+                            Maksimal 5.000 karakter
+                        </p>
+
+                        <p class="hidden items-center gap-1 text-[10px] text-slate-400 sm:flex">
+                            <i class="bi bi-shield-check text-emerald-500"></i>
+                            Percakapan aman di ProKerja
+                        </p>
+
+                    </div>
 
                 </div>
 
@@ -217,6 +325,8 @@
 
     </main>
 
+
+    {{-- Auto Scroll --}}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const box = document.getElementById('job-chat-messages');
@@ -227,4 +337,4 @@
         });
     </script>
 
-</x-layouts.client>
+</x-layouts.marketplace>

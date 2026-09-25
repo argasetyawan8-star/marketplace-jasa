@@ -1,324 +1,663 @@
-<x-layouts.client title="Dashboard">
-
-    @php
-        $user = auth()->user();
-
-        $profile = $user?->profile;
-
-        $avatarUrl = $profile?->avatar
-            ? asset('storage/' . $profile->avatar)
-            : null;
-
-        $initial = strtoupper(
-            substr($user?->name ?: 'U', 0, 1)
-        );
-    @endphp
+<x-layouts.marketplace title="Dashboard Client - ProKerja">
 
 
-    <div class="min-h-screen bg-[#F8FCF9]">
+@php
+    $user = auth()->user();
 
-        <div class="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
+    $profile = $user?->profile;
 
+    $avatarUrl = $profile?->avatar
+        ? asset('storage/' . $profile->avatar)
+        : null;
 
-            {{-- =========================================================
-                WELCOME HERO
-            ========================================================== --}}
-            <section class="relative overflow-hidden rounded-[28px] bg-[#123128] shadow-[0_14px_45px_rgba(18,49,40,0.10)]">
-
-                {{-- Decorative shapes --}}
-                <div class="pointer-events-none absolute inset-0 overflow-hidden">
-
-                    <div class="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-[#1E9E5A]/20 blur-3xl"></div>
-
-                    <div class="absolute -bottom-28 left-[42%] h-64 w-64 rounded-full bg-[#7AD8B5]/10 blur-3xl"></div>
-
-                    <div class="absolute right-[22%] top-1/2 hidden h-28 w-28 -translate-y-1/2 rounded-full border border-white/[0.05] lg:block"></div>
-
-                </div>
+    $initial = strtoupper(
+        substr($user?->name ?: 'U', 0, 1)
+    );
+@endphp
 
 
-                <div class="relative px-6 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10">
+<div class="min-h-screen bg-[#F8FAFC] pt-[48px] pb-10 md:pt-[52px] lg:pb-14">
 
-                    <div class="max-w-3xl">
-
-                        {{-- Profile mini --}}
-                        <div class="flex items-center gap-3">
-
-                            <div class="relative shrink-0">
-
-                                @if($avatarUrl)
-
-                                    <img
-                                        src="{{ $avatarUrl }}"
-                                        alt="{{ $user->name }}"
-                                        class="h-11 w-11 rounded-full object-cover ring-4 ring-white/10"
-                                    >
-
-                                @else
-
-                                    <div class="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white ring-4 ring-white/10">
-                                        {{ $initial }}
-                                    </div>
-
-                                @endif
-
-                                <span class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#123128] bg-[#35C978]"></span>
-
-                            </div>
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
 
-                            <div>
+        {{-- =========================================================
+            WELCOME
+        ========================================================== --}}
+        <section
+            class="relative overflow-hidden rounded-3xl border border-[#DBEAFE] bg-white px-5 py-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)] sm:px-7 sm:py-8 lg:px-9"
+        >
 
-                                <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#7AD8B5]">
-                                    Dashboard Client
-                                </p>
+            {{-- Background decoration --}}
+            <div class="pointer-events-none absolute inset-0 overflow-hidden">
 
-                                <p class="mt-0.5 text-xs text-white/55">
-                                    Senang melihatmu kembali
-                                </p>
+                <div
+                    class="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#DBEAFE] opacity-70 blur-3xl"
+                ></div>
 
-                            </div>
+                <div
+                    class="absolute -bottom-24 left-1/3 h-52 w-52 rounded-full bg-[#EFF6FF] opacity-90 blur-3xl"
+                ></div>
+
+            </div>
+
+
+            <div class="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+
+
+                {{-- LEFT --}}
+                <div class="min-w-0">
+
+                    <div class="flex items-center gap-3">
+
+                        <div class="relative shrink-0">
+
+                            @if($avatarUrl)
+
+                                <img
+                                    src="{{ $avatarUrl }}"
+                                    alt="{{ $user->name }}"
+                                    class="h-12 w-12 rounded-full object-cover ring-4 ring-[#EFF6FF]"
+                                >
+
+                            @else
+
+                                <div
+                                    class="flex h-12 w-12 items-center justify-center rounded-full bg-[#EFF6FF] text-sm font-semibold text-[#2563EB] ring-4 ring-[#F8FAFC]"
+                                >
+                                    {{ $initial }}
+                                </div>
+
+                            @endif
+
+                            <span
+                                class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#16A34A]"
+                            ></span>
 
                         </div>
 
 
-                        {{-- Heading --}}
-                        <h1 class="mt-6 text-[28px] font-semibold tracking-[-0.035em] text-white sm:text-3xl lg:text-[36px]">
-                            Halo, {{ $user->name }}.
-                        </h1>
+                        <div class="min-w-0">
 
-                        <p class="mt-3 max-w-2xl text-sm leading-6 text-white/60">
-                            Cari freelancer terbaik untuk menyelesaikan pekerjaanmu dengan lebih cepat,
-                            mudah, dan aman.
-                        </p>
+                            <p
+                                class="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2563EB]"
+                            >
+                                Dashboard Client
+                            </p>
+
+                            <p class="mt-0.5 text-xs text-[#64748B]">
+                                Selamat datang kembali
+                            </p>
+
+                        </div>
+
+                    </div>
 
 
-                        {{-- Search --}}
-                        <form
-                            action="{{ route('marketplace.search') }}"
-                            method="GET"
-                            class="mt-6 max-w-2xl"
+                    <h1
+                        class="mt-5 text-2xl font-semibold tracking-[-0.035em] text-[#0F172A] sm:text-3xl lg:text-[34px]"
+                    >
+                        Halo, {{ $user->name }}.
+                    </h1>
+
+
+                    <p
+                        class="mt-3 max-w-2xl text-sm leading-6 text-[#64748B] sm:text-[15px]"
+                    >
+                        Temukan freelancer yang tepat untuk membantu menyelesaikan
+                        pekerjaan, project, dan kebutuhan profesionalmu.
+                    </p>
+
+
+                    {{-- SEARCH --}}
+                    <form
+                        action="{{ route('marketplace.search') }}"
+                        method="GET"
+                        class="mt-6 max-w-3xl"
+                    >
+
+                        <div
+                            class="flex flex-col gap-2 rounded-2xl border border-[#E2E8F0] bg-white p-2 shadow-[0_8px_24px_rgba(15,23,42,0.06)] sm:flex-row"
                         >
 
-                            <div class="flex flex-col gap-2 rounded-2xl bg-white p-2 shadow-[0_10px_30px_rgba(0,0,0,0.14)] sm:flex-row">
+                            <div class="flex min-w-0 flex-1 items-center">
 
-                                <div class="flex min-w-0 flex-1 items-center">
-
-                                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A]">
-                                        <i class="bi bi-search text-[15px]"></i>
-                                    </div>
-
-                                    <input
-                                        type="text"
-                                        name="q"
-                                        placeholder="Apa yang sedang kamu cari?"
-                                        class="h-11 min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-[#123128] outline-none placeholder:text-[#9BA9A3]"
-                                    >
-
+                                <div
+                                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]"
+                                >
+                                    <i class="bi bi-search text-[15px]"></i>
                                 </div>
 
 
-                                <button
-                                    type="submit"
-                                    class="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1E9E5A] px-5 text-xs font-semibold text-white transition duration-200 hover:bg-[#0F6B3A]"
+                                <input
+                                    type="text"
+                                    name="q"
+                                    placeholder="Cari jasa yang kamu butuhkan..."
+                                    autocomplete="off"
+                                    class="h-11 min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-[#0F172A] outline-none placeholder:text-[#94A3B8]"
                                 >
-                                    Cari jasa
-
-                                    <i class="bi bi-arrow-right text-[11px]"></i>
-                                </button>
 
                             </div>
 
-                        </form>
 
-
-                        {{-- Quick links --}}
-                        <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-
-                            <span class="text-[10px] text-white/40">
-                                Mulai dari:
-                            </span>
-
-                            <a
-                                href="{{ route('marketplace.search') }}"
-                                class="text-[10px] font-medium text-white/65 transition hover:text-white"
+                            <button
+                                type="submit"
+                                class="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-5 text-xs font-semibold text-white transition duration-200 hover:bg-[#1D4ED8] active:scale-[0.98]"
                             >
-                                Desain
-                            </a>
-
-                            <span class="text-white/20">•</span>
-
-                            <a
-                                href="{{ route('marketplace.search') }}"
-                                class="text-[10px] font-medium text-white/65 transition hover:text-white"
-                            >
-                                Website
-                            </a>
-
-                            <span class="text-white/20">•</span>
-
-                            <a
-                                href="{{ route('marketplace.search') }}"
-                                class="text-[10px] font-medium text-white/65 transition hover:text-white"
-                            >
-                                Marketing
-                            </a>
-
-                            <span class="text-white/20">•</span>
-
-                            <a
-                                href="{{ route('marketplace.search') }}"
-                                class="text-[10px] font-medium text-white/65 transition hover:text-white"
-                            >
-                                Penulisan
-                            </a>
+                                Cari jasa
+                                <i class="bi bi-arrow-right text-[11px]"></i>
+                            </button>
 
                         </div>
 
-                    </div>
-
-                </div>
-
-            </section>
+                    </form>
 
 
+                    {{-- POPULAR --}}
+                    <div class="mt-4 flex flex-wrap items-center gap-2">
 
-            {{-- =========================================================
-                QUICK ACTIONS
-            ========================================================== --}}
-            <section class="mt-8">
+                        <span class="mr-1 text-[10px] font-medium text-[#94A3B8]">
+                            Populer:
+                        </span>
 
-                <div class="flex items-end justify-between">
+                        @foreach([
+                            'Logo Design',
+                            'Website',
+                            'Video Editing',
+                            'Social Media',
+                            'Copywriting',
+                            'AI Services',
+                        ] as $keyword)
 
-                    <div>
+                            <a
+                                href="{{ route('marketplace.search', ['q' => $keyword]) }}"
+                                class="rounded-full border border-[#E2E8F0] bg-white px-3 py-1.5 text-[10px] font-medium text-[#64748B] transition duration-200 hover:border-[#BFDBFE] hover:bg-[#EFF6FF] hover:text-[#2563EB]"
+                            >
+                                {{ $keyword }}
+                            </a>
 
-                        <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#1E9E5A]">
-                            Aktivitas
-                        </p>
-
-                        <h2 class="mt-1 text-lg font-semibold tracking-[-0.025em] text-[#123128]">
-                            Apa yang ingin kamu lakukan?
-                        </h2>
+                        @endforeach
 
                     </div>
 
                 </div>
 
 
-                <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                {{-- RIGHT VISUAL --}}
+                <div class="hidden lg:flex lg:justify-end">
 
-
-                    {{-- Pesanan --}}
-                    <a
-                        href="{{ route('client.orders.index') }}"
-                        class="group rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_5px_18px_rgba(18,49,40,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#CDE3D5] hover:shadow-[0_10px_28px_rgba(18,49,40,0.06)]"
+                    <div
+                        class="relative flex h-40 w-40 items-center justify-center rounded-[30px] border border-[#DBEAFE] bg-[#F8FBFF]"
                     >
 
-                        <div class="flex items-center justify-between">
+                        <div
+                            class="absolute inset-4 rounded-[24px] border border-[#DBEAFE]"
+                        ></div>
 
-                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A]">
-                                <i class="bi bi-bag-check text-[17px]"></i>
-                            </div>
 
-                            <div class="flex h-7 w-7 items-center justify-center rounded-full text-[#A0ADA7] transition duration-200 group-hover:bg-[#EAF7EF] group-hover:text-[#1E9E5A]">
-                                <i class="bi bi-arrow-up-right text-[11px] transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"></i>
-                            </div>
-
+                        <div
+                            class="relative flex h-24 w-24 items-center justify-center rounded-3xl bg-[#2563EB] shadow-[0_14px_30px_rgba(37,99,235,0.20)]"
+                        >
+                            <i class="bi bi-grid-1x2-fill text-4xl text-white"></i>
                         </div>
 
-                        <h3 class="mt-5 text-sm font-semibold text-[#18382E]">
-                            Pesanan saya
-                        </h3>
-
-                        <p class="mt-1.5 text-xs leading-5 text-[#899890]">
-                            Pantau pesanan, progres pekerjaan, dan hasil yang sedang dikerjakan freelancer.
-                        </p>
-
-                    </a>
-
-
-                    {{-- Pesan --}}
-                    <a
-                        href="{{ route('client.messages.index') }}"
-                        class="group rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_5px_18px_rgba(18,49,40,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#CDE3D5] hover:shadow-[0_10px_28px_rgba(18,49,40,0.06)]"
-                    >
-
-                        <div class="flex items-center justify-between">
-
-                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F0F7F3] text-[#1E9E5A]">
-                                <i class="bi bi-chat-dots text-[17px]"></i>
-                            </div>
-
-                            <div class="flex h-7 w-7 items-center justify-center rounded-full text-[#A0ADA7] transition duration-200 group-hover:bg-[#EAF7EF] group-hover:text-[#1E9E5A]">
-                                <i class="bi bi-arrow-up-right text-[11px] transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"></i>
-                            </div>
-
-                        </div>
-
-                        <h3 class="mt-5 text-sm font-semibold text-[#18382E]">
-                            Pesan
-                        </h3>
-
-                        <p class="mt-1.5 text-xs leading-5 text-[#899890]">
-                            Diskusikan kebutuhan pekerjaan dan terima penawaran dari freelancer.
-                        </p>
-
-                    </a>
-
-
-                    {{-- Favorit --}}
-                    <a
-                        href="{{ route('client.favorites.index') }}"
-                        class="group rounded-2xl border border-[#E1EAE5] bg-white p-5 shadow-[0_5px_18px_rgba(18,49,40,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#CDE3D5] hover:shadow-[0_10px_28px_rgba(18,49,40,0.06)]"
-                    >
-
-                        <div class="flex items-center justify-between">
-
-                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#F0F7F3] text-[#1E9E5A]">
-                                <i class="bi bi-heart text-[17px]"></i>
-                            </div>
-
-                            <div class="flex h-7 w-7 items-center justify-center rounded-full text-[#A0ADA7] transition duration-200 group-hover:bg-[#EAF7EF] group-hover:text-[#1E9E5A]">
-                                <i class="bi bi-arrow-up-right text-[11px] transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"></i>
-                            </div>
-
-                        </div>
-
-                        <h3 class="mt-5 text-sm font-semibold text-[#18382E]">
-                            Favorit
-                        </h3>
-
-                        <p class="mt-1.5 text-xs leading-5 text-[#899890]">
-                            Simpan jasa yang menarik agar mudah ditemukan kembali kapan saja.
-                        </p>
-
-                    </a>
+                    </div>
 
                 </div>
 
-            </section>
+            </div>
+
+        </section>
 
 
+        {{-- =========================================================
+            QUICK ACCESS
+        ========================================================== --}}
+        <section class="mt-10">
 
-            {{-- =========================================================
-                MARKETPLACE INTRO
-            ========================================================== --}}
-            <section class="mt-12">
+            <div class="mb-4">
 
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <p
+                    class="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2563EB]"
+                >
+                    Akses cepat
+                </p>
 
-                    <div>
+                <h2
+                    class="mt-1 text-lg font-semibold tracking-[-0.025em] text-[#0F172A]"
+                >
+                    Kelola aktivitasmu
+                </h2>
 
-                        <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#1E9E5A]">
-                            Marketplace
+                <p class="mt-1 text-xs text-[#64748B]">
+                    Semua aktivitas penting client ada di satu tempat.
+                </p>
+
+            </div>
+
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+
+                {{-- ORDERS --}}
+                <a
+                    href="{{ route('client.orders.index') }}"
+                    class="group rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-[0_5px_18px_rgba(15,23,42,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-[0_12px_28px_rgba(15,23,42,0.07)]"
+                >
+
+                    <div class="flex items-start justify-between">
+
+                        <div
+                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]"
+                        >
+                            <i class="bi bi-bag-check text-[17px]"></i>
+                        </div>
+
+                        <div
+                            class="flex h-7 w-7 items-center justify-center rounded-full text-[#94A3B8] transition group-hover:bg-[#EFF6FF] group-hover:text-[#2563EB]"
+                        >
+                            <i class="bi bi-arrow-up-right text-[11px]"></i>
+                        </div>
+
+                    </div>
+
+
+                    <h3 class="mt-5 text-sm font-semibold text-[#0F172A]">
+                        Pesanan saya
+                    </h3>
+
+                    <p class="mt-1 text-xs leading-5 text-[#64748B]">
+                        Lihat, pantau, dan kelola pesanan yang sedang berjalan.
+                    </p>
+
+
+                    <div
+                        class="mt-5 flex items-center gap-2 text-[11px] font-semibold text-[#2563EB]"
+                    >
+                        Buka pesanan
+                        <i class="bi bi-arrow-right text-[10px]"></i>
+                    </div>
+
+                </a>
+
+
+                {{-- FAVORITES --}}
+                <a
+                    href="{{ route('client.favorites.index') }}"
+                    class="group rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-[0_5px_18px_rgba(15,23,42,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-[0_12px_28px_rgba(15,23,42,0.07)]"
+                >
+
+                    <div class="flex items-start justify-between">
+
+                        <div
+                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]"
+                        >
+                            <i class="bi bi-heart text-[17px]"></i>
+                        </div>
+
+                        <div
+                            class="flex h-7 w-7 items-center justify-center rounded-full text-[#94A3B8] transition group-hover:bg-[#EFF6FF] group-hover:text-[#2563EB]"
+                        >
+                            <i class="bi bi-arrow-up-right text-[11px]"></i>
+                        </div>
+
+                    </div>
+
+
+                    <h3 class="mt-5 text-sm font-semibold text-[#0F172A]">
+                        Favorit
+                    </h3>
+
+                    <p class="mt-1 text-xs leading-5 text-[#64748B]">
+                        Simpan layanan yang menarik untuk dipertimbangkan nanti.
+                    </p>
+
+
+                    <div
+                        class="mt-5 flex items-center gap-2 text-[11px] font-semibold text-[#2563EB]"
+                    >
+                        Lihat favorit
+                        <i class="bi bi-arrow-right text-[10px]"></i>
+                    </div>
+
+                </a>
+
+
+                {{-- MESSAGES --}}
+                <a
+                    href="{{ route('client.messages.index') }}"
+                    class="group rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-[0_5px_18px_rgba(15,23,42,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-[0_12px_28px_rgba(15,23,42,0.07)]"
+                >
+
+                    <div class="flex items-start justify-between">
+
+                        <div
+                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]"
+                        >
+                            <i class="bi bi-chat-dots text-[17px]"></i>
+                        </div>
+
+                        <div
+                            class="flex h-7 w-7 items-center justify-center rounded-full text-[#94A3B8] transition group-hover:bg-[#EFF6FF] group-hover:text-[#2563EB]"
+                        >
+                            <i class="bi bi-arrow-up-right text-[11px]"></i>
+                        </div>
+
+                    </div>
+
+
+                    <h3 class="mt-5 text-sm font-semibold text-[#0F172A]">
+                        Pesan
+                    </h3>
+
+                    <p class="mt-1 text-xs leading-5 text-[#64748B]">
+                        Lanjutkan percakapan dengan freelancer pilihanmu.
+                    </p>
+
+
+                    <div
+                        class="mt-5 flex items-center gap-2 text-[11px] font-semibold text-[#2563EB]"
+                    >
+                        Buka pesan
+                        <i class="bi bi-arrow-right text-[10px]"></i>
+                    </div>
+
+                </a>
+
+            </div>
+
+        </section>
+
+
+        {{-- =========================================================
+            DISCOVER
+        ========================================================== --}}
+        <section class="mt-12">
+
+            <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+
+                <div>
+
+                    <p
+                        class="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2563EB]"
+                    >
+                        Jelajahi
+                    </p>
+
+                    <h2
+                        class="mt-1 text-xl font-semibold tracking-[-0.025em] text-[#0F172A]"
+                    >
+                        Temukan jasa yang sesuai
+                    </h2>
+
+                    <p class="mt-1.5 text-xs text-[#64748B]">
+                        Mulai dari kebutuhan sederhana sampai project profesional.
+                    </p>
+
+                </div>
+
+
+                <a
+                    href="{{ route('marketplace.search') }}"
+                    class="inline-flex items-center gap-2 text-xs font-semibold text-[#2563EB] transition hover:text-[#1D4ED8]"
+                >
+                    Lihat semua jasa
+                    <i class="bi bi-arrow-right text-[11px]"></i>
+                </a>
+
+            </div>
+
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+
+                {{-- DESIGN --}}
+                <a
+                    href="{{ route('marketplace.search', ['category' => 'desain']) }}"
+                    class="group flex items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-[0_8px_22px_rgba(15,23,42,0.05)]"
+                >
+
+                    <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]"
+                    >
+                        <i class="bi bi-palette text-[15px]"></i>
+                    </div>
+
+
+                    <div class="min-w-0">
+
+                        <h3 class="truncate text-xs font-semibold text-[#0F172A]">
+                            Desain
+                        </h3>
+
+                        <p class="mt-0.5 text-[10px] text-[#94A3B8]">
+                            Logo, branding, visual
                         </p>
 
-                        <h2 class="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#123128]">
-                            Temukan jasa untuk kebutuhanmu
+                    </div>
+
+
+                    <i
+                        class="bi bi-arrow-up-right ml-auto text-[10px] text-[#94A3B8] transition group-hover:text-[#2563EB]"
+                    ></i>
+
+                </a>
+
+
+                {{-- MARKETING --}}
+                <a
+                    href="{{ route('marketplace.search', ['category' => 'digital-marketing']) }}"
+                    class="group flex items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-[0_8px_22px_rgba(15,23,42,0.05)]"
+                >
+
+                    <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]"
+                    >
+                        <i class="bi bi-megaphone text-[15px]"></i>
+                    </div>
+
+
+                    <div class="min-w-0">
+
+                        <h3 class="truncate text-xs font-semibold text-[#0F172A]">
+                            Digital Marketing
+                        </h3>
+
+                        <p class="mt-0.5 text-[10px] text-[#94A3B8]">
+                            Sosial media, iklan
+                        </p>
+
+                    </div>
+
+
+                    <i
+                        class="bi bi-arrow-up-right ml-auto text-[10px] text-[#94A3B8] transition group-hover:text-[#2563EB]"
+                    ></i>
+
+                </a>
+
+
+                {{-- WRITING --}}
+                <a
+                    href="{{ route('marketplace.search', ['category' => 'penulisan']) }}"
+                    class="group flex items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-[0_8px_22px_rgba(15,23,42,0.05)]"
+                >
+
+                    <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]"
+                    >
+                        <i class="bi bi-pencil-square text-[15px]"></i>
+                    </div>
+
+
+                    <div class="min-w-0">
+
+                        <h3 class="truncate text-xs font-semibold text-[#0F172A]">
+                            Penulisan
+                        </h3>
+
+                        <p class="mt-0.5 text-[10px] text-[#94A3B8]">
+                            Artikel, copywriting
+                        </p>
+
+                    </div>
+
+
+                    <i
+                        class="bi bi-arrow-up-right ml-auto text-[10px] text-[#94A3B8] transition group-hover:text-[#2563EB]"
+                    ></i>
+
+                </a>
+
+
+                {{-- BUSINESS --}}
+                <a
+                    href="{{ route('marketplace.search', ['category' => 'bisnis']) }}"
+                    class="group flex items-center gap-3 rounded-2xl border border-[#E2E8F0] bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-[0_8px_22px_rgba(15,23,42,0.05)]"
+                >
+
+                    <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]"
+                    >
+                        <i class="bi bi-briefcase text-[15px]"></i>
+                    </div>
+
+
+                    <div class="min-w-0">
+
+                        <h3 class="truncate text-xs font-semibold text-[#0F172A]">
+                            Bisnis
+                        </h3>
+
+                        <p class="mt-0.5 text-[10px] text-[#94A3B8]">
+                            Konsultasi, strategi
+                        </p>
+
+                    </div>
+
+
+                    <i
+                        class="bi bi-arrow-up-right ml-auto text-[10px] text-[#94A3B8] transition group-hover:text-[#2563EB]"
+                    ></i>
+
+                </a>
+
+            </div>
+
+        </section>
+
+
+        {{-- =========================================================
+            JOB BOARD
+        ========================================================== --}}
+        <section class="mt-12">
+
+            <div
+                class="overflow-hidden rounded-3xl border border-[#DBEAFE] bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]"
+            >
+
+                <div class="grid gap-0 lg:grid-cols-[1fr_auto] lg:items-center">
+
+                    <div class="px-6 py-7 sm:px-8 sm:py-8">
+
+                        <div
+                            class="inline-flex items-center gap-2 rounded-full bg-[#EFF6FF] px-3 py-1.5 text-[10px] font-semibold text-[#2563EB]"
+                        >
+                            <i class="bi bi-briefcase-fill text-[10px]"></i>
+                            Job Board
+                        </div>
+
+
+                        <h2
+                            class="mt-4 text-xl font-semibold tracking-[-0.025em] text-[#0F172A] sm:text-2xl"
+                        >
+                            Punya project khusus?
                         </h2>
 
-                        <p class="mt-1.5 text-xs leading-5 text-[#899890]">
-                            Dari pekerjaan kreatif hingga kebutuhan bisnis sehari-hari.
+
+                        <p
+                            class="mt-2 max-w-2xl text-sm leading-6 text-[#64748B]"
+                        >
+                            Buat project dan biarkan freelancer mengirim proposal
+                            sesuai kebutuhan yang kamu tentukan.
+                        </p>
+
+
+                        <div class="mt-5 flex flex-wrap gap-3">
+
+                            <a
+                                href="{{ route('marketplace.jobs.index') }}"
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-4 text-xs font-semibold text-[#2563EB] transition hover:bg-[#DBEAFE]"
+                            >
+                                Lihat Job Board
+                                <i class="bi bi-arrow-right text-[10px]"></i>
+                            </a>
+
+
+                            <a
+                                href="{{ route('client.jobs.create') }}"
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-4 text-xs font-semibold text-white transition hover:bg-[#1D4ED8]"
+                            >
+                                Buat project
+                                <i class="bi bi-plus-lg text-[10px]"></i>
+                            </a>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="hidden px-8 lg:block">
+
+                        <div
+                            class="flex h-36 w-36 items-center justify-center rounded-[28px] bg-[#EFF6FF]"
+                        >
+                            <i class="bi bi-kanban-fill text-5xl text-[#2563EB]"></i>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        {{-- =========================================================
+            BOTTOM CTA
+        ========================================================== --}}
+        <section class="mt-10">
+
+            <div
+                class="overflow-hidden rounded-3xl border border-[#DBEAFE] bg-[#EFF6FF] px-6 py-7 sm:px-8 sm:py-8"
+            >
+
+                <div
+                    class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between"
+                >
+
+                    <div class="max-w-2xl">
+
+                        <p
+                            class="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2563EB]"
+                        >
+                            Butuh bantuan?
+                        </p>
+
+
+                        <h2
+                            class="mt-2 text-xl font-semibold tracking-[-0.025em] text-[#0F172A] sm:text-2xl"
+                        >
+                            Temukan freelancer untuk project-mu.
+                        </h2>
+
+
+                        <p
+                            class="mt-2 text-sm leading-6 text-[#64748B]"
+                        >
+                            Cari berdasarkan layanan, kategori, harga, dan pengalaman
+                            freelancer.
                         </p>
 
                     </div>
@@ -326,252 +665,22 @@
 
                     <a
                         href="{{ route('marketplace.search') }}"
-                        class="inline-flex items-center gap-2 text-xs font-semibold text-[#1E9E5A] transition hover:text-[#0F6B3A]"
+                        class="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-5 text-xs font-semibold text-white shadow-[0_6px_18px_rgba(37,99,235,0.16)] transition duration-200 hover:bg-[#1D4ED8] hover:shadow-[0_8px_24px_rgba(37,99,235,0.20)]"
                     >
-                        Jelajahi semua
+                        Mulai cari jasa
                         <i class="bi bi-arrow-right text-[11px]"></i>
                     </a>
 
                 </div>
 
+            </div>
 
-                {{-- Category visual shortcuts --}}
-                <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        </section>
 
-
-                    {{-- Design --}}
-                    <a
-                        href="{{ route('marketplace.search') }}"
-                        class="group relative overflow-hidden rounded-2xl border border-[#E1EAE5] bg-white p-5 transition duration-200 hover:border-[#CDE3D5] hover:shadow-[0_10px_25px_rgba(18,49,40,0.05)]"
-                    >
-
-                        <div class="flex items-center justify-between">
-
-                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A]">
-                                <i class="bi bi-palette text-[16px]"></i>
-                            </div>
-
-                            <i class="bi bi-arrow-up-right text-[11px] text-[#A1AEA8] transition group-hover:text-[#1E9E5A]"></i>
-
-                        </div>
-
-                        <h3 class="mt-5 text-sm font-semibold text-[#18382E]">
-                            Desain & Kreatif
-                        </h3>
-
-                        <p class="mt-1.5 text-xs leading-5 text-[#8B9A93]">
-                            Logo, branding, ilustrasi, dan kebutuhan visual.
-                        </p>
-
-                    </a>
-
-
-                    {{-- Technology --}}
-                    <a
-                        href="{{ route('marketplace.search') }}"
-                        class="group relative overflow-hidden rounded-2xl border border-[#E1EAE5] bg-white p-5 transition duration-200 hover:border-[#CDE3D5] hover:shadow-[0_10px_25px_rgba(18,49,40,0.05)]"
-                    >
-
-                        <div class="flex items-center justify-between">
-
-                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A]">
-                                <i class="bi bi-code-slash text-[16px]"></i>
-                            </div>
-
-                            <i class="bi bi-arrow-up-right text-[11px] text-[#A1AEA8] transition group-hover:text-[#1E9E5A]"></i>
-
-                        </div>
-
-                        <h3 class="mt-5 text-sm font-semibold text-[#18382E]">
-                            Teknologi
-                        </h3>
-
-                        <p class="mt-1.5 text-xs leading-5 text-[#8B9A93]">
-                            Website, aplikasi, software, dan solusi digital.
-                        </p>
-
-                    </a>
-
-
-                    {{-- Marketing --}}
-                    <a
-                        href="{{ route('marketplace.search') }}"
-                        class="group relative overflow-hidden rounded-2xl border border-[#E1EAE5] bg-white p-5 transition duration-200 hover:border-[#CDE3D5] hover:shadow-[0_10px_25px_rgba(18,49,40,0.05)]"
-                    >
-
-                        <div class="flex items-center justify-between">
-
-                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A]">
-                                <i class="bi bi-megaphone text-[16px]"></i>
-                            </div>
-
-                            <i class="bi bi-arrow-up-right text-[11px] text-[#A1AEA8] transition group-hover:text-[#1E9E5A]"></i>
-
-                        </div>
-
-                        <h3 class="mt-5 text-sm font-semibold text-[#18382E]">
-                            Marketing
-                        </h3>
-
-                        <p class="mt-1.5 text-xs leading-5 text-[#8B9A93]">
-                            Sosial media, iklan, konten, dan strategi pemasaran.
-                        </p>
-
-                    </a>
-
-
-                    {{-- Business --}}
-                    <a
-                        href="{{ route('marketplace.search') }}"
-                        class="group relative overflow-hidden rounded-2xl border border-[#E1EAE5] bg-white p-5 transition duration-200 hover:border-[#CDE3D5] hover:shadow-[0_10px_25px_rgba(18,49,40,0.05)]"
-                    >
-
-                        <div class="flex items-center justify-between">
-
-                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A]">
-                                <i class="bi bi-briefcase text-[16px]"></i>
-                            </div>
-
-                            <i class="bi bi-arrow-up-right text-[11px] text-[#A1AEA8] transition group-hover:text-[#1E9E5A]"></i>
-
-                        </div>
-
-                        <h3 class="mt-5 text-sm font-semibold text-[#18382E]">
-                            Bisnis
-                        </h3>
-
-                        <p class="mt-1.5 text-xs leading-5 text-[#8B9A93]">
-                            Konsultasi, administrasi, riset, dan kebutuhan bisnis.
-                        </p>
-
-                    </a>
-
-                </div>
-
-            </section>
-
-
-
-            {{-- =========================================================
-                TRUST / INFO
-            ========================================================== --}}
-            <section class="mt-12">
-
-                <div class="rounded-3xl border border-[#DDEAE2] bg-white p-6 shadow-[0_5px_20px_rgba(18,49,40,0.035)] sm:p-8">
-
-                    <div class="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-
-                        <div class="max-w-lg">
-
-                            <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#1E9E5A]">
-                                JASAIN
-                            </p>
-
-                            <h2 class="mt-2 text-xl font-semibold tracking-[-0.025em] text-[#123128]">
-                                Semua kebutuhan jasa, dalam satu tempat.
-                            </h2>
-
-                            <p class="mt-2.5 text-sm leading-6 text-[#7D8E87]">
-                                Temukan freelancer, diskusikan kebutuhanmu, terima penawaran,
-                                lalu kelola pekerjaanmu melalui satu platform.
-                            </p>
-
-                        </div>
-
-
-                        <div class="grid grid-cols-3 divide-x divide-[#E7EEE9]">
-
-                            <div class="px-5 text-center sm:px-8">
-
-                                <div class="flex justify-center text-[#1E9E5A]">
-                                    <i class="bi bi-people text-xl"></i>
-                                </div>
-
-                                <p class="mt-2 text-[11px] font-semibold text-[#355248]">
-                                    Freelancer
-                                </p>
-
-                            </div>
-
-
-                            <div class="px-5 text-center sm:px-8">
-
-                                <div class="flex justify-center text-[#1E9E5A]">
-                                    <i class="bi bi-chat-square-text text-xl"></i>
-                                </div>
-
-                                <p class="mt-2 text-[11px] font-semibold text-[#355248]">
-                                    Diskusi
-                                </p>
-
-                            </div>
-
-
-                            <div class="px-5 text-center sm:px-8">
-
-                                <div class="flex justify-center text-[#1E9E5A]">
-                                    <i class="bi bi-shield-check text-xl"></i>
-                                </div>
-
-                                <p class="mt-2 text-[11px] font-semibold text-[#355248]">
-                                    Aman
-                                </p>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-
-            {{-- =========================================================
-                FINAL CTA
-            ========================================================== --}}
-            <section class="mt-8">
-
-                <div class="relative overflow-hidden rounded-3xl bg-[#EAF7EF] px-6 py-8 sm:px-8 lg:px-10">
-
-                    <div class="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-
-                        <div class="max-w-2xl">
-
-                            <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#1E9E5A]">
-                                Siap mulai?
-                            </p>
-
-                            <h2 class="mt-2 text-xl font-semibold tracking-[-0.025em] text-[#123128] sm:text-2xl">
-                                Cari freelancer untuk pekerjaanmu hari ini.
-                            </h2>
-
-                            <p class="mt-2 text-xs leading-5 text-[#71837B]">
-                                Jelajahi jasa yang tersedia dan temukan orang yang tepat untuk membantumu.
-                            </p>
-
-                        </div>
-
-
-                        <a
-                            href="{{ route('marketplace.search') }}"
-                            class="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#1E9E5A] px-5 text-xs font-semibold text-white shadow-[0_5px_18px_rgba(30,158,90,0.15)] transition duration-200 hover:bg-[#0F6B3A]"
-                        >
-                            Cari jasa
-                            <i class="bi bi-arrow-right text-[11px]"></i>
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-        </div>
 
     </div>
 
-</x-layouts.client>
+</div>
+
+
+</x-layouts.marketplace>

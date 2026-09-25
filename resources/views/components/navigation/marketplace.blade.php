@@ -1,737 +1,1141 @@
 @php
-    $user = auth()->user();
+    use Illuminate\Support\Facades\Route;
 
-    $isHome = request()->routeIs('marketplace.home');
-
-    $isClient = $user?->role === 'client';
-    $isFreelancer = $user?->role === 'freelancer';
-
-    $profile = $user?->profile;
-    $freelancerProfile = $user?->freelancerProfile;
+    $isAuth = auth()->check();
+    $role = $isAuth ? auth()->user()->role : null;
 
     /*
     |--------------------------------------------------------------------------
-    | Profile / Avatar
+    | Public URLs
     |--------------------------------------------------------------------------
     */
+    $homeUrl = Route::has('marketplace.home')
+        ? route('marketplace.home')
+        : url('/');
 
-    if ($isFreelancer) {
-        $avatarPath = $freelancerProfile?->avatar;
-        $profileRoute = route('freelancer.profile.show');
-        $displayName = $user?->name ?? 'Freelancer';
-    } else {
-        $avatarPath = $profile?->avatar;
+    $searchUrl = Route::has('marketplace.search')
+        ? route('marketplace.search')
+        : '#';
 
-        $profileRoute = auth()->check()
+    $jobsUrl = Route::has('marketplace.jobs.index')
+        ? route('marketplace.jobs.index')
+        : '#';
+
+    /*
+    |--------------------------------------------------------------------------
+    | Role URLs
+    |--------------------------------------------------------------------------
+    */
+    $dashboardUrl = '#';
+    $ordersUrl = '#';
+    $messagesUrl = '#';
+    $profileUrl = '#';
+    $projectsUrl = '#';
+    $favoritesUrl = '#';
+    $servicesUrl = '#';
+    $walletUrl = '#';
+    $withdrawalsUrl = '#';
+    $verificationUrl = '#';
+
+    if ($role === 'client') {
+        $dashboardUrl = Route::has('client.dashboard')
+            ? route('client.dashboard')
+            : '#';
+
+        $ordersUrl = Route::has('client.orders.index')
+            ? route('client.orders.index')
+            : '#';
+
+        $messagesUrl = Route::has('client.messages.index')
+            ? route('client.messages.index')
+            : '#';
+
+        $profileUrl = Route::has('profile.show')
             ? route('profile.show')
             : '#';
 
-        $displayName = $user?->name ?? 'Profil';
+        $projectsUrl = Route::has('client.jobs.index')
+            ? route('client.jobs.index')
+            : '#';
+
+        $favoritesUrl = Route::has('client.favorites.index')
+            ? route('client.favorites.index')
+            : '#';
     }
 
-    $avatarUrl = $avatarPath
-        ? asset('storage/' . $avatarPath)
-        : null;
+    if ($role === 'freelancer') {
+        $dashboardUrl = Route::has('freelancer.dashboard')
+            ? route('freelancer.dashboard')
+            : '#';
+
+        $ordersUrl = Route::has('freelancer.orders.index')
+            ? route('freelancer.orders.index')
+            : '#';
+
+        $messagesUrl = Route::has('freelancer.messages.index')
+            ? route('freelancer.messages.index')
+            : '#';
+
+        $profileUrl = Route::has('freelancer.profile.show')
+            ? route('freelancer.profile.show')
+            : '#';
+
+        $projectsUrl = Route::has('freelancer.jobs.index')
+            ? route('freelancer.jobs.index')
+            : '#';
+
+        $servicesUrl = Route::has('freelancer.services.index')
+            ? route('freelancer.services.index')
+            : '#';
+
+        $walletUrl = Route::has('freelancer.wallet.index')
+            ? route('freelancer.wallet.index')
+            : '#';
+
+        $withdrawalsUrl = Route::has('freelancer.withdrawals.index')
+            ? route('freelancer.withdrawals.index')
+            : '#';
+
+        $verificationUrl = Route::has('freelancer.verification.index')
+            ? route('freelancer.verification.index')
+            : '#';
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin URLs
+    |--------------------------------------------------------------------------
+    */
+    $adminDashboardUrl = Route::has('admin.dashboard')
+        ? route('admin.dashboard')
+        : '#';
+
+    $adminUsersUrl = Route::has('admin.users.index')
+        ? route('admin.users.index')
+        : '#';
+
+    $adminServicesUrl = Route::has('admin.services.index')
+        ? route('admin.services.index')
+        : '#';
+
+    $adminCategoriesUrl = Route::has('admin.categories.index')
+        ? route('admin.categories.index')
+        : '#';
+
+    $adminBannersUrl = Route::has('admin.banners.index')
+        ? route('admin.banners.index')
+        : '#';
+
+    $notificationUrl = Route::has('notifications.index')
+        ? route('notifications.index')
+        : '#';
+
+    /*
+    |--------------------------------------------------------------------------
+    | Active States
+    |--------------------------------------------------------------------------
+    */
+    $isHome = request()->routeIs('marketplace.home');
+
+    $isSearch = request()->routeIs(
+        'marketplace.search',
+        'marketplace.service'
+    );
+
+    $isJobs = request()->routeIs(
+        'marketplace.jobs.*',
+        'client.jobs.*',
+        'freelancer.jobs.*'
+    );
+
+    $isProfile = request()->routeIs(
+        'profile.*',
+        'client.profile.*',
+        'freelancer.profile.*'
+    );
+
+    $isMessages = request()->routeIs(
+        'client.messages.*',
+        'freelancer.messages.*',
+        'client.jobs.chat.*'
+    );
+
+    $isOrders = request()->routeIs(
+        'client.orders.*',
+        'freelancer.orders.*'
+    );
+
+    $isNotifications = request()->routeIs(
+        'notifications.*'
+    );
 @endphp
 
+
+{{-- ============================================================
+     DESKTOP NAVIGATION
+============================================================ --}}
+
 <nav
-    id="jasain-navbar"
-    class="fixed inset-x-0 top-0 z-50 border-b border-[#E7EEEA] bg-white shadow-[0_2px_14px_rgba(18,49,40,0.05)]"
+    class="fixed inset-x-0 top-0 z-50 hidden h-[72px] border-b border-slate-200/80 bg-white/95 backdrop-blur-xl lg:block"
 >
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto flex h-full max-w-7xl items-center px-6">
 
-        <div class="flex h-[72px] items-center justify-between">
-
-            {{-- =====================================================
-                LOGO
-            ====================================================== --}}
-            <a
-                href="{{ route('marketplace.home') }}"
-                class="group flex shrink-0 items-center gap-2.5"
+        {{-- Logo --}}
+        <a
+            href="{{ $homeUrl }}"
+            class="group flex shrink-0 items-center gap-3"
+        >
+            <div
+                class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-sm transition duration-200 group-hover:scale-105 group-hover:bg-blue-700"
             >
-                {{-- Logo --}}
-                <div
-                    class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0F6B3A] text-sm font-bold text-white transition duration-200 group-hover:scale-[1.03]"
+                <svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
                 >
-                    J
+                    <path d="M12 3v18"/>
+                    <path d="M5 8h14"/>
+                    <path d="M7 8c0 4 2 6 5 6s5-2 5-6"/>
+                    <path d="M5 18h14"/>
+                </svg>
+            </div>
+
+            <div class="leading-none">
+                <div class="text-lg font-extrabold tracking-tight text-slate-900">
+                    ProKerja
                 </div>
 
-                {{-- Brand --}}
-                <div class="leading-none">
-
-                    <div
-                        class="text-[17px] font-semibold tracking-[-0.03em] text-[#123128]"
-                    >
-                        JASAIN
-                    </div>
-
-                    <div
-                        class="mt-1 text-[8px] font-medium uppercase tracking-[0.09em] text-[#8B9B94]"
-                    >
-                        Marketplace Jasa
-                    </div>
-
+                <div class="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">
+                    Marketplace Jasa
                 </div>
+            </div>
+        </a>
+
+
+        {{-- Main Menu --}}
+        <nav class="ml-10 flex h-full items-center gap-2">
+
+            {{-- Beranda --}}
+            <a
+                href="{{ $homeUrl }}"
+                class="{{ $isHome
+                    ? 'bg-blue-50 text-[#2563EB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}
+                    inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition"
+            >
+                <svg
+                    class="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path d="m3 10 9-7 9 7"/>
+                    <path d="M5 9v11h14V9"/>
+                    <path d="M9 20v-6h6v6"/>
+                </svg>
+
+                <span>Beranda</span>
             </a>
 
 
-            {{-- =====================================================
-                DESKTOP NAVIGATION
-            ====================================================== --}}
-            <div class="hidden items-center gap-7 lg:flex">
-
-                {{-- Beranda --}}
-                <a
-                    href="{{ route('marketplace.home') }}"
-                    class="jasain-nav-link relative py-2 text-[13px] font-medium transition-colors duration-200
-                    {{ $isHome ? 'text-[#0F6B3A]' : 'text-[#40564C] hover:text-[#0F6B3A]' }}"
+            {{-- Cari Jasa --}}
+            <a
+                href="{{ $searchUrl }}"
+                class="{{ $isSearch
+                    ? 'bg-blue-50 text-[#2563EB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}
+                    inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition"
+            >
+                <svg
+                    class="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
                 >
-                    <span>
-                        Beranda
-                    </span>
+                    <circle cx="11" cy="11" r="7"/>
+                    <path d="m20 20-4-4"/>
+                </svg>
 
-                    @if ($isHome)
-                        <span
-                            class="absolute -bottom-1 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-[#1E9E5A]"
-                        ></span>
-                    @endif
+                <span>Cari Jasa</span>
+            </a>
+
+
+            {{-- Kategori --}}
+            <a
+                href="{{ $searchUrl }}#kategori"
+                class="inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+            >
+                <svg
+                    class="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path d="M4 5h6v6H4z"/>
+                    <path d="M14 5h6v6h-6z"/>
+                    <path d="M4 15h6v4H4z"/>
+                    <path d="M14 15h6v4h-6z"/>
+                </svg>
+
+                <span>Kategori</span>
+            </a>
+
+
+            {{-- JobBoard --}}
+            <a
+                href="{{ $jobsUrl }}"
+                class="{{ $isJobs
+                    ? 'bg-blue-50 text-[#2563EB]'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}
+                    inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition"
+            >
+                <svg
+                    class="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <rect x="3" y="5" width="18" height="15" rx="2"/>
+                    <path d="M8 5V3h8v2"/>
+                    <path d="M3 10h18"/>
+                    <path d="M9 14h6"/>
+                </svg>
+
+                <span>JobBoard</span>
+            </a>
+
+        </nav>
+
+
+        {{-- Right Side --}}
+        <div class="ml-auto flex items-center gap-3">
+
+            @auth
+
+                {{-- Notification --}}
+                <a
+                    href="{{ $notificationUrl }}"
+                    class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+                    aria-label="Notifikasi"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+                        <path d="M10 21h4"/>
+                    </svg>
+
+                    <span
+                        id="marketplace-notification-badge"
+                        class="absolute right-1 top-1 hidden min-w-[17px] rounded-full bg-rose-500 px-1 text-center text-[9px] font-bold leading-[17px] text-white"
+                    ></span>
                 </a>
 
 
-                {{-- Cari Jasa --}}
-                <a
-                    href="{{ route('marketplace.search') }}"
-                    class="jasain-nav-link relative py-2 text-[13px] font-medium transition-colors duration-200
-                    {{
-                        request()->routeIs('marketplace.search') ||
-                        request()->routeIs('marketplace.category')
-                            ? 'text-[#0F6B3A]'
-                            : 'text-[#40564C] hover:text-[#0F6B3A]'
-                    }}"
-                >
-                    <span>
-                        Cari Jasa
-                    </span>
+                {{-- Profile --}}
+                <div class="relative">
 
-                    @if (
-                        request()->routeIs('marketplace.search') ||
-                        request()->routeIs('marketplace.category')
-                    )
-                        <span
-                            class="absolute -bottom-1 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-[#1E9E5A]"
-                        ></span>
-                    @endif
-                </a>
-
-
-                {{-- =================================================
-                    CLIENT MENU
-                ================================================== --}}
-                @auth
-                    @if ($isClient)
-
-                        {{-- Dashboard --}}
-                        <a
-                            href="{{ route('client.dashboard') }}"
-                            class="relative py-2 text-[13px] font-medium transition-colors duration-200
-                            {{
-                                request()->routeIs('client.dashboard')
-                                    ? 'text-[#0F6B3A]'
-                                    : 'text-[#40564C] hover:text-[#0F6B3A]'
-                            }}"
-                        >
-                            <span>
-                                Dashboard
-                            </span>
-
-                            @if (request()->routeIs('client.dashboard'))
-                                <span
-                                    class="absolute -bottom-1 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-[#1E9E5A]"
-                                ></span>
-                            @endif
-                        </a>
-
-
-                        {{-- Pesanan --}}
-                        <a
-                            href="{{ route('client.orders.index') }}"
-                            class="relative py-2 text-[13px] font-medium transition-colors duration-200
-                            {{
-                                request()->routeIs('client.orders.*')
-                                    ? 'text-[#0F6B3A]'
-                                    : 'text-[#40564C] hover:text-[#0F6B3A]'
-                            }}"
-                        >
-                            <span>
-                                Pesanan
-                            </span>
-
-                            @if (request()->routeIs('client.orders.*'))
-                                <span
-                                    class="absolute -bottom-1 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-[#1E9E5A]"
-                                ></span>
-                            @endif
-                        </a>
-
-
-                        {{-- Favorit --}}
-                        <a
-                            href="{{ route('client.favorites.index') }}"
-                            class="relative py-2 text-[13px] font-medium transition-colors duration-200
-                            {{
-                                request()->routeIs('client.favorites.*')
-                                    ? 'text-[#0F6B3A]'
-                                    : 'text-[#40564C] hover:text-[#0F6B3A]'
-                            }}"
-                        >
-                            <span>
-                                Favorit
-                            </span>
-
-                            @if (request()->routeIs('client.favorites.*'))
-                                <span
-                                    class="absolute -bottom-1 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-[#1E9E5A]"
-                                ></span>
-                            @endif
-                        </a>
-
-
-                    @elseif ($isFreelancer)
-
-                        {{-- =================================================
-                            FREELANCER MENU
-                        ================================================== --}}
-
-                        {{-- Dashboard --}}
-                        <a
-                            href="{{ route('freelancer.dashboard') }}"
-                            class="relative py-2 text-[13px] font-medium transition-colors duration-200
-                            {{
-                                request()->routeIs('freelancer.dashboard')
-                                    ? 'text-[#0F6B3A]'
-                                    : 'text-[#40564C] hover:text-[#0F6B3A]'
-                            }}"
-                        >
-                            <span>
-                                Dashboard
-                            </span>
-
-                            @if (request()->routeIs('freelancer.dashboard'))
-                                <span
-                                    class="absolute -bottom-1 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-[#1E9E5A]"
-                                ></span>
-                            @endif
-                        </a>
-
-
-                        {{-- Jasa Saya --}}
-                        <a
-                            href="{{ route('freelancer.services.index') }}"
-                            class="relative py-2 text-[13px] font-medium transition-colors duration-200
-                            {{
-                                request()->routeIs('freelancer.services.*')
-                                    ? 'text-[#0F6B3A]'
-                                    : 'text-[#40564C] hover:text-[#0F6B3A]'
-                            }}"
-                        >
-                            <span>
-                                Jasa Saya
-                            </span>
-
-                            @if (request()->routeIs('freelancer.services.*'))
-                                <span
-                                    class="absolute -bottom-1 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-[#1E9E5A]"
-                                ></span>
-                            @endif
-                        </a>
-
-                    @endif
-                @endauth
-
-            </div>
-
-
-            {{-- =====================================================
-                DESKTOP RIGHT SIDE
-            ====================================================== --}}
-            <div class="hidden items-center gap-2.5 lg:flex">
-
-                @guest
-
-                    {{-- Search --}}
-                    <a
-                        href="{{ route('marketplace.search') }}"
-                        class="flex h-9 w-9 items-center justify-center rounded-full text-[#61736A] transition duration-200 hover:bg-[#F2F7F4] hover:text-[#0F6B3A]"
-                        aria-label="Cari jasa"
-                        title="Cari jasa"
+                    <button
+                        type="button"
+                        id="marketplace-profile-button"
+                        class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 transition hover:border-blue-200 hover:bg-blue-50/50"
                     >
-                        <i class="bi bi-search text-[16px]"></i>
-                    </a>
 
+                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 text-sm font-bold text-blue-700">
+                            {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
+                        </div>
 
-                    {{-- Masuk --}}
-                    <a
-                        href="{{ route('login') }}"
-                        class="inline-flex h-9 items-center justify-center rounded-full border border-[#D5E1DB] px-4 text-[12px] font-medium text-[#3F5149] transition duration-200 hover:border-[#BBD3C4] hover:bg-[#F4F8F5] hover:text-[#0F6B3A]"
-                    >
-                        Masuk
-                    </a>
-
-
-                    {{-- Daftar --}}
-                    <a
-                        href="{{ route('register') }}"
-                        class="inline-flex h-9 items-center justify-center rounded-full bg-[#1E9E5A] px-5 text-[12px] font-semibold text-white transition duration-200 hover:bg-[#178C4F]"
-                    >
-                        Daftar
-                    </a>
-
-
-                @else
-
-                    {{-- Message --}}
-                    @if ($isClient)
-
-                        <a
-                            href="{{ route('client.messages.index') }}"
-                            class="flex h-9 w-9 items-center justify-center rounded-full text-[#60736A] transition duration-200 hover:bg-[#F2F7F4] hover:text-[#0F6B3A]"
-                            title="Pesan"
-                            aria-label="Pesan"
-                        >
-                            <i class="bi bi-chat-dots text-[16px]"></i>
-                        </a>
-
-                    @elseif ($isFreelancer)
-
-                        <a
-                            href="{{ route('freelancer.messages.index') }}"
-                            class="flex h-9 w-9 items-center justify-center rounded-full text-[#60736A] transition duration-200 hover:bg-[#F2F7F4] hover:text-[#0F6B3A]"
-                            title="Pesan"
-                            aria-label="Pesan"
-                        >
-                            <i class="bi bi-chat-dots text-[16px]"></i>
-                        </a>
-
-                    @endif
-
-
-                    {{-- Divider --}}
-                    <div class="mx-1 h-5 w-px bg-[#E0E8E3]"></div>
-
-
-                    {{-- Profile --}}
-                    <a
-                        href="{{ $profileRoute }}"
-                        class="flex items-center rounded-full px-1 py-1 transition duration-200 hover:bg-[#F3F7F4]"
-                        title="{{ $displayName }}"
-                    >
-                        @if ($avatarUrl)
-
-                            <img
-                                src="{{ $avatarUrl }}"
-                                alt="{{ $displayName }}"
-                                class="h-8 w-8 rounded-full object-cover ring-2 ring-[#E4EEE8]"
-                            >
-
-                        @else
-
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-full bg-[#EAF7EF] text-xs font-semibold text-[#0F6B3A]"
-                            >
-                                {{ strtoupper(substr($displayName, 0, 1)) }}
+                        <div class="hidden text-left xl:block">
+                            <div class="max-w-[120px] truncate text-sm font-semibold text-slate-800">
+                                {{ auth()->user()->name }}
                             </div>
 
-                        @endif
-                    </a>
-
-
-                    {{-- Logout --}}
-                    <form
-                        method="POST"
-                        action="{{ route('logout') }}"
-                    >
-                        @csrf
-
-                        <button
-                            type="submit"
-                            class="flex h-9 w-9 items-center justify-center rounded-full text-[#84928C] transition duration-200 hover:bg-red-50 hover:text-red-500"
-                            title="Keluar"
-                            aria-label="Keluar"
-                        >
-                            <i class="bi bi-box-arrow-right text-[16px]"></i>
-                        </button>
-                    </form>
-
-                @endguest
-
-            </div>
-
-
-            {{-- =====================================================
-                MOBILE RIGHT SIDE
-            ====================================================== --}}
-            <div class="flex items-center gap-2 lg:hidden">
-
-                @guest
-
-                    {{-- Mobile Login --}}
-                    <a
-                        href="{{ route('login') }}"
-                        class="hidden min-[400px]:inline-flex h-9 items-center rounded-full px-2.5 text-[12px] font-medium text-[#40564C] transition hover:bg-[#F3F7F4] hover:text-[#0F6B3A]"
-                    >
-                        Masuk
-                    </a>
-
-
-                    {{-- Mobile Register --}}
-                    <a
-                        href="{{ route('register') }}"
-                        class="inline-flex h-9 items-center rounded-full bg-[#1E9E5A] px-3.5 text-[12px] font-semibold text-white transition hover:bg-[#178C4F]"
-                    >
-                        Daftar
-                    </a>
-
-                @else
-
-                    {{-- Mobile Profile --}}
-                    <a
-                        href="{{ $profileRoute }}"
-                        class="flex items-center"
-                        aria-label="Profil"
-                    >
-                        @if ($avatarUrl)
-
-                            <img
-                                src="{{ $avatarUrl }}"
-                                alt="{{ $displayName }}"
-                                class="h-8 w-8 rounded-full object-cover ring-2 ring-[#E4EEE8]"
-                            >
-
-                        @else
-
-                            <div
-                                class="flex h-8 w-8 items-center justify-center rounded-full bg-[#EAF7EF] text-xs font-semibold text-[#0F6B3A]"
-                            >
-                                {{ strtoupper(substr($displayName, 0, 1)) }}
+                            <div class="text-[11px] font-medium capitalize text-slate-400">
+                                {{ $role ?? 'User' }}
                             </div>
+                        </div>
 
-                        @endif
-                    </a>
+                        <svg
+                            class="h-4 w-4 text-slate-400"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="m6 9 6 6 6-6"/>
+                        </svg>
 
-                @endguest
-
-
-                {{-- Mobile Menu Button --}}
-                <button
-                    id="jasain-mobile-menu-button"
-                    type="button"
-                    class="flex h-9 w-9 items-center justify-center rounded-full border border-[#DDE7E1] bg-white text-[#40564C] transition hover:border-[#BFD6C7] hover:bg-[#F2F7F4] hover:text-[#0F6B3A]"
-                    aria-label="Buka menu"
-                    aria-expanded="false"
-                >
-                    <i
-                        id="jasain-mobile-menu-icon"
-                        class="bi bi-list text-[19px]"
-                    ></i>
-                </button>
-
-            </div>
-
-        </div>
-    </div>
+                    </button>
 
 
-    {{-- =========================================================
-        MOBILE MENU
-    ========================================================== --}}
-    <div
-        id="mobile-marketplace-menu"
-        class="hidden border-t border-[#E7EEEA] bg-white lg:hidden"
-    >
+                    {{-- Profile Dropdown --}}
+                    <div
+                        id="marketplace-profile-menu"
+                        class="absolute right-0 top-[52px] hidden w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10"
+                    >
 
-        <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6">
+                        <div class="border-b border-slate-100 bg-slate-50/70 p-4">
+                            <div class="flex items-center gap-3">
 
-            <div class="space-y-1">
+                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 font-bold text-blue-700">
+                                    {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
+                                </div>
 
-                {{-- Beranda --}}
+                                <div class="min-w-0">
+                                    <div class="truncate text-sm font-bold text-slate-900">
+                                        {{ auth()->user()->name }}
+                                    </div>
+
+                                    <div class="truncate text-xs text-slate-500">
+                                        {{ auth()->user()->email }}
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+
+                        <div class="p-2">
+
+                            @if($role === 'client')
+
+                                <a href="{{ $dashboardUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Dashboard
+                                </a>
+
+                                <a href="{{ $projectsUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Proyek Saya
+                                </a>
+
+                                <a href="{{ $ordersUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Pesanan
+                                </a>
+
+                                <a href="{{ $messagesUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Pesan
+                                </a>
+
+                                <a href="{{ $favoritesUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Favorit
+                                </a>
+
+                            @elseif($role === 'freelancer')
+
+                                <a href="{{ $dashboardUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Dashboard
+                                </a>
+
+                                <a href="{{ $projectsUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Cari Job
+                                </a>
+
+                                <a href="{{ $servicesUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Layanan Saya
+                                </a>
+
+                                <a href="{{ $ordersUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Pesanan
+                                </a>
+
+                                <a href="{{ $messagesUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Pesan
+                                </a>
+
+                                <a href="{{ $walletUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Wallet
+                                </a>
+
+                                <a href="{{ $withdrawalsUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Penarikan
+                                </a>
+
+                                <a href="{{ $verificationUrl }}"
+                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Verifikasi
+                                </a>
+
+                            @elseif($role === 'admin')
+
+                                <a href="{{ $adminDashboardUrl }}"
+                                   class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Admin Dashboard
+                                </a>
+
+                                <a href="{{ $adminUsersUrl }}"
+                                   class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Pengguna
+                                </a>
+
+                                <a href="{{ $adminServicesUrl }}"
+                                   class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Layanan
+                                </a>
+
+                                <a href="{{ $adminCategoriesUrl }}"
+                                   class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    Kategori
+                                </a>
+
+                            @endif
+
+                            <a href="{{ $profileUrl }}"
+                               class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                Profil
+                            </a>
+
+                        </div>
+
+
+                        <div class="border-t border-slate-100 p-2">
+
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+
+                                <button
+                                    type="submit"
+                                    class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+                                >
+                                    <svg
+                                        class="h-4 w-4"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <path d="M10 17l5-5-5-5"/>
+                                        <path d="M15 12H3"/>
+                                        <path d="M21 19V5a2 2 0 0 0-2-2h-6"/>
+                                    </svg>
+
+                                    Keluar
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            @else
+
                 <a
-                    href="{{ route('marketplace.home') }}"
-                    class="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition
-                    {{
-                        $isHome
-                            ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                            : 'text-[#40564C] hover:bg-[#F5F8F6] hover:text-[#0F6B3A]'
-                    }}"
+                    href="{{ Route::has('login') ? route('login') : '#' }}"
+                    class="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
                 >
-                    <i class="bi bi-house-door text-[16px]"></i>
-
-                    <span>
-                        Beranda
-                    </span>
+                    Masuk
                 </a>
 
-
-                {{-- Cari Jasa --}}
                 <a
-                    href="{{ route('marketplace.search') }}"
-                    class="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-[13px] font-medium transition
-                    {{
-                        request()->routeIs('marketplace.search') ||
-                        request()->routeIs('marketplace.category')
-                            ? 'bg-[#EAF7EF] text-[#0F6B3A]'
-                            : 'text-[#40564C] hover:bg-[#F5F8F6] hover:text-[#0F6B3A]'
-                    }}"
+                    href="{{ Route::has('register') ? route('register') : '#' }}"
+                    class="rounded-xl bg-[#2563EB] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
                 >
-                    <i class="bi bi-search text-[16px]"></i>
-
-                    <span>
-                        Cari Jasa
-                    </span>
+                    Daftar
                 </a>
 
+            @endauth
 
-                @auth
-
-                    <div class="my-2 border-t border-[#EDF2EF]"></div>
-
-                    {{-- CLIENT --}}
-                    @if ($isClient)
-
-                        {{-- Dashboard --}}
-                        <a
-                            href="{{ route('client.dashboard') }}"
-                            class="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-[13px] font-medium text-[#40564C] transition hover:bg-[#F5F8F6] hover:text-[#0F6B3A]"
-                        >
-                            <i class="bi bi-grid text-[16px]"></i>
-
-                            <span>
-                                Dashboard
-                            </span>
-                        </a>
-
-
-                        {{-- Pesanan --}}
-                        <a
-                            href="{{ route('client.orders.index') }}"
-                            class="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-[13px] font-medium text-[#40564C] transition hover:bg-[#F5F8F6] hover:text-[#0F6B3A]"
-                        >
-                            <i class="bi bi-bag text-[16px]"></i>
-
-                            <span>
-                                Pesanan
-                            </span>
-                        </a>
-
-
-                        {{-- Favorit --}}
-                        <a
-                            href="{{ route('client.favorites.index') }}"
-                            class="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-[13px] font-medium text-[#40564C] transition hover:bg-[#F5F8F6] hover:text-[#0F6B3A]"
-                        >
-                            <i class="bi bi-heart text-[16px]"></i>
-
-                            <span>
-                                Favorit
-                            </span>
-                        </a>
-
-
-                        {{-- Pesan --}}
-                        <a
-                            href="{{ route('client.messages.index') }}"
-                            class="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-[13px] font-medium text-[#40564C] transition hover:bg-[#F5F8F6] hover:text-[#0F6B3A]"
-                        >
-                            <i class="bi bi-chat-dots text-[16px]"></i>
-
-                            <span>
-                                Pesan
-                            </span>
-                        </a>
-
-
-                    {{-- FREELANCER --}}
-                    @elseif ($isFreelancer)
-
-                        {{-- Dashboard --}}
-                        <a
-                            href="{{ route('freelancer.dashboard') }}"
-                            class="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-[13px] font-medium text-[#40564C] transition hover:bg-[#F5F8F6] hover:text-[#0F6B3A]"
-                        >
-                            <i class="bi bi-grid text-[16px]"></i>
-
-                            <span>
-                                Dashboard
-                            </span>
-                        </a>
-
-
-                        {{-- Jasa Saya --}}
-                        <a
-                            href="{{ route('freelancer.services.index') }}"
-                            class="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-[13px] font-medium text-[#40564C] transition hover:bg-[#F5F8F6] hover:text-[#0F6B3A]"
-                        >
-                            <i class="bi bi-briefcase text-[16px]"></i>
-
-                            <span>
-                                Jasa Saya
-                            </span>
-                        </a>
-
-
-                        {{-- Pesan --}}
-                        <a
-                            href="{{ route('freelancer.messages.index') }}"
-                            class="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-[13px] font-medium text-[#40564C] transition hover:bg-[#F5F8F6] hover:text-[#0F6B3A]"
-                        >
-                            <i class="bi bi-chat-dots text-[16px]"></i>
-
-                            <span>
-                                Pesan
-                            </span>
-                        </a>
-
-                    @endif
-
-
-                    {{-- Profile --}}
-                    <a
-                        href="{{ $profileRoute }}"
-                        class="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-[13px] font-medium text-[#40564C] transition hover:bg-[#F5F8F6] hover:text-[#0F6B3A]"
-                    >
-                        <i class="bi bi-person text-[16px]"></i>
-
-                        <span>
-                            Profil
-                        </span>
-                    </a>
-
-
-                    {{-- Logout --}}
-                    <div class="my-2 border-t border-[#EDF2EF]"></div>
-
-                    <form
-                        method="POST"
-                        action="{{ route('logout') }}"
-                    >
-                        @csrf
-
-                        <button
-                            type="submit"
-                            class="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 text-left text-[13px] font-medium text-red-500 transition hover:bg-red-50"
-                        >
-                            <i class="bi bi-box-arrow-right text-[16px]"></i>
-
-                            <span>
-                                Keluar
-                            </span>
-                        </button>
-                    </form>
-
-                @else
-
-                    {{-- Guest additional menu --}}
-                    <div class="my-2 border-t border-[#EDF2EF]"></div>
-
-                    {{-- Mobile Login --}}
-                    <a
-                        href="{{ route('login') }}"
-                        class="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-[13px] font-medium text-[#40564C] transition hover:bg-[#F5F8F6] hover:text-[#0F6B3A]"
-                    >
-                        <i class="bi bi-box-arrow-in-right text-[16px]"></i>
-
-                        <span>
-                            Masuk
-                        </span>
-                    </a>
-
-
-                    {{-- Mobile Register --}}
-                    <a
-                        href="{{ route('register') }}"
-                        class="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-[13px] font-medium text-[#40564C] transition hover:bg-[#F5F8F6] hover:text-[#0F6B3A]"
-                    >
-                        <i class="bi bi-person-plus text-[16px]"></i>
-
-                        <span>
-                            Daftar
-                        </span>
-                    </a>
-
-                @endauth
-
-            </div>
         </div>
+
     </div>
 </nav>
 
 
-{{-- ==========================================================
-    MOBILE MENU SCRIPT
-=========================================================== --}}
+{{-- ============================================================
+     MOBILE TOP NAVIGATION
+============================================================ --}}
+
+<nav
+    class="fixed inset-x-0 top-0 z-50 flex h-16 items-center border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-xl lg:hidden"
+>
+
+    {{-- Logo --}}
+    <a href="{{ $homeUrl }}" class="flex items-center gap-2">
+
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2563EB] text-white">
+            <svg
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path d="M12 3v18"/>
+                <path d="M5 8h14"/>
+                <path d="M7 8c0 4 2 6 5 6s5-2 5-6"/>
+                <path d="M5 18h14"/>
+            </svg>
+        </div>
+
+        <span class="text-base font-extrabold tracking-tight text-slate-900">
+            ProKerja
+        </span>
+
+    </a>
+
+
+    <div class="ml-auto flex items-center gap-1">
+
+        {{-- Quick JobBoard --}}
+        <a
+            href="{{ $jobsUrl }}"
+            class="flex h-10 items-center rounded-xl px-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+        >
+            JobBoard
+        </a>
+
+
+        @auth
+
+            {{-- Notification --}}
+            <a
+                href="{{ $notificationUrl }}"
+                class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500"
+            >
+                <svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+                    <path d="M10 21h4"/>
+                </svg>
+
+                <span
+                    id="marketplace-mobile-notification-badge"
+                    class="absolute right-1 top-1 hidden min-w-[17px] rounded-full bg-rose-500 px-1 text-center text-[9px] font-bold leading-[17px] text-white"
+                ></span>
+            </a>
+
+        @endauth
+
+
+        {{-- More --}}
+        <button
+            type="button"
+            id="marketplace-mobile-menu-button"
+            class="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-50"
+            aria-label="Menu"
+        >
+            <svg
+                class="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <circle cx="5" cy="12" r="1"/>
+                <circle cx="12" cy="12" r="1"/>
+                <circle cx="19" cy="12" r="1"/>
+            </svg>
+        </button>
+
+    </div>
+
+</nav>
+
+
+{{-- ============================================================
+     MOBILE MORE MENU
+============================================================ --}}
+
+<div
+    id="marketplace-mobile-menu"
+    class="fixed inset-x-0 top-16 z-40 hidden border-b border-slate-200 bg-white shadow-xl lg:hidden"
+>
+
+    <div class="mx-auto max-w-7xl p-4">
+
+        <div class="grid grid-cols-2 gap-2">
+
+            <a
+                href="{{ $homeUrl }}"
+                class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+            >
+                Beranda
+            </a>
+
+            <a
+                href="{{ $searchUrl }}"
+                class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+            >
+                Cari Jasa
+            </a>
+
+            <a
+                href="{{ $searchUrl }}#kategori"
+                class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+            >
+                Kategori
+            </a>
+
+            @auth
+
+                @if($role === 'client')
+
+                    <a
+                        href="{{ $dashboardUrl }}"
+                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                    >
+                        Dashboard
+                    </a>
+
+                    <a
+                        href="{{ $projectsUrl }}"
+                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                    >
+                        Proyek Saya
+                    </a>
+
+                    <a
+                        href="{{ $favoritesUrl }}"
+                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                    >
+                        Favorit
+                    </a>
+
+                @elseif($role === 'freelancer')
+
+                    <a
+                        href="{{ $dashboardUrl }}"
+                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                    >
+                        Dashboard
+                    </a>
+
+                    <a
+                        href="{{ $projectsUrl }}"
+                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                    >
+                        Cari Job
+                    </a>
+
+                    <a
+                        href="{{ $servicesUrl }}"
+                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                    >
+                        Layanan Saya
+                    </a>
+
+                    <a
+                        href="{{ $walletUrl }}"
+                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                    >
+                        Wallet
+                    </a>
+
+                    <a
+                        href="{{ $withdrawalsUrl }}"
+                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                    >
+                        Penarikan
+                    </a>
+
+                    <a
+                        href="{{ $verificationUrl }}"
+                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                    >
+                        Verifikasi
+                    </a>
+
+                @elseif($role === 'admin')
+
+                    <a
+                        href="{{ $adminDashboardUrl }}"
+                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                    >
+                        Admin Dashboard
+                    </a>
+
+                    <a
+                        href="{{ $adminUsersUrl }}"
+                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                    >
+                        Pengguna
+                    </a>
+
+                @endif
+
+                <a
+                    href="{{ $profileUrl }}"
+                    class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                >
+                    Profil
+                </a>
+
+                <form
+                    method="POST"
+                    action="{{ route('logout') }}"
+                    class="col-span-2"
+                >
+                    @csrf
+
+                    <button
+                        type="submit"
+                        class="w-full rounded-2xl border border-rose-100 bg-rose-50 p-4 text-left text-sm font-semibold text-rose-600"
+                    >
+                        Keluar
+                    </button>
+                </form>
+
+            @else
+
+                <a
+                    href="{{ Route::has('login') ? route('login') : '#' }}"
+                    class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                >
+                    Masuk
+                </a>
+
+                <a
+                    href="{{ Route::has('register') ? route('register') : '#' }}"
+                    class="rounded-2xl bg-[#2563EB] p-4 text-sm font-semibold text-white"
+                >
+                    Daftar
+                </a>
+
+            @endauth
+
+        </div>
+
+    </div>
+
+</div>
+
+
+{{-- ============================================================
+     MOBILE BOTTOM NAVIGATION
+============================================================ --}}
+
+<nav
+    class="fixed inset-x-0 bottom-0 z-50 h-[72px] border-t border-slate-200/80 bg-white/95 px-3 pb-safe backdrop-blur-xl lg:hidden"
+>
+
+    <div class="mx-auto grid h-full max-w-lg grid-cols-5 items-center">
+
+        {{-- Home --}}
+        <a
+            href="{{ $homeUrl }}"
+            class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold {{ $isHome ? 'text-[#2563EB]' : 'text-slate-400' }}"
+        >
+            <svg
+                class="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path d="m3 10 9-7 9 7"/>
+                <path d="M5 9v11h14V9"/>
+                <path d="M9 20v-6h6v6"/>
+            </svg>
+
+            <span>Beranda</span>
+        </a>
+
+
+        {{-- Search --}}
+        <a
+            href="{{ $searchUrl }}"
+            class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold {{ $isSearch ? 'text-[#2563EB]' : 'text-slate-400' }}"
+        >
+            <svg
+                class="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <circle cx="11" cy="11" r="7"/>
+                <path d="m20 20-4-4"/>
+            </svg>
+
+            <span>Cari</span>
+        </a>
+
+
+        @auth
+
+            {{-- Messages --}}
+            <a
+                href="{{ $messagesUrl }}"
+                class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold {{ $isMessages ? 'text-[#2563EB]' : 'text-slate-400' }}"
+            >
+                <svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-4.5A7.5 7.5 0 1 1 20 11.5Z"/>
+                </svg>
+
+                <span>Pesan</span>
+            </a>
+
+
+            {{-- Orders --}}
+            <a
+                href="{{ $ordersUrl }}"
+                class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold {{ $isOrders ? 'text-[#2563EB]' : 'text-slate-400' }}"
+            >
+                <svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <rect x="4" y="4" width="16" height="16" rx="2"/>
+                    <path d="M8 9h8"/>
+                    <path d="M8 13h5"/>
+                </svg>
+
+                <span>Pesanan</span>
+            </a>
+
+
+            {{-- Profile --}}
+            <a
+                href="{{ $profileUrl }}"
+                class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold {{ $isProfile ? 'text-[#2563EB]' : 'text-slate-400' }}"
+            >
+                <div class="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-500">
+                    {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
+                </div>
+
+                <span>Profil</span>
+            </a>
+
+        @else
+
+            {{-- JobBoard --}}
+            <a
+                href="{{ $jobsUrl }}"
+                class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold {{ $isJobs ? 'text-[#2563EB]' : 'text-slate-400' }}"
+            >
+                <svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <rect x="3" y="5" width="18" height="15" rx="2"/>
+                    <path d="M8 5V3h8v2"/>
+                    <path d="M3 10h18"/>
+                </svg>
+
+                <span>JobBoard</span>
+            </a>
+
+
+            {{-- Login --}}
+            <a
+                href="{{ Route::has('login') ? route('login') : '#' }}"
+                class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold text-slate-400"
+            >
+                <svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path d="M10 17l5-5-5-5"/>
+                    <path d="M15 12H3"/>
+                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"/>
+                </svg>
+
+                <span>Masuk</span>
+            </a>
+
+
+            {{-- Register --}}
+            <a
+                href="{{ Route::has('register') ? route('register') : '#' }}"
+                class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold text-slate-400"
+            >
+                <svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M5 21a7 7 0 0 1 14 0"/>
+                </svg>
+
+                <span>Daftar</span>
+            </a>
+
+        @endauth
+
+    </div>
+
+</nav>
+
+
+{{-- ============================================================
+     NAVBAR SPACER
+     Ini yang memastikan konten halaman tidak tertutup navbar.
+============================================================ --}}
+
+<div
+    class="h-16 w-full lg:h-[72px]"
+    aria-hidden="true"
+></div>
+
+
+{{-- ============================================================
+     JAVASCRIPT
+============================================================ --}}
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const button = document.getElementById('jasain-mobile-menu-button');
-        const menu = document.getElementById('mobile-marketplace-menu');
-        const icon = document.getElementById('jasain-mobile-menu-icon');
+document.addEventListener('DOMContentLoaded', function () {
 
-        if (!button || !menu || !icon) {
-            return;
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | Desktop Profile Dropdown
+    |--------------------------------------------------------------------------
+    */
+    const profileButton = document.getElementById(
+        'marketplace-profile-button'
+    );
 
-        function openMenu() {
-            menu.classList.remove('hidden');
+    const profileMenu = document.getElementById(
+        'marketplace-profile-menu'
+    );
 
-            button.setAttribute('aria-expanded', 'true');
+    if (profileButton && profileMenu) {
 
-            button.setAttribute('aria-label', 'Tutup menu');
+        profileButton.addEventListener('click', function (event) {
 
-            icon.classList.remove('bi-list');
-            icon.classList.add('bi-x-lg');
-        }
+            event.stopPropagation();
 
-        function closeMenu() {
-            menu.classList.add('hidden');
+            profileMenu.classList.toggle('hidden');
 
-            button.setAttribute('aria-expanded', 'false');
+        });
 
-            button.setAttribute('aria-label', 'Buka menu');
+        document.addEventListener('click', function (event) {
 
-            icon.classList.remove('bi-x-lg');
-            icon.classList.add('bi-list');
-        }
-
-        button.addEventListener('click', function () {
-            const isOpen = button.getAttribute('aria-expanded') === 'true';
-
-            if (isOpen) {
-                closeMenu();
-            } else {
-                openMenu();
+            if (
+                !profileMenu.contains(event.target) &&
+                !profileButton.contains(event.target)
+            ) {
+                profileMenu.classList.add('hidden');
             }
+
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | Close mobile menu when clicking a menu link
-        |--------------------------------------------------------------------------
-        */
+    }
 
-        menu.querySelectorAll('a').forEach(function (link) {
-            link.addEventListener('click', function () {
-                closeMenu();
-            });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mobile More Menu
+    |--------------------------------------------------------------------------
+    */
+    const mobileMenuButton = document.getElementById(
+        'marketplace-mobile-menu-button'
+    );
+
+    const mobileMenu = document.getElementById(
+        'marketplace-mobile-menu'
+    );
+
+    if (mobileMenuButton && mobileMenu) {
+
+        mobileMenuButton.addEventListener('click', function () {
+
+            mobileMenu.classList.toggle('hidden');
+
         });
 
-        /*
-        |--------------------------------------------------------------------------
-        | Reset mobile menu when switching to desktop
-        |--------------------------------------------------------------------------
-        */
+        document.addEventListener('click', function (event) {
 
-        window.addEventListener('resize', function () {
-            if (window.innerWidth >= 1024) {
-                closeMenu();
+            if (
+                !mobileMenu.contains(event.target) &&
+                !mobileMenuButton.contains(event.target)
+            ) {
+                mobileMenu.classList.add('hidden');
             }
+
         });
-    });
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Hide Mobile Bottom Navigation While Typing
+    |--------------------------------------------------------------------------
+    */
+    const bottomNavigation = document.querySelector(
+        'nav.fixed.bottom-0'
+    );
+
+    if (bottomNavigation) {
+
+        document.addEventListener('focusin', function (event) {
+
+            const target = event.target;
+
+            if (
+                target.matches('input, textarea, select')
+            ) {
+                bottomNavigation.classList.add('translate-y-full');
+            }
+
+        });
+
+        document.addEventListener('focusout', function (event) {
+
+            setTimeout(function () {
+
+                const active = document.activeElement;
+
+                if (
+                    !active ||
+                    !active.matches('input, textarea, select')
+                ) {
+                    bottomNavigation.classList.remove(
+                        'translate-y-full'
+                    );
+                }
+
+            }, 100);
+
+        });
+
+    }
+
+});
 </script>

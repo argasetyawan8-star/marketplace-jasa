@@ -22,7 +22,7 @@ use App\Http\Controllers\Admin\ServiceModerationController as AdminServiceModera
 use App\Http\Controllers\Admin\CancellationController as AdminCancellationController;
 use App\Http\Controllers\Admin\DisputeController as AdminDisputeController;
 use App\Http\Controllers\Admin\RefundController as AdminRefundController;
-
+use App\Http\Controllers\Admin\BannerController as AdminBannerController;
 /*
 |--------------------------------------------------------------------------
 | Client Controllers
@@ -1271,6 +1271,51 @@ Route::middleware(['auth', 'role:admin'])
             '/refunds/{refund}/reject',
             [AdminRefundController::class, 'reject']
         )->name('refunds.reject');
+
+
+                /*
+        |--------------------------------------------------------------------------
+        | Banners
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/banners',
+            [AdminBannerController::class, 'index']
+        )->name('banners.index');
+
+        Route::get(
+            '/banners/create',
+            [AdminBannerController::class, 'create']
+        )->name('banners.create');
+
+        Route::post(
+            '/banners',
+            [AdminBannerController::class, 'store']
+        )->name('banners.store');
+
+        Route::get(
+            '/banners/{banner}/edit',
+            [AdminBannerController::class, 'edit']
+        )->name('banners.edit');
+
+        Route::put(
+            '/banners/{banner}',
+            [AdminBannerController::class, 'update']
+        )->name('banners.update');
+
+        Route::delete(
+            '/banners/{banner}',
+            [AdminBannerController::class, 'destroy']
+        )->name('banners.destroy');
+
+        Route::patch(
+            '/banners/{banner}/status',
+            [AdminBannerController::class, 'toggleStatus']
+        )->name('banners.status');
+
+        
+
     });
 
 /*
