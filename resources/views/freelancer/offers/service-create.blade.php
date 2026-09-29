@@ -1,156 +1,131 @@
 <x-layouts.freelancer title="Buat Penawaran">
 
-    <div class="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+
+<div class="min-h-screen bg-[#F8FAFC]">
+    <div class="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 
         {{-- Header --}}
         <div class="mb-6">
-
             <a
                 href="{{ route(
                     'freelancer.messages.show',
                     $conversation
                 ) }}"
-                class="inline-flex items-center gap-2 text-xs font-medium text-[#71837B] transition hover:text-[#0F6B3A]"
+                class="group inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-[#2563EB]"
             >
-                <i class="bi bi-arrow-left"></i>
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white transition group-hover:border-blue-200 group-hover:bg-blue-50">
+                    <i class="bi bi-arrow-left text-xs"></i>
+                </span>
                 Kembali ke percakapan
             </a>
 
-            <div class="mt-5">
-
-                <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
+            <div class="mt-6">
+                <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-[#2563EB]">
+                    <i class="bi bi-file-earmark-text"></i>
                     Penawaran Jasa
-                </p>
+                </div>
 
-                <h1 class="mt-1 text-2xl font-semibold tracking-[-0.03em] text-[#123128]">
+                <h1 class="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-[30px]">
                     Buat Penawaran
                 </h1>
 
-                <p class="mt-2 text-sm leading-6 text-[#71837B]">
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
                     Buat quotation sesuai kebutuhan client sebelum order dibuat.
                 </p>
-
             </div>
-
         </div>
-
 
         {{-- Error --}}
         @if ($errors->any())
-
-            <div class="mb-5 rounded-2xl border border-red-100 bg-red-50 px-4 py-4">
-
+            <div class="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4">
                 <div class="flex items-start gap-3">
-
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-red-500">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm">
                         <i class="bi bi-exclamation-circle"></i>
                     </div>
 
-                    <div>
-
-                        <p class="text-xs font-semibold text-red-700">
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-red-700">
                             Ada data yang perlu diperbaiki.
                         </p>
 
                         <ul class="mt-2 space-y-1 text-xs leading-5 text-red-600">
-
                             @foreach ($errors->all() as $error)
-
-                                <li>
-                                    {{ $error }}
-                                </li>
-
+                                <li>{{ $error }}</li>
                             @endforeach
-
                         </ul>
-
                     </div>
-
                 </div>
-
             </div>
-
         @endif
-
 
         {{-- Existing Active Offer --}}
         @if ($hasActiveOffer)
-
-            <div class="mb-5 rounded-2xl border border-[#E8DDC3] bg-[#FFF9EA] px-4 py-4">
-
+            <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
                 <div class="flex items-start gap-3">
-
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#9A6800]">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm">
                         <i class="bi bi-hourglass-split"></i>
                     </div>
 
-                    <div>
-
-                        <p class="text-xs font-semibold text-[#815A08]">
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-amber-800">
                             Masih ada quotation aktif
                         </p>
 
-                        <p class="mt-1 text-xs leading-5 text-[#94763A]">
-                            Tunggu client menerima atau menolak quotation sebelumnya sebelum membuat penawaran baru.
+                        <p class="mt-1 text-xs leading-5 text-amber-700">
+                            Tunggu client menerima atau menolak quotation sebelumnya
+                            sebelum membuat penawaran baru.
                         </p>
-
                     </div>
-
                 </div>
-
             </div>
-
         @endif
 
-
         {{-- Service Information --}}
-        <div class="mb-5 rounded-2xl border border-[#DDE9E2] bg-white">
+        <div class="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-            <div class="border-b border-[#E7EEE9] px-5 py-5">
+            <div class="border-b border-slate-100 px-5 py-5 sm:px-6">
+                <div class="flex items-start gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#2563EB]">
+                        <i class="bi bi-briefcase"></i>
+                    </div>
 
-                <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#1E9E5A]">
-                    Jasa
-                </p>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#2563EB]">
+                            Jasa
+                        </p>
 
-                <h2 class="mt-1 text-sm font-semibold text-[#123128]">
-                    {{ $conversation->service->title }}
-                </h2>
+                        <h2 class="mt-1 truncate text-base font-bold text-slate-900">
+                            {{ $conversation->service->title }}
+                        </h2>
 
-                <div class="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-[#82928B]">
+                        <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                            @if ($conversation->service->category)
+                                <span>
+                                    {{ $conversation->service->category->name }}
+                                </span>
+                            @endif
 
-                    @if ($conversation->service->category)
+                            @if ($conversation->service->subcategory)
+                                <span class="text-slate-300">•</span>
 
-                        <span>
-                            {{ $conversation->service->category->name }}
-                        </span>
-
-                    @endif
-
-                    @if ($conversation->service->subcategory)
-
-                        <span class="text-[#C6D0CB]">
-                            •
-                        </span>
-
-                        <span>
-                            {{ $conversation->service->subcategory->name }}
-                        </span>
-
-                    @endif
-
+                                <span>
+                                    {{ $conversation->service->subcategory->name }}
+                                </span>
+                            @endif
+                        </div>
+                    </div>
                 </div>
-
             </div>
 
-            <div class="grid gap-3 px-5 py-5 sm:grid-cols-3">
+            <div class="grid gap-3 px-5 py-5 sm:grid-cols-3 sm:px-6">
 
-                <div class="rounded-xl bg-[#F8FBF9] px-4 py-3">
-
-                    <p class="text-[9px] text-[#8C9B95]">
+                {{-- Starting Price --}}
+                <div class="rounded-xl bg-slate-50 p-4">
+                    <p class="text-[10px] font-medium text-slate-400">
                         Harga mulai
                     </p>
 
-                    <p class="mt-1 text-sm font-semibold text-[#18382E]">
+                    <p class="mt-1 text-sm font-bold text-slate-800">
                         Rp {{ number_format(
                             (float) $conversation->service->starting_price,
                             0,
@@ -158,54 +133,54 @@
                             '.'
                         ) }}
                     </p>
-
                 </div>
 
-                <div class="rounded-xl bg-[#F8FBF9] px-4 py-3">
-
-                    <p class="text-[9px] text-[#8C9B95]">
+                {{-- Delivery --}}
+                <div class="rounded-xl bg-slate-50 p-4">
+                    <p class="text-[10px] font-medium text-slate-400">
                         Estimasi
                     </p>
 
-                    <p class="mt-1 text-sm font-semibold text-[#18382E]">
+                    <p class="mt-1 text-sm font-bold text-slate-800">
                         {{ $conversation->service->delivery_days }}
                         hari
                     </p>
-
                 </div>
 
-                <div class="rounded-xl bg-[#F8FBF9] px-4 py-3">
-
-                    <p class="text-[9px] text-[#8C9B95]">
+                {{-- Client --}}
+                <div class="rounded-xl bg-slate-50 p-4">
+                    <p class="text-[10px] font-medium text-slate-400">
                         Client
                     </p>
 
-                    <p class="mt-1 truncate text-sm font-semibold text-[#18382E]">
+                    <p class="mt-1 truncate text-sm font-bold text-slate-800">
                         {{ $conversation->client?->name ?? 'Client' }}
                     </p>
-
                 </div>
 
             </div>
-
         </div>
 
-
         {{-- Form --}}
-        <div class="rounded-2xl border border-[#DDE9E2] bg-white">
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-            <div class="border-b border-[#E7EEE9] px-5 py-5">
+            <div class="border-b border-slate-100 px-5 py-5 sm:px-6">
+                <div class="flex items-start gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#2563EB]">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
 
-                <h2 class="text-sm font-semibold text-[#123128]">
-                    Detail penawaran
-                </h2>
+                    <div>
+                        <h2 class="text-base font-semibold text-slate-900">
+                            Detail penawaran
+                        </h2>
 
-                <p class="mt-1 text-xs text-[#87978F]">
-                    Tentukan isi quotation yang akan dikirim kepada client.
-                </p>
-
+                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                            Tentukan isi quotation yang akan dikirim kepada client.
+                        </p>
+                    </div>
+                </div>
             </div>
-
 
             <form
                 action="{{ route(
@@ -213,21 +188,22 @@
                     $conversation
                 ) }}"
                 method="POST"
-                class="space-y-5 px-5 py-5"
+                class="space-y-6 p-5 sm:p-6"
             >
-
                 @csrf
-
 
                 {{-- Title --}}
                 <div>
-
                     <label
                         for="title"
-                        class="mb-2 block text-xs font-semibold text-[#52675D]"
+                        class="block text-sm font-semibold text-slate-800"
                     >
                         Judul penawaran
                     </label>
+
+                    <p class="mt-1 text-xs text-slate-400">
+                        Gunakan judul yang jelas dan mudah dipahami client.
+                    </p>
 
                     <input
                         id="title"
@@ -236,64 +212,59 @@
                         value="{{ old('title', 'Penawaran ' . $conversation->service->title) }}"
                         maxlength="255"
                         required
-                        class="block w-full rounded-xl border border-[#D8E5DD] bg-[#F8FCF9] px-4 py-3 text-sm text-[#123128] outline-none transition placeholder:text-[#9BA9A2] focus:border-[#1E9E5A] focus:bg-white focus:ring-2 focus:ring-[#EAF7EF]"
+                        class="mt-2 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50"
                         placeholder="Contoh: Penawaran jasa sesuai kebutuhan client"
                     >
 
                     @error('title')
-
                         <p class="mt-1.5 text-xs text-red-600">
                             {{ $message }}
                         </p>
-
                     @enderror
-
                 </div>
-
 
                 {{-- Description --}}
                 <div>
+                    <div class="flex items-center justify-between gap-3">
+                        <label
+                            for="description"
+                            class="block text-sm font-semibold text-slate-800"
+                        >
+                            Deskripsi penawaran
+                        </label>
 
-                    <label
-                        for="description"
-                        class="mb-2 block text-xs font-semibold text-[#52675D]"
-                    >
-                        Deskripsi penawaran
-                    </label>
+                        <span class="text-[10px] text-slate-400">
+                            Maks. 10000 karakter
+                        </span>
+                    </div>
 
                     <textarea
                         id="description"
                         name="description"
                         rows="5"
                         maxlength="10000"
-                        class="block w-full resize-none rounded-xl border border-[#D8E5DD] bg-[#F8FCF9] px-4 py-3 text-sm leading-6 text-[#123128] outline-none transition placeholder:text-[#9BA9A2] focus:border-[#1E9E5A] focus:bg-white focus:ring-2 focus:ring-[#EAF7EF]"
+                        class="mt-2 block w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50"
                         placeholder="Jelaskan apa saja yang akan dikerjakan untuk client..."
                     >{{ old('description') }}</textarea>
 
                     @error('description')
-
                         <p class="mt-1.5 text-xs text-red-600">
                             {{ $message }}
                         </p>
-
                     @enderror
-
                 </div>
-
 
                 {{-- Price --}}
                 <div>
-
                     <label
                         for="price"
-                        class="mb-2 block text-xs font-semibold text-[#52675D]"
+                        class="block text-sm font-semibold text-slate-800"
                     >
                         Harga penawaran
                     </label>
 
-                    <div class="relative">
-
-                        <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-xs font-semibold text-[#83928C]">
+                    <div class="relative mt-2">
+                        <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-xs font-semibold text-slate-400">
                             Rp
                         </span>
 
@@ -305,37 +276,31 @@
                             min="1"
                             step="1"
                             required
-                            class="block w-full rounded-xl border border-[#D8E5DD] bg-[#F8FCF9] py-3 pl-11 pr-4 text-sm text-[#123128] outline-none transition focus:border-[#1E9E5A] focus:bg-white focus:ring-2 focus:ring-[#EAF7EF]"
+                            class="block w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50"
                             placeholder="100000"
                         >
-
                     </div>
 
                     @error('price')
-
                         <p class="mt-1.5 text-xs text-red-600">
                             {{ $message }}
                         </p>
-
                     @enderror
-
                 </div>
-
 
                 {{-- Delivery + Revision --}}
                 <div class="grid gap-5 sm:grid-cols-2">
 
+                    {{-- Delivery --}}
                     <div>
-
                         <label
                             for="delivery_days"
-                            class="mb-2 block text-xs font-semibold text-[#52675D]"
+                            class="block text-sm font-semibold text-slate-800"
                         >
                             Waktu pengerjaan
                         </label>
 
-                        <div class="relative">
-
+                        <div class="relative mt-2">
                             <input
                                 id="delivery_days"
                                 type="number"
@@ -344,37 +309,31 @@
                                 min="1"
                                 max="365"
                                 required
-                                class="block w-full rounded-xl border border-[#D8E5DD] bg-[#F8FCF9] px-4 py-3 pr-16 text-sm text-[#123128] outline-none transition focus:border-[#1E9E5A] focus:bg-white focus:ring-2 focus:ring-[#EAF7EF]"
+                                class="block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-16 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50"
                             >
 
-                            <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[10px] text-[#8A9992]">
+                            <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs text-slate-400">
                                 hari
                             </span>
-
                         </div>
 
                         @error('delivery_days')
-
                             <p class="mt-1.5 text-xs text-red-600">
                                 {{ $message }}
                             </p>
-
                         @enderror
-
                     </div>
 
-
+                    {{-- Revision --}}
                     <div>
-
                         <label
                             for="revision_count"
-                            class="mb-2 block text-xs font-semibold text-[#52675D]"
+                            class="block text-sm font-semibold text-slate-800"
                         >
                             Jumlah revisi
                         </label>
 
-                        <div class="relative">
-
+                        <div class="relative mt-2">
                             <input
                                 id="revision_count"
                                 type="number"
@@ -383,95 +342,88 @@
                                 min="0"
                                 max="100"
                                 required
-                                class="block w-full rounded-xl border border-[#D8E5DD] bg-[#F8FCF9] px-4 py-3 pr-16 text-sm text-[#123128] outline-none transition focus:border-[#1E9E5A] focus:bg-white focus:ring-2 focus:ring-[#EAF7EF]"
+                                class="block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-16 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50"
                             >
 
-                            <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[10px] text-[#8A9992]">
+                            <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs text-slate-400">
                                 kali
                             </span>
-
                         </div>
 
                         @error('revision_count')
-
                             <p class="mt-1.5 text-xs text-red-600">
                                 {{ $message }}
                             </p>
-
                         @enderror
-
                     </div>
 
                 </div>
 
-
                 {{-- Expiry --}}
                 <div>
+                    <div class="flex items-center justify-between gap-3">
+                        <label
+                            for="expires_at"
+                            class="block text-sm font-semibold text-slate-800"
+                        >
+                            Berlaku sampai
+                        </label>
 
-                    <label
-                        for="expires_at"
-                        class="mb-2 block text-xs font-semibold text-[#52675D]"
-                    >
-                        Berlaku sampai
-                    </label>
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-medium text-slate-500">
+                            Opsional
+                        </span>
+                    </div>
 
                     <input
                         id="expires_at"
                         type="datetime-local"
                         name="expires_at"
                         value="{{ old('expires_at') }}"
-                        class="block w-full rounded-xl border border-[#D8E5DD] bg-[#F8FCF9] px-4 py-3 text-sm text-[#123128] outline-none transition focus:border-[#1E9E5A] focus:bg-white focus:ring-2 focus:ring-[#EAF7EF]"
+                        class="mt-2 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50"
                     >
 
-                    <p class="mt-1.5 text-[10px] leading-5 text-[#8B9A94]">
+                    <p class="mt-2 text-xs leading-5 text-slate-400">
                         Kosongkan jika quotation tidak memiliki batas waktu.
                     </p>
 
                     @error('expires_at')
-
                         <p class="mt-1.5 text-xs text-red-600">
                             {{ $message }}
                         </p>
-
                     @enderror
-
                 </div>
-
 
                 {{-- Info --}}
-                <div class="rounded-xl border border-[#DCEBE1] bg-[#F7FBF8] px-4 py-4">
-
+                <div class="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
                     <div class="flex items-start gap-3">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#2563EB] shadow-sm">
+                            <i class="bi bi-info-circle"></i>
+                        </div>
 
-                        <i class="bi bi-info-circle mt-0.5 text-[#1E9E5A]"></i>
-
-                        <p class="text-xs leading-5 text-[#698077]">
-                            Setelah client menerima penawaran, sistem akan membuat order dan client dapat melanjutkan ke pembayaran.
+                        <p class="text-xs leading-5 text-slate-500">
+                            Setelah client menerima penawaran, sistem akan membuat order
+                            dan client dapat melanjutkan ke pembayaran.
                         </p>
-
                     </div>
-
                 </div>
 
-
                 {{-- Buttons --}}
-                <div class="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+                <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end">
 
                     <a
                         href="{{ route(
                             'freelancer.messages.show',
                             $conversation
                         ) }}"
-                        class="inline-flex h-11 items-center justify-center rounded-xl border border-[#D8E5DD] bg-white px-5 text-xs font-semibold text-[#52685F] transition hover:border-[#BBD9C6] hover:bg-[#F4FAF6]"
+                        class="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 sm:w-auto"
                     >
                         Batal
                     </a>
 
-
                     <button
                         type="submit"
                         @disabled($hasActiveOffer)
-                        class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0F6B3A] px-5 text-xs font-semibold text-white transition hover:bg-[#1E9E5A] disabled:cursor-not-allowed disabled:opacity-50"
+                        class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1D4ED8] focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                     >
                         <i class="bi bi-send"></i>
                         Kirim penawaran
@@ -480,9 +432,10 @@
                 </div>
 
             </form>
-
         </div>
 
     </div>
+</div>
+
 
 </x-layouts.freelancer>

@@ -71,6 +71,7 @@ use App\Http\Controllers\Freelancer\VerificationController as FreelancerVerifica
 use App\Http\Controllers\Freelancer\ServiceModerationController as FreelancerServiceModerationController;
 use App\Http\Controllers\Freelancer\CancellationController as FreelancerCancellationController;
 use App\Http\Controllers\Freelancer\DisputeController as FreelancerDisputeController;
+use App\Http\Controllers\Freelancer\DisputeController;
 
 
 /*
@@ -919,6 +920,8 @@ Route::middleware(['auth', 'role:freelancer'])
             '/disputes/{dispute}/evidence',
             [FreelancerDisputeController::class, 'evidence']
         )->name('disputes.evidence');
+
+        
     });
 
 /*

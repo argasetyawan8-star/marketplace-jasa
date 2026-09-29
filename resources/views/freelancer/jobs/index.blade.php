@@ -1,77 +1,127 @@
+
 <x-layouts.freelancer title="Job Board">
 
-    <main class="min-h-[calc(100vh-72px)] bg-[#F8FCF9]">
+    <main class="min-h-[calc(100vh-72px)] bg-[#F8FAFC]">
 
-        <section class="border-b border-[#E5ECE8] bg-white">
+        {{-- =========================================================
+             HEADER
+        ========================================================== --}}
+        <section class="border-b border-[#E5EAF2] bg-white">
+
             <div class="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8">
 
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 
                     <div>
-                        <div class="flex items-center gap-2 text-xs text-[#7A8A83]">
-                            <span>JASAIN</span>
+
+                        {{-- Breadcrumb --}}
+                        <div class="flex items-center gap-2 text-xs text-[#7B8798]">
+
+                            <span>PROKERJA</span>
+
                             <i class="bi bi-chevron-right text-[9px]"></i>
-                            <span class="text-[#123128]">Job Board</span>
+
+                            <span class="font-medium text-[#172B4D]">
+                                Job Board
+                            </span>
+
                         </div>
 
-                        <h1 class="mt-2 text-2xl font-semibold tracking-tight text-[#123128] sm:text-3xl">
+                        {{-- Title --}}
+                        <h1
+                            class="mt-2 text-2xl font-semibold tracking-tight text-[#172B4D] sm:text-3xl"
+                        >
                             Cari pekerjaan
                         </h1>
 
-                        <p class="mt-1.5 max-w-2xl text-sm leading-6 text-[#71837B]">
-                            Temukan project yang sesuai dengan keahlianmu dan kirim proposal kepada client.
+                        {{-- Description --}}
+                        <p
+                            class="mt-1.5 max-w-2xl text-sm leading-6 text-[#718096]"
+                        >
+                            Temukan project yang sesuai dengan keahlianmu dan
+                            kirim proposal kepada client.
                         </p>
+
                     </div>
 
-                    <div class="hidden items-center gap-2 rounded-lg bg-[#F1F7F3] px-3 py-2 text-xs text-[#4A695B] sm:flex">
-                        <i class="bi bi-briefcase text-[#1E9E5A]"></i>
-                        <span>{{ $jobs->total() }} pekerjaan tersedia</span>
+                    {{-- Job Counter --}}
+                    <div
+                        class="hidden items-center gap-2 rounded-lg bg-[#EFF6FF] px-3 py-2 text-xs text-[#486581] sm:flex"
+                    >
+
+                        <i class="bi bi-briefcase text-[#2563EB]"></i>
+
+                        <span>
+                            {{ $jobs->total() }} pekerjaan tersedia
+                        </span>
+
                     </div>
 
                 </div>
 
             </div>
+
         </section>
 
+
+        {{-- =========================================================
+             CONTENT
+        ========================================================== --}}
         <section class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 
-            {{-- Search --}}
+
+            {{-- =====================================================
+                 SEARCH
+            ====================================================== --}}
             <form
                 method="GET"
                 action="{{ route('freelancer.jobs.index') }}"
-                class="rounded-xl border border-[#DDE7E2] bg-white p-4 sm:p-5"
+                class="rounded-xl border border-[#E2E8F0] bg-white p-4 shadow-sm shadow-[#0F172A]/[0.02] sm:p-5"
             >
 
                 <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_90px]">
 
+
+                    {{-- Search Input --}}
                     <div>
-                        <label class="mb-1.5 block text-xs font-semibold text-[#355248]">
+
+                        <label
+                            class="mb-1.5 block text-xs font-semibold text-[#334155]"
+                        >
                             Cari pekerjaan
                         </label>
 
                         <div class="relative">
 
-                            <i class="bi bi-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#94A39D]"></i>
+                            <i
+                                class="bi bi-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#94A3B8]"
+                            ></i>
 
                             <input
                                 type="text"
                                 name="q"
                                 value="{{ request('q') }}"
                                 placeholder="Cari berdasarkan judul atau deskripsi..."
-                                class="h-10 w-full rounded-lg border border-[#DCE6E1] bg-white pl-9 pr-3 text-sm text-[#233D33] outline-none transition placeholder:text-[#9AA8A2] focus:border-[#1E9E5A] focus:ring-2 focus:ring-[#1E9E5A]/10"
+                                class="h-10 w-full rounded-lg border border-[#DCE3ED] bg-white pl-9 pr-3 text-sm text-[#1E293B] outline-none transition duration-200 placeholder:text-[#9AA5B1] hover:border-[#C9D4E3] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10"
                             >
 
                         </div>
+
                     </div>
 
+
+                    {{-- Category --}}
                     <div>
-                        <label class="mb-1.5 block text-xs font-semibold text-[#355248]">
+
+                        <label
+                            class="mb-1.5 block text-xs font-semibold text-[#334155]"
+                        >
                             Job category
                         </label>
 
                         <select
                             name="category"
-                            class="h-10 w-full rounded-lg border border-[#DCE6E1] bg-white px-3 text-sm text-[#355248] outline-none transition focus:border-[#1E9E5A] focus:ring-2 focus:ring-[#1E9E5A]/10"
+                            class="h-10 w-full rounded-lg border border-[#DCE3ED] bg-white px-3 text-sm text-[#334155] outline-none transition duration-200 hover:border-[#C9D4E3] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10"
                         >
 
                             <option value="">
@@ -90,13 +140,16 @@
                             @endforeach
 
                         </select>
+
                     </div>
 
+
+                    {{-- Search Button --}}
                     <div class="flex items-end">
 
                         <button
                             type="submit"
-                            class="h-10 w-full rounded-lg bg-[#0F6B3A] px-4 text-sm font-semibold text-white transition hover:bg-[#17894D]"
+                            class="h-10 w-full rounded-lg bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-sm transition duration-200 hover:bg-[#1D4ED8] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 active:scale-[0.98]"
                         >
                             Cari
                         </button>
@@ -107,63 +160,140 @@
 
             </form>
 
-            {{-- Heading --}}
-            <div class="mt-6 flex items-end justify-between">
+
+            {{-- =====================================================
+                 HEADING
+            ====================================================== --}}
+            <div class="mt-7 flex items-end justify-between">
 
                 <div>
-                    <h2 class="text-lg font-semibold text-[#123128]">
+
+                    <h2 class="text-lg font-semibold text-[#172B4D]">
                         Available jobs
                     </h2>
 
-                    <p class="mt-0.5 text-xs text-[#81918B]">
+                    <p class="mt-0.5 text-xs text-[#8190A5]">
                         Pilih pekerjaan yang sesuai dengan kemampuanmu.
                     </p>
+
                 </div>
 
             </div>
 
-            {{-- Desktop List --}}
-            <div class="mt-4 hidden overflow-hidden rounded-xl border border-[#DDE7E2] bg-white lg:block">
 
-                <div class="grid grid-cols-[minmax(300px,1.8fr)_1.1fr_0.75fr_0.9fr_1fr_1fr_92px] items-center border-b border-[#E5ECE8] bg-[#F8FBF9] px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-[#75867E]">
+            {{-- =====================================================
+                 DESKTOP LIST
+            ====================================================== --}}
+            <div
+                class="mt-4 hidden overflow-hidden rounded-xl border border-[#E2E8F0] bg-white shadow-sm shadow-[#0F172A]/[0.02] lg:block"
+            >
 
-                    <div>Jobs</div>
-                    <div>Kategori</div>
-                    <div>Type</div>
-                    <div>Budget</div>
-                    <div>Posted</div>
-                    <div>Deliver Within</div>
+                {{-- Table Header --}}
+                <div
+                    class="grid grid-cols-[minmax(300px,1.8fr)_1.1fr_0.75fr_0.9fr_1fr_1fr_92px] items-center border-b border-[#E6EBF2] bg-[#F8FAFC] px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-[#718096]"
+                >
+
+                    <div>
+                        Jobs
+                    </div>
+
+                    <div>
+                        Kategori
+                    </div>
+
+                    <div>
+                        Type
+                    </div>
+
+                    <div>
+                        Budget
+                    </div>
+
+                    <div>
+                        Posted
+                    </div>
+
+                    <div>
+                        Deliver Within
+                    </div>
+
                     <div></div>
 
                 </div>
 
+
                 @forelse($jobs as $job)
 
                     @php
+
                         $budget = 'Negosiasi';
 
-                        if ($job->budget_min !== null && $job->budget_max !== null) {
-                            $budget = 'Rp ' . number_format((float) $job->budget_min, 0, ',', '.')
-                                . ' - Rp ' . number_format((float) $job->budget_max, 0, ',', '.');
+                        if (
+                            $job->budget_min !== null &&
+                            $job->budget_max !== null
+                        ) {
+
+                            $budget =
+                                'Rp ' .
+                                number_format(
+                                    (float) $job->budget_min,
+                                    0,
+                                    ',',
+                                    '.'
+                                ) .
+                                ' - Rp ' .
+                                number_format(
+                                    (float) $job->budget_max,
+                                    0,
+                                    ',',
+                                    '.'
+                                );
+
                         } elseif ($job->budget_min !== null) {
-                            $budget = 'Rp ' . number_format((float) $job->budget_min, 0, ',', '.');
+
+                            $budget =
+                                'Rp ' .
+                                number_format(
+                                    (float) $job->budget_min,
+                                    0,
+                                    ',',
+                                    '.'
+                                );
+
                         } elseif ($job->budget_max !== null) {
-                            $budget = 'Rp ' . number_format((float) $job->budget_max, 0, ',', '.');
+
+                            $budget =
+                                'Rp ' .
+                                number_format(
+                                    (float) $job->budget_max,
+                                    0,
+                                    ',',
+                                    '.'
+                                );
+
                         }
+
                     @endphp
 
+
+                    {{-- Job Row --}}
                     <a
                         href="{{ route('freelancer.jobs.show', $job) }}"
-                        class="group grid grid-cols-[minmax(300px,1.8fr)_1.1fr_0.75fr_0.9fr_1fr_1fr_92px] items-center border-b border-[#E8EFEB] px-5 py-4 transition last:border-b-0 hover:bg-[#FBFDFC]"
+                        class="group grid grid-cols-[minmax(300px,1.8fr)_1.1fr_0.75fr_0.9fr_1fr_1fr_92px] items-center border-b border-[#E8EDF3] px-5 py-4 transition duration-200 last:border-b-0 hover:bg-[#F8FBFF]"
                     >
 
+                        {{-- Job --}}
                         <div class="min-w-0 pr-5">
 
-                            <h3 class="truncate text-sm font-semibold text-[#1E342C] transition group-hover:text-[#0F6B3A]">
+                            <h3
+                                class="truncate text-sm font-semibold text-[#1E293B] transition group-hover:text-[#2563EB]"
+                            >
                                 {{ $job->title }}
                             </h3>
 
-                            <div class="mt-1.5 flex items-center gap-2 text-[11px] text-[#81918B]">
+                            <div
+                                class="mt-1.5 flex items-center gap-2 text-[11px] text-[#8190A5]"
+                            >
 
                                 <span>
                                     {{ $job->proposals_count }} applied
@@ -171,7 +301,7 @@
 
                                 @if($job->location)
 
-                                    <span class="text-[#B4BDB8]">
+                                    <span class="text-[#C1CBD8]">
                                         •
                                     </span>
 
@@ -185,41 +315,71 @@
 
                         </div>
 
-                        <div class="pr-4 text-xs text-[#536A60]">
+
+                        {{-- Category --}}
+                        <div class="pr-4 text-xs text-[#53657A]">
+
                             {{ $job->category?->name ?? 'Lainnya' }}
+
                         </div>
 
+
+                        {{-- Type --}}
                         <div class="pr-4">
 
-                            <span class="inline-flex rounded-md bg-[#F1F6F3] px-2 py-1 text-[11px] font-medium text-[#355F4E]">
+                            <span
+                                class="inline-flex rounded-md bg-[#EFF6FF] px-2 py-1 text-[11px] font-medium text-[#2563EB]"
+                            >
                                 Freelance
                             </span>
 
                         </div>
 
-                        <div class="pr-4 text-xs font-medium text-[#253F35]">
+
+                        {{-- Budget --}}
+                        <div
+                            class="pr-4 text-xs font-medium text-[#253B5B]"
+                        >
                             {{ $budget }}
                         </div>
 
-                        <div class="pr-4 text-xs text-[#71837B]">
+
+                        {{-- Posted --}}
+                        <div
+                            class="pr-4 text-xs text-[#718096]"
+                        >
                             {{ optional($job->published_at)->format('d/m/Y H:i') ?? '-' }}
                         </div>
 
-                        <div class="pr-4 text-xs text-[#71837B]">
+
+                        {{-- Deliver --}}
+                        <div
+                            class="pr-4 text-xs text-[#718096]"
+                        >
 
                             @if($job->deadline)
+
                                 {{ $job->deadline->format('d/m/Y') }}
+
                             @elseif($job->duration_days)
+
                                 {{ $job->duration_days }} hari
+
                             @else
+
                                 -
+
                             @endif
 
                         </div>
 
+
+                        {{-- Apply --}}
                         <div class="flex justify-end">
 
-                            <span class="inline-flex h-8 min-w-[68px] items-center justify-center rounded-md border border-[#CFE1D7] bg-white px-3 text-xs font-semibold text-[#0F6B3A] transition group-hover:border-[#1E9E5A] group-hover:bg-[#F0F8F3]">
+                            <span
+                                class="inline-flex h-8 min-w-[68px] items-center justify-center rounded-md border border-[#BFDBFE] bg-white px-3 text-xs font-semibold text-[#2563EB] transition duration-200 group-hover:border-[#2563EB] group-hover:bg-[#EFF6FF]"
+                            >
                                 Apply
                             </span>
 
@@ -227,19 +387,27 @@
 
                     </a>
 
+
                 @empty
 
+                    {{-- Empty --}}
                     <div class="px-6 py-16 text-center">
 
-                        <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-[#F1F6F3] text-[#80958A]">
+                        <div
+                            class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-[#EFF6FF] text-[#7C9BCF]"
+                        >
                             <i class="bi bi-search"></i>
                         </div>
 
-                        <h3 class="mt-4 text-sm font-semibold text-[#123128]">
+                        <h3
+                            class="mt-4 text-sm font-semibold text-[#172B4D]"
+                        >
                             Belum ada pekerjaan
                         </h3>
 
-                        <p class="mt-1.5 text-xs text-[#81918B]">
+                        <p
+                            class="mt-1.5 text-xs text-[#8190A5]"
+                        >
                             Coba gunakan kata kunci atau kategori lain.
                         </p>
 
@@ -249,44 +417,93 @@
 
             </div>
 
-            {{-- Mobile List --}}
+
+            {{-- =====================================================
+                 MOBILE LIST
+            ====================================================== --}}
             <div class="mt-4 space-y-3 lg:hidden">
 
                 @forelse($jobs as $job)
 
                     @php
+
                         $budget = 'Negosiasi';
 
-                        if ($job->budget_min !== null && $job->budget_max !== null) {
-                            $budget = 'Rp ' . number_format((float) $job->budget_min, 0, ',', '.')
-                                . ' - Rp ' . number_format((float) $job->budget_max, 0, ',', '.');
+                        if (
+                            $job->budget_min !== null &&
+                            $job->budget_max !== null
+                        ) {
+
+                            $budget =
+                                'Rp ' .
+                                number_format(
+                                    (float) $job->budget_min,
+                                    0,
+                                    ',',
+                                    '.'
+                                ) .
+                                ' - Rp ' .
+                                number_format(
+                                    (float) $job->budget_max,
+                                    0,
+                                    ',',
+                                    '.'
+                                );
+
                         } elseif ($job->budget_min !== null) {
-                            $budget = 'Rp ' . number_format((float) $job->budget_min, 0, ',', '.');
+
+                            $budget =
+                                'Rp ' .
+                                number_format(
+                                    (float) $job->budget_min,
+                                    0,
+                                    ',',
+                                    '.'
+                                );
+
                         } elseif ($job->budget_max !== null) {
-                            $budget = 'Rp ' . number_format((float) $job->budget_max, 0, ',', '.');
+
+                            $budget =
+                                'Rp ' .
+                                number_format(
+                                    (float) $job->budget_max,
+                                    0,
+                                    ',',
+                                    '.'
+                                );
+
                         }
+
                     @endphp
 
+
+                    {{-- Mobile Job Card --}}
                     <a
                         href="{{ route('freelancer.jobs.show', $job) }}"
-                        class="block rounded-xl border border-[#DDE7E2] bg-white p-4 transition hover:border-[#C8DDD1]"
+                        class="group block rounded-xl border border-[#E2E8F0] bg-white p-4 shadow-sm shadow-[#0F172A]/[0.02] transition duration-200 hover:border-[#BFDBFE] hover:shadow-md hover:shadow-[#2563EB]/[0.04]"
                     >
 
-                        <div class="flex items-start justify-between gap-3">
+                        <div
+                            class="flex items-start justify-between gap-3"
+                        >
 
                             <div class="min-w-0">
 
-                                <h3 class="text-sm font-semibold leading-5 text-[#1E342C]">
+                                <h3
+                                    class="text-sm font-semibold leading-5 text-[#1E293B] transition group-hover:text-[#2563EB]"
+                                >
                                     {{ $job->title }}
                                 </h3>
 
-                                <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#81918B]">
+                                <div
+                                    class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#8190A5]"
+                                >
 
                                     <span>
                                         {{ $job->category?->name ?? 'Lainnya' }}
                                     </span>
 
-                                    <span class="text-[#C0C9C4]">
+                                    <span class="text-[#C4CDD8]">
                                         •
                                     </span>
 
@@ -298,65 +515,112 @@
 
                             </div>
 
-                            <i class="bi bi-chevron-right shrink-0 pt-1 text-xs text-[#9AA8A2]"></i>
+                            <i
+                                class="bi bi-chevron-right shrink-0 pt-1 text-xs text-[#9AA7B8] transition group-hover:translate-x-0.5 group-hover:text-[#2563EB]"
+                            ></i>
 
                         </div>
 
-                        <div class="mt-4 grid grid-cols-2 gap-3 border-t border-[#EDF2EF] pt-3">
 
+                        {{-- Mobile Information --}}
+                        <div
+                            class="mt-4 grid grid-cols-2 gap-3 border-t border-[#EDF1F5] pt-3"
+                        >
+
+                            {{-- Budget --}}
                             <div>
-                                <p class="text-[10px] uppercase tracking-[0.04em] text-[#8A9993]">
+
+                                <p
+                                    class="text-[10px] uppercase tracking-[0.04em] text-[#8A97A8]"
+                                >
                                     Budget
                                 </p>
 
-                                <p class="mt-1 text-xs font-semibold text-[#253F35]">
+                                <p
+                                    class="mt-1 text-xs font-semibold text-[#253B5B]"
+                                >
                                     {{ $budget }}
                                 </p>
+
                             </div>
 
+
+                            {{-- Posted --}}
                             <div>
-                                <p class="text-[10px] uppercase tracking-[0.04em] text-[#8A9993]">
+
+                                <p
+                                    class="text-[10px] uppercase tracking-[0.04em] text-[#8A97A8]"
+                                >
                                     Posted
                                 </p>
 
-                                <p class="mt-1 text-xs text-[#71837B]">
+                                <p
+                                    class="mt-1 text-xs text-[#718096]"
+                                >
                                     {{ optional($job->published_at)->format('d/m/Y') ?? '-' }}
                                 </p>
+
                             </div>
 
+
+                            {{-- Deliver --}}
                             <div>
-                                <p class="text-[10px] uppercase tracking-[0.04em] text-[#8A9993]">
+
+                                <p
+                                    class="text-[10px] uppercase tracking-[0.04em] text-[#8A97A8]"
+                                >
                                     Deliver within
                                 </p>
 
-                                <p class="mt-1 text-xs text-[#71837B]">
+                                <p
+                                    class="mt-1 text-xs text-[#718096]"
+                                >
 
                                     @if($job->deadline)
+
                                         {{ $job->deadline->format('d/m/Y') }}
+
                                     @elseif($job->duration_days)
+
                                         {{ $job->duration_days }} hari
+
                                     @else
+
                                         -
+
                                     @endif
 
                                 </p>
+
                             </div>
 
+
+                            {{-- Applied --}}
                             <div>
-                                <p class="text-[10px] uppercase tracking-[0.04em] text-[#8A9993]">
+
+                                <p
+                                    class="text-[10px] uppercase tracking-[0.04em] text-[#8A97A8]"
+                                >
                                     Applied
                                 </p>
 
-                                <p class="mt-1 text-xs font-medium text-[#355F4E]">
+                                <p
+                                    class="mt-1 text-xs font-medium text-[#2563EB]"
+                                >
                                     {{ $job->proposals_count }}
                                 </p>
+
                             </div>
 
                         </div>
 
+
+                        {{-- Mobile CTA --}}
                         <div class="mt-4">
 
-                            <span class="inline-flex h-9 w-full items-center justify-center rounded-md border border-[#CFE1D7] bg-white text-xs font-semibold text-[#0F6B3A]">
+                            <span
+                                class="inline-flex h-9 w-full items-center justify-center rounded-md border border-[#BFDBFE] bg-white text-xs font-semibold text-[#2563EB] transition duration-200 group-hover:bg-[#EFF6FF]"
+                            >
                                 Lihat & Ajukan Proposal
                             </span>
 
@@ -364,19 +628,29 @@
 
                     </a>
 
+
                 @empty
 
-                    <div class="rounded-xl border border-[#DDE7E2] bg-white px-6 py-16 text-center">
+                    {{-- Mobile Empty --}}
+                    <div
+                        class="rounded-xl border border-[#E2E8F0] bg-white px-6 py-16 text-center shadow-sm shadow-[#0F172A]/[0.02]"
+                    >
 
-                        <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-[#F1F6F3] text-[#80958A]">
+                        <div
+                            class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-[#EFF6FF] text-[#7C9BCF]"
+                        >
                             <i class="bi bi-search"></i>
                         </div>
 
-                        <h3 class="mt-4 text-sm font-semibold text-[#123128]">
+                        <h3
+                            class="mt-4 text-sm font-semibold text-[#172B4D]"
+                        >
                             Belum ada pekerjaan
                         </h3>
 
-                        <p class="mt-1.5 text-xs text-[#81918B]">
+                        <p
+                            class="mt-1.5 text-xs text-[#8190A5]"
+                        >
                             Coba gunakan kata kunci atau kategori lain.
                         </p>
 
@@ -386,11 +660,18 @@
 
             </div>
 
-            {{-- Pagination --}}
+
+            {{-- =====================================================
+                 PAGINATION
+            ====================================================== --}}
             @if($jobs->hasPages())
+
                 <div class="mt-5">
+
                     {{ $jobs->links() }}
+
                 </div>
+
             @endif
 
         </section>

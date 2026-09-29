@@ -1,46 +1,54 @@
 <x-layouts.freelancer title="Order Saya">
+
     @php
+
         $statusConfig = [
             'pending_payment' => [
                 'label' => 'Menunggu pembayaran',
-                'class' => 'border-[#F2DDAF] bg-[#FFF9EA] text-[#9A6800]',
-                'dot' => 'bg-[#D99A19]',
+                'class' => 'border-amber-200 bg-amber-50 text-amber-700',
+                'dot' => 'bg-amber-500',
                 'icon' => 'bi-credit-card',
             ],
+
             'paid' => [
                 'label' => 'Siap dikerjakan',
-                'class' => 'border-[#CFE0F1] bg-[#F3F8FC] text-[#3C6F9F]',
-                'dot' => 'bg-[#5B91C0]',
+                'class' => 'border-blue-200 bg-blue-50 text-blue-700',
+                'dot' => 'bg-blue-500',
                 'icon' => 'bi-check-circle',
             ],
+
             'in_progress' => [
                 'label' => 'Sedang dikerjakan',
-                'class' => 'border-[#CDE7D7] bg-[#EAF7EF] text-[#168A4D]',
-                'dot' => 'bg-[#35C978]',
+                'class' => 'border-indigo-200 bg-indigo-50 text-indigo-700',
+                'dot' => 'bg-indigo-500',
                 'icon' => 'bi-arrow-repeat',
             ],
+
             'delivered' => [
                 'label' => 'Menunggu client',
-                'class' => 'border-[#E7D9C8] bg-[#FFF8EF] text-[#A96B20]',
-                'dot' => 'bg-[#D48A32]',
+                'class' => 'border-orange-200 bg-orange-50 text-orange-700',
+                'dot' => 'bg-orange-500',
                 'icon' => 'bi-file-earmark-check',
             ],
+
             'revision' => [
                 'label' => 'Dalam revisi',
-                'class' => 'border-[#E8D8ED] bg-[#FAF4FC] text-[#895597]',
-                'dot' => 'bg-[#B77BC7]',
+                'class' => 'border-violet-200 bg-violet-50 text-violet-700',
+                'dot' => 'bg-violet-500',
                 'icon' => 'bi-arrow-repeat',
             ],
+
             'completed' => [
                 'label' => 'Selesai',
-                'class' => 'border-[#CDE7D7] bg-[#EAF7EF] text-[#168A4D]',
-                'dot' => 'bg-[#35C978]',
+                'class' => 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                'dot' => 'bg-emerald-500',
                 'icon' => 'bi-check-circle-fill',
             ],
+
             'cancelled' => [
                 'label' => 'Dibatalkan',
-                'class' => 'border-[#F0D5D5] bg-[#FFF6F6] text-[#B84E4E]',
-                'dot' => 'bg-[#D16B6B]',
+                'class' => 'border-rose-200 bg-rose-50 text-rose-700',
+                'dot' => 'bg-rose-500',
                 'icon' => 'bi-x-circle',
             ],
         ];
@@ -48,260 +56,503 @@
         $cancellationConfig = [
             'pending_freelancer' => [
                 'label' => 'Perlu ditinjau',
-                'class' => 'bg-[#FFF6D9] text-[#966600]',
+                'class' => 'bg-amber-50 text-amber-700',
                 'icon' => 'bi-hourglass-split',
             ],
+
             'rejected_by_freelancer' => [
                 'label' => 'Ditolak freelancer',
-                'class' => 'bg-[#FFF0F0] text-[#B84E4E]',
+                'class' => 'bg-rose-50 text-rose-700',
                 'icon' => 'bi-x-circle',
             ],
+
             'mediation_pending' => [
                 'label' => 'Menunggu admin',
-                'class' => 'bg-[#EEF6FF] text-[#4676A8]',
+                'class' => 'bg-blue-50 text-blue-700',
                 'icon' => 'bi-shield-exclamation',
             ],
+
             'approved_by_freelancer' => [
                 'label' => 'Disetujui freelancer',
-                'class' => 'bg-[#EAF7EF] text-[#168A4D]',
+                'class' => 'bg-emerald-50 text-emerald-700',
                 'icon' => 'bi-check-circle-fill',
             ],
+
             'approved_by_admin' => [
                 'label' => 'Disetujui admin',
-                'class' => 'bg-[#EAF7EF] text-[#168A4D]',
+                'class' => 'bg-emerald-50 text-emerald-700',
                 'icon' => 'bi-check-circle-fill',
             ],
+
             'rejected_by_admin' => [
                 'label' => 'Ditolak admin',
-                'class' => 'bg-[#FFF0F0] text-[#B84E4E]',
+                'class' => 'bg-rose-50 text-rose-700',
                 'icon' => 'bi-shield-x',
             ],
         ];
+
     @endphp
 
-    <div class="min-h-[calc(100vh-72px)] bg-[#F8FCF9]">
-        <div class="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
 
-            {{-- HEADER --}}
-            <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#1E9E5A]">
-                        Freelancer
-                    </p>
-                    <h1 class="mt-1 text-2xl font-semibold tracking-[-0.03em] text-[#123128]">
-                        Order saya
-                    </h1>
-                    <p class="mt-1.5 max-w-2xl text-xs leading-5 text-[#71837B]">
-                        Kelola semua pesanan yang sedang dikerjakan, menunggu client, sampai selesai.
-                    </p>
-                </div>
+    {{-- =========================================================
+        PAGE
+    ========================================================== --}}
+    <div class="min-h-screen bg-[#F8FAFC]">
 
-                <div class="flex items-center gap-2 rounded-xl border border-[#DCE9E1] bg-white px-3.5 py-2.5 shadow-[0_4px_14px_rgba(18,49,40,0.025)]">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EAF7EF] text-[#1E9E5A]">
-                        <i class="bi bi-briefcase text-[13px]"></i>
-                    </div>
-                    <div>
-                        <p class="text-[9px] text-[#98A49E]">Total order</p>
-                        <p class="text-xs font-semibold text-[#355248]">
-                            {{ $orders->total() }} order
+        <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
+
+            {{-- =====================================================
+                HEADER
+            ====================================================== --}}
+            <div class="mb-5 sm:mb-7">
+
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+
+                    <div class="min-w-0">
+
+                        <div class="mb-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-[10px] font-semibold text-blue-700">
+                            <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                            Area Freelancer
+                        </div>
+
+                        <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                            Order Saya
+                        </h1>
+
+                        <p class="mt-1.5 max-w-2xl text-xs leading-5 text-slate-500 sm:text-sm">
+                            Kelola pesanan yang sedang dikerjakan hingga selesai.
                         </p>
+
                     </div>
+
+
+                    {{-- Total --}}
+                    <div class="flex w-fit items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3.5 py-3 shadow-sm">
+
+                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                            <i class="bi bi-briefcase text-sm"></i>
+                        </div>
+
+                        <div>
+                            <p class="text-[10px] font-medium text-slate-400">
+                                Total order
+                            </p>
+
+                            <p class="text-sm font-bold text-slate-800">
+                                {{ $orders->total() }}
+                            </p>
+                        </div>
+
+                    </div>
+
                 </div>
+
             </div>
 
-            {{-- ALERT SUCCESS --}}
+
+            {{-- =====================================================
+                ALERT SUCCESS
+            ====================================================== --}}
             @if(session('success'))
-                <div class="mb-5 rounded-xl border border-[#CDE8D7] bg-white shadow-[0_4px_16px_rgba(18,49,40,0.04)]">
-                    <div class="flex items-center gap-3 px-4 py-3.5">
-                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF7EF]">
-                            <i class="bi bi-check-lg text-sm text-[#1E9E5A]"></i>
+
+                <div class="mb-4 rounded-2xl border border-emerald-200 bg-white shadow-sm">
+                    <div class="flex items-center gap-3 px-4 py-3">
+
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                            <i class="bi bi-check-lg text-sm"></i>
                         </div>
-                        <p class="text-sm text-[#355248]">
+
+                        <p class="text-xs font-medium leading-5 text-slate-700 sm:text-sm">
                             {{ session('success') }}
                         </p>
+
                     </div>
                 </div>
+
             @endif
 
-            {{-- ALERT ERROR --}}
+
+            {{-- =====================================================
+                ALERT ERROR
+            ====================================================== --}}
             @if(session('error'))
-                <div class="mb-5 rounded-xl border border-red-100 bg-white shadow-[0_4px_16px_rgba(18,49,40,0.04)]">
-                    <div class="flex items-center gap-3 px-4 py-3.5">
-                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50">
-                            <i class="bi bi-exclamation-lg text-sm text-red-500"></i>
+
+                <div class="mb-4 rounded-2xl border border-rose-200 bg-white shadow-sm">
+                    <div class="flex items-center gap-3 px-4 py-3">
+
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+                            <i class="bi bi-exclamation-lg text-sm"></i>
                         </div>
-                        <p class="text-sm text-red-600">
+
+                        <p class="text-xs font-medium leading-5 text-rose-700 sm:text-sm">
                             {{ session('error') }}
                         </p>
+
                     </div>
                 </div>
+
             @endif
 
-            {{-- ORDER LIST --}}
+
+            {{-- =====================================================
+                ORDER LIST
+            ====================================================== --}}
             @if($orders->count() > 0)
+
                 <div class="space-y-3">
+
                     @foreach($orders as $order)
+
                         @php
+
                             $status = $statusConfig[$order->status] ?? [
                                 'label' => ucfirst(str_replace('_', ' ', $order->status)),
-                                'class' => 'border-[#E1E7E3] bg-[#F7F9F8] text-[#66766E]',
-                                'dot' => 'bg-[#A3AEA9]',
+                                'class' => 'border-slate-200 bg-slate-50 text-slate-600',
+                                'dot' => 'bg-slate-400',
                                 'icon' => 'bi-info-circle',
                             ];
 
                             $cancellationRequest = $order->latestCancellationRequest;
+
                             $cancellation = $cancellationRequest
                                 ? ($cancellationConfig[$cancellationRequest->status] ?? null)
                                 : null;
 
                             $serviceTitle = $order->items->first()?->service_title ?? 'Pesanan Jasa';
-                            $clientName = $order->client?->name ?? 'Client';
-                            $clientInitial = strtoupper(substr($clientName, 0, 1));
 
-                            $needsCancellationReview = $cancellationRequest?->status === 'pending_freelancer';
+                            $clientName = $order->client?->name ?? 'Client';
+
+                            $clientInitial = strtoupper(
+                                substr($clientName, 0, 1)
+                            );
+
+                            $needsCancellationReview =
+                                $cancellationRequest?->status === 'pending_freelancer';
+
                         @endphp
 
-                        <article class="overflow-hidden rounded-2xl border {{ $needsCancellationReview ? 'border-[#E8D596]' : 'border-[#E1EAE5]' }} bg-white shadow-[0_5px_18px_rgba(18,49,40,0.035)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(18,49,40,0.055)]">
-                            <div class="p-5 sm:p-6">
-                                <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+
+                        {{-- =================================================
+                            ORDER CARD
+                        ================================================== --}}
+                        <article
+                            class="overflow-hidden rounded-2xl border bg-white shadow-sm transition duration-200 hover:border-blue-200 hover:shadow-md
+                            {{ $needsCancellationReview
+                                ? 'border-amber-200 ring-1 ring-amber-100'
+                                : 'border-slate-200' }}"
+                        >
+
+                            <div class="p-4 sm:p-5">
+
+
+                                {{-- =================================================
+                                    TOP ROW
+                                ================================================== --}}
+                                <div class="flex items-start gap-3">
+
+                                    {{-- Client Avatar --}}
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sm font-bold text-blue-700">
+                                        {{ $clientInitial }}
+                                    </div>
+
 
                                     <div class="min-w-0 flex-1">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#F3F7F5] px-2.5 py-1 text-[9px] font-medium text-[#7F8E87]">
-                                                <i class="bi bi-hash text-[8px]"></i>
-                                                {{ $order->order_number }}
+
+                                        {{-- Order number + date --}}
+                                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+
+                                            <span class="text-[10px] font-semibold text-slate-400">
+                                                #{{ $order->order_number }}
                                             </span>
 
-                                            <span class="text-[10px] text-[#A0AAA5]">
+                                            <span class="text-[10px] text-slate-300">
+                                                •
+                                            </span>
+
+                                            <span class="text-[10px] text-slate-400">
                                                 {{ $order->created_at?->format('d M Y, H:i') }}
                                             </span>
+
                                         </div>
 
-                                        <h2 class="mt-3 text-sm font-semibold leading-6 text-[#18382E] sm:text-base">
+
+                                        {{-- Service title --}}
+                                        <h2 class="mt-1.5 line-clamp-2 text-sm font-bold leading-5 text-slate-900 sm:text-[15px]">
                                             {{ $serviceTitle }}
                                         </h2>
 
-                                        <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2">
-                                            <span class="inline-flex items-center gap-1.5 text-[10px] text-[#7D8D86]">
-                                                <i class="bi bi-person text-[#1E9E5A]"></i>
-                                                {{ $clientName }}
-                                            </span>
 
-                                            <span class="inline-flex items-center gap-1.5 text-[10px] text-[#7D8D86]">
-                                                <i class="bi bi-calendar-event text-[#1E9E5A]"></i>
-                                                {{ $order->due_at?->format('d M Y, H:i') ?? '-' }}
-                                            </span>
+                                        {{-- Client --}}
+                                        <p class="mt-1 text-[11px] text-slate-500">
+                                            {{ $clientName }}
+                                        </p>
 
-                                            <span class="inline-flex items-center gap-1.5 text-[10px] text-[#7D8D86]">
-                                                <i class="bi bi-clock text-[#1E9E5A]"></i>
-                                                {{ $order->delivery_days }} hari
-                                            </span>
-                                        </div>
-
-                                        @if($cancellationRequest && $cancellation)
-                                            <div class="mt-4 flex flex-col gap-2 rounded-xl border {{ $needsCancellationReview ? 'border-[#EADAA2] bg-[#FFFBEF]' : 'border-[#E5ECE8] bg-[#FAFCFB]' }} px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                                                <div class="flex min-w-0 items-start gap-2.5">
-                                                    <div class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-[#8A9A92] shadow-sm">
-                                                        <i class="bi {{ $cancellation['icon'] }} text-[11px]"></i>
-                                                    </div>
-                                                    <div class="min-w-0">
-                                                        <p class="text-[9px] font-semibold uppercase tracking-[0.13em] {{ $needsCancellationReview ? 'text-[#9A6800]' : 'text-[#7A8982]' }}">
-                                                            Pembatalan
-                                                        </p>
-                                                        <p class="mt-0.5 text-[10px] leading-4 {{ $needsCancellationReview ? 'text-[#76520F]' : 'text-[#62756D]' }}">
-                                                            {{ $needsCancellationReview ? 'Client mengajukan pembatalan dan membutuhkan tanggapan kamu.' : 'Pengajuan pembatalan sudah memiliki status terbaru.' }}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <span class="inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-semibold {{ $cancellation['class'] }}">
-                                                    <i class="bi {{ $cancellation['icon'] }} text-[9px]"></i>
-                                                    {{ $cancellation['label'] }}
-                                                </span>
-                                            </div>
-                                        @endif
                                     </div>
 
-                                    <div class="flex shrink-0 flex-col items-start gap-3 lg:items-end">
-                                        <span class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-semibold {{ $status['class'] }}">
+
+                                    {{-- Status --}}
+                                    <div class="shrink-0">
+
+                                        <span
+                                            class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[9px] font-bold sm:px-3 sm:text-[10px] {{ $status['class'] }}"
+                                        >
+
                                             <span class="h-1.5 w-1.5 rounded-full {{ $status['dot'] }}"></span>
-                                            <i class="bi {{ $status['icon'] }} text-[10px]"></i>
-                                            {{ $status['label'] }}
+
+                                            <span class="hidden sm:inline">
+                                                {{ $status['label'] }}
+                                            </span>
+
+                                            <span class="sm:hidden">
+                                                {{ match($order->status) {
+                                                    'pending_payment' => 'Belum bayar',
+                                                    'paid' => 'Siap',
+                                                    'in_progress' => 'Proses',
+                                                    'delivered' => 'Review',
+                                                    'revision' => 'Revisi',
+                                                    'completed' => 'Selesai',
+                                                    'cancelled' => 'Batal',
+                                                    default => $status['label'],
+                                                } }}
+                                            </span>
+
                                         </span>
 
-                                        <span class="text-[10px] text-[#98A49E]">
-                                            Rp {{ number_format((float) $order->freelancer_amount, 0, ',', '.') }}
-                                        </span>
                                     </div>
+
                                 </div>
 
-                                <div class="mt-5 flex flex-col gap-3 border-t border-[#EDF2EF] pt-4 sm:flex-row sm:items-center sm:justify-between">
-                                    <div class="flex flex-wrap items-center gap-3">
-                                        <div class="flex items-center gap-2">
-                                            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#EAF7EF] text-[10px] font-semibold text-[#1E9E5A]">
-                                                {{ $clientInitial }}
-                                            </div>
-                                            <div>
-                                                <p class="text-[9px] text-[#98A49E]">Client</p>
-                                                <p class="text-[10px] font-semibold text-[#52685F]">
-                                                    {{ $clientName }}
-                                                </p>
-                                            </div>
+
+                                {{-- =================================================
+                                    ORDER INFO
+                                ================================================== --}}
+                                <div class="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+
+                                    {{-- Deadline --}}
+                                    <div class="rounded-xl bg-slate-50 px-3 py-2.5">
+
+                                        <div class="flex items-center gap-1.5">
+
+                                            <i class="bi bi-calendar-event text-[11px] text-blue-600"></i>
+
+                                            <span class="text-[9px] font-medium text-slate-400">
+                                                Deadline
+                                            </span>
+
                                         </div>
 
-                                        <span class="hidden h-5 w-px bg-[#E5ECE8] sm:block"></span>
+                                        <p class="mt-1 truncate text-[10px] font-semibold text-slate-700 sm:text-xs">
+                                            {{ $order->due_at?->format('d M Y, H:i') ?? '-' }}
+                                        </p>
 
-                                        <div>
-                                            <p class="text-[9px] text-[#98A49E]">Total order</p>
-                                            <p class="text-[10px] font-semibold text-[#355248]">
-                                                Rp {{ number_format((float) $order->total, 0, ',', '.') }}
-                                            </p>
-                                        </div>
                                     </div>
 
-                                    <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+
+                                    {{-- Duration --}}
+                                    <div class="rounded-xl bg-slate-50 px-3 py-2.5">
+
+                                        <div class="flex items-center gap-1.5">
+
+                                            <i class="bi bi-clock text-[11px] text-blue-600"></i>
+
+                                            <span class="text-[9px] font-medium text-slate-400">
+                                                Durasi
+                                            </span>
+
+                                        </div>
+
+                                        <p class="mt-1 text-[10px] font-semibold text-slate-700 sm:text-xs">
+                                            {{ $order->delivery_days }} hari
+                                        </p>
+
+                                    </div>
+
+
+                                    {{-- Pendapatan --}}
+                                    <div class="col-span-2 rounded-xl bg-blue-50/70 px-3 py-2.5 sm:col-span-1">
+
+                                        <div class="flex items-center gap-1.5">
+
+                                            <i class="bi bi-wallet2 text-[11px] text-blue-600"></i>
+
+                                            <span class="text-[9px] font-medium text-blue-500">
+                                                Pendapatan
+                                            </span>
+
+                                        </div>
+
+                                        <p class="mt-1 truncate text-[10px] font-bold text-blue-700 sm:text-xs">
+                                            Rp {{ number_format((float) $order->freelancer_amount, 0, ',', '.') }}
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+
+                                {{-- =================================================
+                                    CANCELLATION
+                                ================================================== --}}
+                                @if($cancellationRequest && $cancellation)
+
+                                    <div
+                                        class="mt-3 rounded-xl border px-3 py-3
+                                        {{ $needsCancellationReview
+                                            ? 'border-amber-200 bg-amber-50/70'
+                                            : 'border-slate-200 bg-slate-50/70' }}"
+                                    >
+
+                                        <div class="flex items-start gap-2.5">
+
+                                            <div
+                                                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm
+                                                {{ $needsCancellationReview
+                                                    ? 'text-amber-600'
+                                                    : 'text-slate-500' }}"
+                                            >
+                                                <i class="bi {{ $cancellation['icon'] }} text-xs"></i>
+                                            </div>
+
+
+                                            <div class="min-w-0 flex-1">
+
+                                                <div class="flex flex-wrap items-center gap-2">
+
+                                                    <p
+                                                        class="text-[9px] font-bold uppercase tracking-[0.14em]
+                                                        {{ $needsCancellationReview
+                                                            ? 'text-amber-700'
+                                                            : 'text-slate-500' }}"
+                                                    >
+                                                        Pembatalan
+                                                    </p>
+
+                                                    <span
+                                                        class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[8px] font-bold {{ $cancellation['class'] }}"
+                                                    >
+                                                        {{ $cancellation['label'] }}
+                                                    </span>
+
+                                                </div>
+
+
+                                                <p
+                                                    class="mt-1 text-[10px] leading-4
+                                                    {{ $needsCancellationReview
+                                                        ? 'text-amber-800'
+                                                        : 'text-slate-600' }}"
+                                                >
+                                                    {{ $needsCancellationReview
+                                                        ? 'Client mengajukan pembatalan dan membutuhkan tanggapan kamu.'
+                                                        : 'Pengajuan pembatalan sudah memiliki status terbaru.' }}
+                                                </p>
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                @endif
+
+
+                                {{-- =================================================
+                                    BOTTOM ACTION
+                                ================================================== --}}
+                                <div class="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+
+                                    {{-- Total --}}
+                                    <div class="min-w-0">
+
+                                        <p class="text-[9px] font-medium text-slate-400">
+                                            Total order
+                                        </p>
+
+                                        <p class="mt-0.5 truncate text-xs font-bold text-slate-800">
+                                            Rp {{ number_format((float) $order->total, 0, ',', '.') }}
+                                        </p>
+
+                                    </div>
+
+
+                                    {{-- Buttons --}}
+                                    <div class="flex shrink-0 items-center gap-2">
+
                                         @if($needsCancellationReview)
+
                                             <a
                                                 href="{{ route('freelancer.orders.cancellation.create', $order) }}"
-                                                class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#D99A19] px-4 text-[10px] font-semibold text-white transition hover:bg-[#B77A0B]"
+                                                class="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-3 text-[10px] font-bold text-white transition hover:bg-amber-600 sm:px-3.5 sm:text-xs"
                                             >
                                                 <i class="bi bi-shield-exclamation"></i>
-                                                Tinjau Pembatalan
+
+                                                <span class="hidden xs:inline sm:inline">
+                                                    Tinjau
+                                                </span>
                                             </a>
+
                                         @endif
+
 
                                         <a
                                             href="{{ route('freelancer.orders.show', $order) }}"
-                                            class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#DCE7E1] bg-white px-4 text-[10px] font-semibold text-[#52685F] transition hover:border-[#BBD9C6] hover:bg-[#F4FAF6] hover:text-[#1E9E5A]"
+                                            class="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 sm:px-3.5 sm:text-xs"
                                         >
-                                            Lihat detail
-                                            <i class="bi bi-arrow-right text-[10px]"></i>
+                                            Detail
+
+                                            <i class="bi bi-arrow-right text-[9px]"></i>
                                         </a>
+
                                     </div>
+
                                 </div>
+
                             </div>
+
                         </article>
+
                     @endforeach
+
                 </div>
 
+
+                {{-- =====================================================
+                    PAGINATION
+                ====================================================== --}}
                 @if($orders->hasPages())
-                    <div class="pt-3">
+
+                    <div class="mt-5">
                         {{ $orders->links() }}
                     </div>
+
                 @endif
+
+
             @else
-                <section class="rounded-2xl border border-dashed border-[#DCE7E1] bg-white px-5 py-14 text-center shadow-[0_5px_18px_rgba(18,49,40,0.025)]">
-                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF7EF] text-[#1E9E5A]">
+
+                {{-- =====================================================
+                    EMPTY STATE
+                ====================================================== --}}
+                <section class="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-12 text-center shadow-sm sm:py-16">
+
+                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
                         <i class="bi bi-briefcase text-xl"></i>
                     </div>
-                    <h2 class="mt-5 text-sm font-semibold text-[#123128]">
+
+                    <h2 class="mt-4 text-sm font-bold text-slate-900 sm:text-base">
                         Belum ada order
                     </h2>
-                    <p class="mx-auto mt-2 max-w-md text-xs leading-5 text-[#8B9992]">
+
+                    <p class="mx-auto mt-2 max-w-md text-xs leading-5 text-slate-500 sm:text-sm sm:leading-6">
                         Saat ada client yang membeli layananmu, pesanan akan muncul di halaman ini.
                     </p>
+
                 </section>
+
             @endif
+
         </div>
+
     </div>
+
 </x-layouts.freelancer>
