@@ -1,626 +1,888 @@
+
 <x-layouts.admin title="Kelola Komisi">
 
     @php
+        /*
+        |--------------------------------------------------------------------------
+        | Status Map
+        |--------------------------------------------------------------------------
+        */
         $statusMap = [
             'pending' => [
                 'label' => 'Menunggu',
-                'class' => 'bg-[#FEF3C7] text-[#92400E] dark:bg-[#48391E] dark:text-[#E8C67A]',
+                'class' => 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-800',
                 'icon' => 'bi-hourglass-split',
             ],
+
             'earned' => [
                 'label' => 'Diperoleh',
-                'class' => 'bg-[#DBEAFE] text-[#1D4ED8] dark:bg-[#243A59] dark:text-[#9CC4FF]',
+                'class' => 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:ring-blue-800',
                 'icon' => 'bi-graph-up-arrow',
             ],
+
             'paid' => [
                 'label' => 'Sudah Dibayarkan',
-                'class' => 'bg-[#DCFCE7] text-[#166534] dark:bg-[#244732] dark:text-[#A0E8B7]',
+                'class' => 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-800',
                 'icon' => 'bi-check-circle-fill',
             ],
+
             'cancelled' => [
                 'label' => 'Dibatalkan',
-                'class' => 'bg-[#FEE2E2] text-[#991B1B] dark:bg-[#492727] dark:text-[#F0A3A3]',
+                'class' => 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-950/30 dark:text-red-300 dark:ring-red-800',
                 'icon' => 'bi-x-circle-fill',
             ],
         ];
     @endphp
 
 
-    <div class="space-y-6">
+    <div class="min-h-screen bg-slate-50 dark:bg-slate-950">
 
-        {{-- Header --}}
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div class="mx-auto max-w-7xl space-y-6 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
 
-            <div>
-                <p class="text-sm font-medium text-[#1E9E5A] dark:text-[#7AD8B5]">
-                    Keuangan
-                </p>
+            {{-- =========================================================
+                HEADER
+            ========================================================== --}}
+            <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
 
-                <h1 class="mt-1 text-2xl font-semibold tracking-tight text-[#123128] dark:text-white">
-                    Kelola Komisi
-                </h1>
+                <div class="max-w-2xl">
 
-                <p class="mt-1 max-w-2xl text-sm text-[#667D73] dark:text-[#A9BCB2]">
-                    Pantau pendapatan platform dari setiap transaksi yang berhasil.
-                </p>
-            </div>
+                    <div class="flex flex-wrap items-center gap-2">
 
-            <div class="rounded-xl border border-[#D6E4DD] bg-white px-4 py-3 dark:border-[#2E473A] dark:bg-[#13221A]">
-                <div class="flex items-center gap-3">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-800">
+                            <i class="bi bi-wallet2"></i>
+                            Keuangan
+                        </span>
 
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
-                        <i class="bi bi-wallet2"></i>
+                        <span class="text-xs text-slate-400 dark:text-slate-500">
+                            Admin Panel
+                        </span>
+
                     </div>
 
-                    <div>
-                        <p class="text-[11px] font-medium uppercase tracking-wide text-[#71837B] dark:text-[#8FA59A]">
-                            Total Komisi
-                        </p>
+                    <h1 class="mt-3 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                        Kelola Komisi
+                    </h1>
 
-                        <p class="mt-0.5 text-sm font-semibold text-[#123128] dark:text-white">
-                            {{ $commissions->total() }}
-                        </p>
-                    </div>
-
-                </div>
-            </div>
-
-        </div>
-
-
-        {{-- Filter --}}
-        <div class="rounded-2xl border border-[#D6E4DD] bg-white p-5 dark:border-[#2E473A] dark:bg-[#13221A]">
-
-            <div class="mb-4 flex items-center gap-3">
-
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
-                    <i class="bi bi-funnel-fill"></i>
-                </div>
-
-                <div>
-                    <h2 class="text-sm font-semibold text-[#123128] dark:text-white">
-                        Filter Komisi
-                    </h2>
-
-                    <p class="text-xs text-[#71837B] dark:text-[#8FA59A]">
-                        Cari berdasarkan order, client, atau freelancer.
+                    <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                        Pantau pendapatan platform dari setiap transaksi yang berhasil.
                     </p>
+
                 </div>
 
-            </div>
 
+                {{-- Total --}}
+                <div class="w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:w-auto sm:min-w-[220px] dark:border-slate-800 dark:bg-slate-900">
 
-            <form
-                action="{{ route('admin.commissions.index') }}"
-                method="GET"
-                class="grid gap-4 lg:grid-cols-[1fr_220px_auto]"
-            >
+                    <div class="flex items-center gap-3">
 
-                {{-- Search --}}
-                <div>
-                    <label
-                        for="search"
-                        class="mb-2 block text-sm font-medium text-[#355247] dark:text-[#D0DED8]"
-                    >
-                        Cari komisi
-                    </label>
-
-                    <div class="relative">
-
-                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                            <i class="bi bi-search text-[#80948A] dark:text-[#80988C]"></i>
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+                            <i class="bi bi-wallet2 text-lg"></i>
                         </div>
 
-                        <input
-                            type="text"
-                            id="search"
-                            name="search"
-                            value="{{ $search }}"
-                            placeholder="Nomor order, nama client, freelancer..."
-                            class="w-full rounded-xl border border-[#BFCFC7] bg-white py-3 pl-10 pr-4 text-sm text-[#123128] outline-none transition placeholder:text-[#95A79F] hover:border-[#AFC2B8] focus:border-[#1E9E5A] focus:ring-4 focus:ring-[#EAF7EF] dark:border-[#3A5245] dark:bg-[#16251D] dark:text-white dark:placeholder:text-[#789086] dark:hover:border-[#4C695B] dark:focus:border-[#7AD8B5] dark:focus:ring-[#214532]"
-                        >
+                        <div>
+
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                Total Komisi
+                            </p>
+
+                            <p class="mt-1 text-xl font-bold text-slate-900 dark:text-white">
+                                {{ $commissions->total() }}
+                            </p>
+
+                        </div>
 
                     </div>
-                </div>
 
-
-                {{-- Status --}}
-                <div>
-                    <label
-                        for="status"
-                        class="mb-2 block text-sm font-medium text-[#355247] dark:text-[#D0DED8]"
-                    >
-                        Status
-                    </label>
-
-                    <select
-                        id="status"
-                        name="status"
-                        class="w-full rounded-xl border border-[#BFCFC7] bg-white px-4 py-3 text-sm text-[#123128] outline-none transition hover:border-[#AFC2B8] focus:border-[#1E9E5A] focus:ring-4 focus:ring-[#EAF7EF] dark:border-[#3A5245] dark:bg-[#16251D] dark:text-white dark:hover:border-[#4C695B] dark:focus:border-[#7AD8B5] dark:focus:ring-[#214532]"
-                    >
-                        <option value="">
-                            Semua status
-                        </option>
-
-                        <option value="pending" @selected($status === 'pending')>
-                            Menunggu
-                        </option>
-
-                        <option value="earned" @selected($status === 'earned')>
-                            Diperoleh
-                        </option>
-
-                        <option value="paid" @selected($status === 'paid')>
-                            Sudah Dibayarkan
-                        </option>
-
-                        <option value="cancelled" @selected($status === 'cancelled')>
-                            Dibatalkan
-                        </option>
-                    </select>
-                </div>
-
-
-                {{-- Buttons --}}
-                <div class="flex items-end gap-2">
-
-                    <button
-                        type="submit"
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1E9E5A] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#17844A] focus:outline-none focus:ring-4 focus:ring-[#D8F3E2] dark:focus:ring-[#28533B] lg:w-auto"
-                    >
-                        <i class="bi bi-search"></i>
-                        Cari
-                    </button>
-
-                    @if ($search !== '' || $status)
-
-                        <a
-                            href="{{ route('admin.commissions.index') }}"
-                            class="inline-flex items-center justify-center rounded-xl border border-[#BFCFC7] bg-white px-4 py-3 text-sm font-medium text-[#355247] transition hover:border-[#AFC2B8] hover:bg-[#F6FAF8] dark:border-[#3A5245] dark:bg-[#16251D] dark:text-[#C4D2CC] dark:hover:border-[#4C695B] dark:hover:bg-[#1A3024]"
-                        >
-                            Reset
-                        </a>
-
-                    @endif
-
-                </div>
-
-            </form>
-
-        </div>
-
-
-        {{-- Commission Table --}}
-        <div class="overflow-hidden rounded-2xl border border-[#D6E4DD] bg-white dark:border-[#2E473A] dark:bg-[#13221A]">
-
-            <div class="flex flex-col gap-2 border-b border-[#D6E4DD] px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-[#2E473A]">
-
-                <div>
-                    <h2 class="text-sm font-semibold text-[#123128] dark:text-white">
-                        Daftar Komisi
-                    </h2>
-
-                    <p class="mt-0.5 text-xs text-[#71837B] dark:text-[#8FA59A]">
-                        Menampilkan {{ $commissions->firstItem() ?? 0 }}–{{ $commissions->lastItem() ?? 0 }}
-                        dari {{ $commissions->total() }} komisi
-                    </p>
-                </div>
-
-                <div class="hidden items-center gap-2 text-xs text-[#71837B] sm:flex dark:text-[#8FA59A]">
-                    <i class="bi bi-bar-chart-line text-[#1E9E5A] dark:text-[#7AD8B5]"></i>
-                    Monitoring pendapatan
                 </div>
 
             </div>
 
 
-            {{-- Desktop --}}
-            <div class="hidden overflow-x-auto md:block">
+            {{-- =========================================================
+                FILTER
+            ========================================================== --}}
+            <section class="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
-                <table class="min-w-full">
+                <div class="border-b border-slate-100 px-5 py-5 sm:px-6 dark:border-slate-800">
 
-                    <thead>
-                        <tr class="border-b border-[#D6E4DD] bg-[#F8FCF9] dark:border-[#2E473A] dark:bg-[#17271F]">
+                    <div class="flex items-start gap-3">
 
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#71837B] dark:text-[#9CB0A7]">
-                                Order
-                            </th>
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+                            <i class="bi bi-funnel-fill"></i>
+                        </div>
 
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#71837B] dark:text-[#9CB0A7]">
-                                Client
-                            </th>
+                        <div>
 
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#71837B] dark:text-[#9CB0A7]">
-                                Freelancer
-                            </th>
+                            <h2 class="text-base font-bold text-slate-900 dark:text-white">
+                                Filter Komisi
+                            </h2>
 
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#71837B] dark:text-[#9CB0A7]">
-                                Komisi
-                            </th>
+                            <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                                Cari berdasarkan order, client, atau freelancer.
+                            </p>
 
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#71837B] dark:text-[#9CB0A7]">
-                                Freelancer
-                            </th>
+                        </div>
 
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#71837B] dark:text-[#9CB0A7]">
-                                Status
-                            </th>
+                    </div>
 
-                            <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#71837B] dark:text-[#9CB0A7]">
-                                Aksi
-                            </th>
-
-                        </tr>
-                    </thead>
+                </div>
 
 
-                    <tbody class="divide-y divide-[#E5EEE9] dark:divide-[#294036]">
+                <form
+                    action="{{ route('admin.commissions.index') }}"
+                    method="GET"
+                    class="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_220px_auto]"
+                >
 
-                        @forelse ($commissions as $commission)
+                    {{-- Search --}}
+                    <div>
 
-                            @php
-                                $commissionStatus = $statusMap[$commission->status] ?? [
-                                    'label' => ucfirst(str_replace('_', ' ', $commission->status ?? 'Unknown')),
-                                    'class' => 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
-                                    'icon' => 'bi-question-circle',
-                                ];
+                        <label
+                            for="search"
+                            class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                        >
+                            Cari Komisi
+                        </label>
 
-                                $order = $commission->order;
-                                $client = $order?->client;
-                                $freelancerUser = $commission->freelancerProfile?->user;
-                            @endphp
+                        <div class="relative">
 
-                            <tr class="transition hover:bg-[#F8FCF9] dark:hover:bg-[#17271F]">
+                            <i class="bi bi-search pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400"></i>
 
-                                {{-- Order --}}
-                                <td class="px-5 py-4">
+                            <input
+                                type="text"
+                                id="search"
+                                name="search"
+                                value="{{ $search }}"
+                                placeholder="Nomor order, nama client, freelancer..."
+                                class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:border-slate-600 dark:focus:border-blue-500 dark:focus:bg-slate-900"
+                            >
 
-                                    <div class="min-w-[160px]">
+                        </div>
 
-                                        @if ($order)
+                    </div>
 
-                                            <a
-                                                href="{{ route('admin.orders.show', $order) }}"
-                                                class="text-sm font-semibold text-[#123128] transition hover:text-[#1E9E5A] dark:text-white dark:hover:text-[#7AD8B5]"
-                                            >
-                                                #{{ $order->order_number }}
-                                            </a>
 
-                                            <p class="mt-1 text-xs text-[#71837B] dark:text-[#8FA59A]">
-                                                Rp {{ number_format((float) $commission->order_total, 0, ',', '.') }}
+                    {{-- Status --}}
+                    <div>
+
+                        <label
+                            for="status"
+                            class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                        >
+                            Status
+                        </label>
+
+                        <select
+                            id="status"
+                            name="status"
+                            class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:border-slate-600 dark:focus:border-blue-500 dark:focus:bg-slate-900"
+                        >
+
+                            <option value="">
+                                Semua status
+                            </option>
+
+                            <option value="pending" @selected($status === 'pending')>
+                                Menunggu
+                            </option>
+
+                            <option value="earned" @selected($status === 'earned')>
+                                Diperoleh
+                            </option>
+
+                            <option value="paid" @selected($status === 'paid')>
+                                Sudah Dibayarkan
+                            </option>
+
+                            <option value="cancelled" @selected($status === 'cancelled')>
+                                Dibatalkan
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    {{-- Buttons --}}
+                    <div class="flex items-end gap-2">
+
+                        <button
+                            type="submit"
+                            class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 !text-white text-sm font-semibold shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 lg:flex-none"
+                        >
+                            <i class="bi bi-search"></i>
+                            Cari
+                        </button>
+
+                        @if($search !== '' || $status)
+
+                            <a
+                                href="{{ route('admin.commissions.index') }}"
+                                class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-800 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
+                            >
+                                Reset
+                            </a>
+
+                        @endif
+
+                    </div>
+
+                </form>
+
+            </section>
+
+
+            {{-- =========================================================
+                COMMISSION LIST
+            ========================================================== --}}
+            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+                {{-- List Header --}}
+                <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:border-slate-800">
+
+                    <div>
+
+                        <h2 class="text-base font-bold text-slate-900 dark:text-white">
+                            Daftar Komisi
+                        </h2>
+
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Menampilkan
+                            {{ $commissions->firstItem() ?? 0 }}–{{ $commissions->lastItem() ?? 0 }}
+                            dari
+                            {{ $commissions->total() }}
+                            komisi
+                        </p>
+
+                    </div>
+
+                    <div class="inline-flex w-fit items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 dark:bg-blue-950/30 dark:text-blue-300">
+
+                        <i class="bi bi-bar-chart-line"></i>
+
+                        Monitoring pendapatan
+
+                    </div>
+
+                </div>
+
+
+                {{-- =====================================================
+                    DESKTOP TABLE
+                ====================================================== --}}
+                <div class="hidden overflow-x-auto lg:block">
+
+                    <table class="w-full min-w-[1250px]">
+
+                        <thead>
+
+                            <tr class="border-b border-slate-100 bg-slate-50/80 text-left dark:border-slate-800 dark:bg-slate-800/60">
+
+                                <th class="px-6 py-4 text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400">
+                                    Order
+                                </th>
+
+                                <th class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400">
+                                    Client
+                                </th>
+
+                                <th class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400">
+                                    Freelancer
+                                </th>
+
+                                <th class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400">
+                                    Komisi Platform
+                                </th>
+
+                                <th class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400">
+                                    Pendapatan Freelancer
+                                </th>
+
+                                <th class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400">
+                                    Status
+                                </th>
+
+                                <th class="px-6 py-4 text-right text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400">
+                                    Aksi
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+
+                            @forelse($commissions as $commission)
+
+                                @php
+                                    $commissionStatus = $statusMap[$commission->status] ?? [
+                                        'label' => ucfirst(
+                                            str_replace(
+                                                '_',
+                                                ' ',
+                                                $commission->status ?? 'Unknown'
+                                            )
+                                        ),
+                                        'class' => 'bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700',
+                                        'icon' => 'bi-question-circle',
+                                    ];
+
+                                    $order = $commission->order;
+
+                                    $client = $order?->client;
+                                    $clientProfile = $client?->profile;
+                                    $clientAvatar = $clientProfile?->avatar;
+
+                                    $freelancerProfile = $commission->freelancerProfile;
+                                    $freelancerUser = $freelancerProfile?->user;
+                                    $freelancerAvatar = $freelancerProfile?->avatar;
+
+                                    $clientInitial = strtoupper(
+                                        substr(
+                                            $client?->name ?? 'C',
+                                            0,
+                                            1
+                                        )
+                                    );
+
+                                    $freelancerInitial = strtoupper(
+                                        substr(
+                                            $freelancerUser?->name ?? 'F',
+                                            0,
+                                            1
+                                        )
+                                    );
+                                @endphp
+
+
+                                <tr class="group transition hover:bg-blue-50/30 dark:hover:bg-blue-950/20">
+
+
+                                    {{-- Order --}}
+                                    <td class="px-6 py-5">
+
+                                        <div class="min-w-[170px]">
+
+                                            @if($order)
+
+                                                <a
+                                                    href="{{ route('admin.orders.show', $order) }}"
+                                                    class="inline-flex items-center gap-1.5 text-sm font-bold text-slate-800 transition hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-300"
+                                                >
+                                                    #{{ $order->order_number }}
+
+                                                    <i class="bi bi-arrow-up-right text-[10px]"></i>
+                                                </a>
+
+                                            @else
+
+                                                <p class="text-sm text-slate-400">
+                                                    Order tidak tersedia
+                                                </p>
+
+                                            @endif
+
+                                            <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                                                Order Total
+                                                <span class="font-semibold text-slate-500 dark:text-slate-400">
+                                                    Rp {{ number_format((float) $commission->order_total, 0, ',', '.') }}
+                                                </span>
                                             </p>
 
-                                        @else
+                                        </div>
 
-                                            <p class="text-sm text-[#71837B] dark:text-[#8FA59A]">
-                                                Order tidak tersedia
+                                    </td>
+
+
+                                    {{-- Client --}}
+                                    <td class="px-5 py-5">
+
+                                        <div class="flex min-w-[220px] items-center gap-3">
+
+                                            @if($clientAvatar)
+
+                                                <img
+                                                    src="{{ asset('storage/' . $clientAvatar) }}"
+                                                    alt="{{ $client?->name ?? 'Client' }}"
+                                                    class="h-10 w-10 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-slate-900"
+                                                >
+
+                                            @else
+
+                                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 ring-2 ring-white dark:bg-blue-950/60 dark:text-blue-300 dark:ring-slate-900">
+                                                    {{ $clientInitial }}
+                                                </div>
+
+                                            @endif
+
+                                            <div class="min-w-0">
+
+                                                <p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                                    {{ $client?->name ?? 'Client tidak tersedia' }}
+                                                </p>
+
+                                                @if($client?->email)
+
+                                                    <p class="mt-0.5 truncate text-xs text-slate-400 dark:text-slate-500">
+                                                        {{ $client->email }}
+                                                    </p>
+
+                                                @endif
+
+                                            </div>
+
+                                        </div>
+
+                                    </td>
+
+
+                                    {{-- Freelancer --}}
+                                    <td class="px-5 py-5">
+
+                                        <div class="flex min-w-[220px] items-center gap-3">
+
+                                            @if($freelancerAvatar)
+
+                                                <img
+                                                    src="{{ asset('storage/' . $freelancerAvatar) }}"
+                                                    alt="{{ $freelancerUser?->name ?? 'Freelancer' }}"
+                                                    class="h-10 w-10 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-slate-900"
+                                                >
+
+                                            @else
+
+                                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-700 ring-2 ring-white dark:bg-violet-950/60 dark:text-violet-300 dark:ring-slate-900">
+                                                    {{ $freelancerInitial }}
+                                                </div>
+
+                                            @endif
+
+                                            <div class="min-w-0">
+
+                                                <p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                                    {{ $freelancerUser?->name ?? 'Freelancer tidak tersedia' }}
+                                                </p>
+
+                                                @if($freelancerProfile?->username)
+
+                                                    <p class="mt-0.5 truncate text-xs text-slate-400 dark:text-slate-500">
+                                                        {{ '@' . $freelancerProfile->username }}
+                                                    </p>
+
+                                                @endif
+
+                                            </div>
+
+                                        </div>
+
+                                    </td>
+
+
+                                    {{-- Commission --}}
+                                    <td class="px-5 py-5">
+
+                                        <div class="min-w-[160px]">
+
+                                            <p class="text-sm font-bold text-slate-900 dark:text-white">
+                                                Rp {{ number_format((float) $commission->commission_amount, 0, ',', '.') }}
+                                            </p>
+
+                                            <div class="mt-1 flex items-center gap-2">
+
+                                                <span class="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700 dark:bg-blue-950/30 dark:text-blue-300">
+                                                    {{ number_format((float) $commission->commission_rate, 2, ',', '.') }}%
+                                                </span>
+
+                                                <span class="text-[10px] text-slate-400">
+                                                    platform
+                                                </span>
+
+                                            </div>
+
+                                        </div>
+
+                                    </td>
+
+
+                                    {{-- Freelancer Amount --}}
+                                    <td class="px-5 py-5">
+
+                                        <div class="min-w-[170px]">
+
+                                            <p class="text-sm font-bold text-slate-900 dark:text-white">
+                                                Rp {{ number_format((float) $commission->freelancer_amount, 0, ',', '.') }}
+                                            </p>
+
+                                            <p class="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
+                                                Bagian freelancer
+                                            </p>
+
+                                        </div>
+
+                                    </td>
+
+
+                                    {{-- Status --}}
+                                    <td class="px-5 py-5">
+
+                                        <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold {{ $commissionStatus['class'] }}">
+
+                                            <i class="bi {{ $commissionStatus['icon'] }}"></i>
+
+                                            {{ $commissionStatus['label'] }}
+
+                                        </span>
+
+                                    </td>
+
+
+                                    {{-- Action --}}
+                                    <td class="px-6 py-5">
+
+                                        <div class="flex justify-end">
+
+                                            <a
+                                                href="{{ route('admin.commissions.show', $commission) }}"
+                                                class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-800 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
+                                                title="Lihat detail komisi"
+                                            >
+                                                <i class="bi bi-eye"></i>
+                                                Detail
+                                            </a>
+
+                                        </div>
+
+                                    </td>
+
+                                </tr>
+
+
+                            @empty
+
+                                <tr>
+
+                                    <td colspan="7" class="px-6 py-16 text-center">
+
+                                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+                                            <i class="bi bi-wallet2 text-2xl"></i>
+                                        </div>
+
+                                        <h3 class="mt-4 text-sm font-bold text-slate-800 dark:text-white">
+                                            Komisi belum ditemukan
+                                        </h3>
+
+                                        <p class="mx-auto mt-1 max-w-md text-sm leading-6 text-slate-400 dark:text-slate-500">
+                                            Belum ada data komisi yang sesuai dengan pencarian atau filter yang dipilih.
+                                        </p>
+
+                                        @if($search !== '' || $status)
+
+                                            <a
+                                                href="{{ route('admin.commissions.index') }}"
+                                                class="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 !text-white text-sm font-semibold shadow-sm transition hover:bg-blue-700"
+                                            >
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                                Tampilkan semua
+                                            </a>
+
+                                        @endif
+
+                                    </td>
+
+                                </tr>
+
+                            @endforelse
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+                {{-- =====================================================
+                    MOBILE
+                ====================================================== --}}
+                <div class="divide-y divide-slate-100 lg:hidden dark:divide-slate-800">
+
+                    @forelse($commissions as $commission)
+
+                        @php
+                            $commissionStatus = $statusMap[$commission->status] ?? [
+                                'label' => ucfirst(
+                                    str_replace(
+                                        '_',
+                                        ' ',
+                                        $commission->status ?? 'Unknown'
+                                    )
+                                ),
+                                'class' => 'bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700',
+                                'icon' => 'bi-question-circle',
+                            ];
+
+                            $order = $commission->order;
+
+                            $client = $order?->client;
+                            $clientProfile = $client?->profile;
+                            $clientAvatar = $clientProfile?->avatar;
+
+                            $freelancerProfile = $commission->freelancerProfile;
+                            $freelancerUser = $freelancerProfile?->user;
+                            $freelancerAvatar = $freelancerProfile?->avatar;
+
+                            $clientInitial = strtoupper(
+                                substr(
+                                    $client?->name ?? 'C',
+                                    0,
+                                    1
+                                )
+                            );
+
+                            $freelancerInitial = strtoupper(
+                                substr(
+                                    $freelancerUser?->name ?? 'F',
+                                    0,
+                                    1
+                                )
+                            );
+                        @endphp
+
+
+                        <div class="p-4 sm:p-5">
+
+                            {{-- Card Header --}}
+                            <div class="flex items-start justify-between gap-3">
+
+                                <div class="min-w-0">
+
+                                    @if($order)
+
+                                        <a
+                                            href="{{ route('admin.orders.show', $order) }}"
+                                            class="inline-flex items-center gap-1.5 text-sm font-bold text-slate-800 hover:text-blue-600 dark:text-white dark:hover:text-blue-300"
+                                        >
+                                            #{{ $order->order_number }}
+                                            <i class="bi bi-arrow-up-right text-[10px]"></i>
+                                        </a>
+
+                                    @else
+
+                                        <p class="text-sm font-bold text-slate-800 dark:text-white">
+                                            Order tidak tersedia
+                                        </p>
+
+                                    @endif
+
+                                    <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                                        Order Total:
+                                        <span class="font-semibold text-slate-600 dark:text-slate-300">
+                                            Rp {{ number_format((float) $commission->order_total, 0, ',', '.') }}
+                                        </span>
+                                    </p>
+
+                                </div>
+
+
+                                <span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-[10px] font-semibold {{ $commissionStatus['class'] }}">
+
+                                    <i class="bi {{ $commissionStatus['icon'] }}"></i>
+
+                                    {{ $commissionStatus['label'] }}
+
+                                </span>
+
+                            </div>
+
+
+                            {{-- Client --}}
+                            <div class="mt-4 rounded-2xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900 dark:bg-blue-950/20">
+
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
+                                    Client
+                                </p>
+
+                                <div class="mt-3 flex items-center gap-3">
+
+                                    @if($clientAvatar)
+
+                                        <img
+                                            src="{{ asset('storage/' . $clientAvatar) }}"
+                                            alt="{{ $client?->name ?? 'Client' }}"
+                                            class="h-12 w-12 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-slate-900"
+                                        >
+
+                                    @else
+
+                                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700 ring-2 ring-white dark:bg-blue-950/60 dark:text-blue-300 dark:ring-slate-900">
+                                            {{ $clientInitial }}
+                                        </div>
+
+                                    @endif
+
+                                    <div class="min-w-0">
+
+                                        <p class="truncate text-sm font-bold text-slate-800 dark:text-white">
+                                            {{ $client?->name ?? 'Client tidak tersedia' }}
+                                        </p>
+
+                                        @if($client?->email)
+
+                                            <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                                {{ $client->email }}
+                                            </p>
+
+                                        @endif
+
+                                        @if($clientProfile?->username)
+
+                                            <p class="mt-1 truncate text-[11px] font-medium text-blue-600 dark:text-blue-300">
+                                                {{ '@' . $clientProfile->username }}
                                             </p>
 
                                         @endif
 
                                     </div>
 
-                                </td>
+                                </div>
+
+                            </div>
 
 
-                                {{-- Client --}}
-                                <td class="px-5 py-4">
+                            {{-- Freelancer --}}
+                            <div class="mt-3 rounded-2xl border border-violet-100 bg-violet-50/50 p-4 dark:border-violet-900 dark:bg-violet-950/20">
 
-                                    <div class="flex min-w-[180px] items-center gap-3">
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-300">
+                                    Freelancer
+                                </p>
 
-                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EAF7EF] text-sm font-semibold text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
-                                            {{ strtoupper(substr($client?->name ?? 'C', 0, 1)) }}
-                                        </div>
+                                <div class="mt-3 flex items-center gap-3">
 
-                                        <div class="min-w-0">
+                                    @if($freelancerAvatar)
 
-                                            <p class="truncate text-sm font-medium text-[#263F35] dark:text-[#D7E3DE]">
-                                                {{ $client?->name ?? 'Client tidak tersedia' }}
-                                            </p>
-
-                                            @if ($client?->email)
-                                                <p class="mt-0.5 truncate text-xs text-[#71837B] dark:text-[#8FA59A]">
-                                                    {{ $client->email }}
-                                                </p>
-                                            @endif
-
-                                        </div>
-
-                                    </div>
-
-                                </td>
-
-
-                                {{-- Freelancer --}}
-                                <td class="px-5 py-4">
-
-                                    <div class="flex min-w-[180px] items-center gap-3">
-
-                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EAF7EF] text-sm font-semibold text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
-                                            {{ strtoupper(substr($freelancerUser?->name ?? 'F', 0, 1)) }}
-                                        </div>
-
-                                        <div class="min-w-0">
-
-                                            <p class="truncate text-sm font-medium text-[#263F35] dark:text-[#D7E3DE]">
-                                                {{ $freelancerUser?->name ?? 'Freelancer tidak tersedia' }}
-                                            </p>
-
-                                            @if ($commission->freelancerProfile?->username)
-                                                <p class="mt-0.5 truncate text-xs text-[#71837B] dark:text-[#8FA59A]">
-                                                    {{ '@' . $commission->freelancerProfile->username }}
-                                                </p>
-                                            @endif
-
-                                        </div>
-
-                                    </div>
-
-                                </td>
-
-
-                                {{-- Commission --}}
-                                <td class="px-5 py-4">
-
-                                    <div class="min-w-[145px]">
-
-                                        <p class="text-sm font-semibold text-[#123128] dark:text-white">
-                                            Rp {{ number_format((float) $commission->commission_amount, 0, ',', '.') }}
-                                        </p>
-
-                                        <p class="mt-1 text-xs text-[#71837B] dark:text-[#8FA59A]">
-                                            {{ number_format((float) $commission->commission_rate, 2, ',', '.') }}%
-                                        </p>
-
-                                    </div>
-
-                                </td>
-
-
-                                {{-- Freelancer Amount --}}
-                                <td class="px-5 py-4">
-
-                                    <div class="min-w-[145px]">
-
-                                        <p class="text-sm font-semibold text-[#123128] dark:text-white">
-                                            Rp {{ number_format((float) $commission->freelancer_amount, 0, ',', '.') }}
-                                        </p>
-
-                                        <p class="mt-1 text-xs text-[#71837B] dark:text-[#8FA59A]">
-                                            Bagian freelancer
-                                        </p>
-
-                                    </div>
-
-                                </td>
-
-
-                                {{-- Status --}}
-                                <td class="px-5 py-4">
-
-                                    <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold {{ $commissionStatus['class'] }}">
-                                        <i class="bi {{ $commissionStatus['icon'] }}"></i>
-                                        {{ $commissionStatus['label'] }}
-                                    </span>
-
-                                </td>
-
-
-                                {{-- Action --}}
-                                <td class="px-5 py-4">
-
-                                    <div class="flex justify-end">
-
-                                        <a
-                                            href="{{ route('admin.commissions.show', $commission) }}"
-                                            class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D0DED8] bg-white text-[#486258] transition hover:border-[#9EB5AA] hover:bg-[#F4F8F5] hover:text-[#1E9E5A] dark:border-[#3A5245] dark:bg-[#16251D] dark:text-[#AFC0B8] dark:hover:border-[#4C695B] dark:hover:bg-[#1D3327] dark:hover:text-[#7AD8B5]"
-                                            title="Lihat detail"
+                                        <img
+                                            src="{{ asset('storage/' . $freelancerAvatar) }}"
+                                            alt="{{ $freelancerUser?->name ?? 'Freelancer' }}"
+                                            class="h-12 w-12 shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white dark:ring-slate-900"
                                         >
-                                            <i class="bi bi-eye"></i>
-                                        </a>
 
-                                    </div>
+                                    @else
 
-                                </td>
-
-                            </tr>
-
-                        @empty
-
-                            <tr>
-
-                                <td colspan="7" class="px-6 py-16 text-center">
-
-                                    <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF7EF] text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
-                                        <i class="bi bi-wallet2 text-2xl"></i>
-                                    </div>
-
-                                    <h3 class="mt-4 text-sm font-semibold text-[#123128] dark:text-white">
-                                        Komisi belum ditemukan
-                                    </h3>
-
-                                    <p class="mx-auto mt-1 max-w-md text-sm text-[#71837B] dark:text-[#8FA59A]">
-                                        Belum ada data komisi yang sesuai dengan pencarian atau filter yang dipilih.
-                                    </p>
-
-                                    @if ($search !== '' || $status)
-
-                                        <a
-                                            href="{{ route('admin.commissions.index') }}"
-                                            class="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#1E9E5A] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#17844A]"
-                                        >
-                                            <i class="bi bi-arrow-counterclockwise"></i>
-                                            Tampilkan semua
-                                        </a>
+                                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-bold text-violet-700 ring-2 ring-white dark:bg-violet-950/60 dark:text-violet-300 dark:ring-slate-900">
+                                            {{ $freelancerInitial }}
+                                        </div>
 
                                     @endif
 
-                                </td>
+                                    <div class="min-w-0">
 
-                            </tr>
+                                        <p class="truncate text-sm font-bold text-slate-800 dark:text-white">
+                                            {{ $freelancerUser?->name ?? 'Freelancer tidak tersedia' }}
+                                        </p>
 
-                        @endforelse
+                                        @if($freelancerProfile?->username)
 
-                    </tbody>
+                                            <p class="mt-1 truncate text-[11px] font-medium text-violet-600 dark:text-violet-300">
+                                                {{ '@' . $freelancerProfile->username }}
+                                            </p>
 
-                </table>
+                                        @endif
 
-            </div>
-
-
-            {{-- Mobile --}}
-            <div class="divide-y divide-[#E5EEE9] md:hidden dark:divide-[#294036]">
-
-                @forelse ($commissions as $commission)
-
-                    @php
-                        $commissionStatus = $statusMap[$commission->status] ?? [
-                            'label' => ucfirst(str_replace('_', ' ', $commission->status ?? 'Unknown')),
-                            'class' => 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200',
-                            'icon' => 'bi-question-circle',
-                        ];
-
-                        $order = $commission->order;
-                        $client = $order?->client;
-                        $freelancerUser = $commission->freelancerProfile?->user;
-                    @endphp
-
-                    <div class="p-5">
-
-                        <div class="flex items-start justify-between gap-4">
-
-                            <div class="min-w-0">
-
-                                @if ($order)
-                                    <a
-                                        href="{{ route('admin.orders.show', $order) }}"
-                                        class="text-sm font-semibold text-[#123128] hover:text-[#1E9E5A] dark:text-white dark:hover:text-[#7AD8B5]"
-                                    >
-                                        #{{ $order->order_number }}
-                                    </a>
-                                @else
-                                    <p class="text-sm font-semibold text-[#123128] dark:text-white">
-                                        Order tidak tersedia
-                                    </p>
-                                @endif
-
-                                <p class="mt-1 text-xs text-[#71837B] dark:text-[#8FA59A]">
-                                    Rp {{ number_format((float) $commission->order_total, 0, ',', '.') }}
-                                </p>
-
-                            </div>
-
-                            <span class="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold {{ $commissionStatus['class'] }}">
-                                <i class="bi {{ $commissionStatus['icon'] }}"></i>
-                                {{ $commissionStatus['label'] }}
-                            </span>
-
-                        </div>
-
-
-                        <div class="mt-4 grid gap-3">
-
-                            <div class="flex items-center gap-3">
-
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EAF7EF] text-xs font-semibold text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
-                                    {{ strtoupper(substr($client?->name ?? 'C', 0, 1)) }}
-                                </div>
-
-                                <div class="min-w-0">
-
-                                    <p class="text-xs font-medium uppercase tracking-wide text-[#879A91] dark:text-[#81968B]">
-                                        Client
-                                    </p>
-
-                                    <p class="truncate text-sm text-[#355247] dark:text-[#D0DED8]">
-                                        {{ $client?->name ?? 'Tidak tersedia' }}
-                                    </p>
+                                    </div>
 
                                 </div>
 
                             </div>
 
 
-                            <div class="flex items-center gap-3">
+                            {{-- Financial Summary --}}
+                            <div class="mt-4 grid grid-cols-2 gap-3">
 
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EAF7EF] text-xs font-semibold text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
-                                    {{ strtoupper(substr($freelancerUser?->name ?? 'F', 0, 1)) }}
+                                {{-- Commission --}}
+                                <div class="rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/20">
+
+                                    <p class="text-[10px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
+                                        Komisi Platform
+                                    </p>
+
+                                    <p class="mt-1.5 text-base font-bold text-slate-900 dark:text-white">
+                                        Rp {{ number_format((float) $commission->commission_amount, 0, ',', '.') }}
+                                    </p>
+
+                                    <span class="mt-2 inline-flex rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-blue-700 dark:bg-slate-900 dark:text-blue-300">
+                                        {{ number_format((float) $commission->commission_rate, 2, ',', '.') }}%
+                                    </span>
+
                                 </div>
 
-                                <div class="min-w-0">
 
-                                    <p class="text-xs font-medium uppercase tracking-wide text-[#879A91] dark:text-[#81968B]">
+                                {{-- Freelancer Amount --}}
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/60">
+
+                                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                                         Freelancer
                                     </p>
 
-                                    <p class="truncate text-sm text-[#355247] dark:text-[#D0DED8]">
-                                        {{ $freelancerUser?->name ?? 'Tidak tersedia' }}
+                                    <p class="mt-1.5 text-base font-bold text-slate-900 dark:text-white">
+                                        Rp {{ number_format((float) $commission->freelancer_amount, 0, ',', '.') }}
+                                    </p>
+
+                                    <p class="mt-1 text-[10px] text-slate-400">
+                                        Pendapatan freelancer
                                     </p>
 
                                 </div>
 
                             </div>
 
-                        </div>
 
-
-                        <div class="mt-4 flex items-center justify-between gap-4 border-t border-[#E5EEE9] pt-4 dark:border-[#294036]">
-
-                            <div>
-
-                                <p class="text-xs text-[#71837B] dark:text-[#8FA59A]">
-                                    Komisi Platform
-                                </p>
-
-                                <p class="mt-0.5 text-base font-semibold text-[#1E9E5A] dark:text-[#7AD8B5]">
-                                    Rp {{ number_format((float) $commission->commission_amount, 0, ',', '.') }}
-                                </p>
-
-                            </div>
-
+                            {{-- Action --}}
                             <a
                                 href="{{ route('admin.commissions.show', $commission) }}"
-                                class="inline-flex items-center gap-2 rounded-xl bg-[#EAF7EF] px-4 py-2.5 text-sm font-semibold text-[#1E7045] transition hover:bg-[#DDF1E5] dark:bg-[#234632] dark:text-[#A4E5BA] dark:hover:bg-[#2B513B]"
+                                class="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 !text-white text-sm font-semibold shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2"
                             >
                                 <i class="bi bi-eye"></i>
-                                Detail
+                                Lihat Detail Komisi
                             </a>
 
                         </div>
 
-                    </div>
 
-                @empty
+                    @empty
 
-                    <div class="px-6 py-14 text-center">
+                        <div class="px-5 py-14 text-center">
 
-                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF7EF] text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
-                            <i class="bi bi-wallet2 text-2xl"></i>
+                            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+                                <i class="bi bi-wallet2 text-2xl"></i>
+                            </div>
+
+                            <h3 class="mt-4 text-sm font-bold text-slate-800 dark:text-white">
+                                Komisi belum ditemukan
+                            </h3>
+
+                            <p class="mt-1 text-sm leading-6 text-slate-400 dark:text-slate-500">
+                                Belum ada komisi yang sesuai.
+                            </p>
+
                         </div>
 
-                        <h3 class="mt-4 text-sm font-semibold text-[#123128] dark:text-white">
-                            Komisi belum ditemukan
-                        </h3>
+                    @endforelse
 
-                        <p class="mt-1 text-sm text-[#71837B] dark:text-[#8FA59A]">
-                            Belum ada komisi yang sesuai.
-                        </p>
-
-                    </div>
-
-                @endforelse
-
-            </div>
-
-
-            {{-- Pagination --}}
-            @if ($commissions->hasPages())
-
-                <div class="border-t border-[#D6E4DD] px-5 py-4 dark:border-[#2E473A]">
-                    {{ $commissions->links() }}
                 </div>
 
-            @endif
+
+                {{-- =====================================================
+                    PAGINATION
+                ====================================================== --}}
+                @if($commissions->hasPages())
+
+                    <div class="border-t border-slate-100 bg-slate-50/50 px-5 py-4 sm:px-6 dark:border-slate-800 dark:bg-slate-900/50">
+                        {{ $commissions->links() }}
+                    </div>
+
+                @endif
+
+            </section>
 
         </div>
 

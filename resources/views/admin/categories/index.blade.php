@@ -1,603 +1,733 @@
 <x-layouts.admin title="Kategori">
 
-    <div class="mx-auto max-w-7xl space-y-6">
 
-        {{-- Header --}}
-        <div class="rounded-2xl border border-[#D8E5DE] bg-white p-6 dark:border-[#2B4337] dark:bg-[#111F18] sm:p-7">
-            <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+<div class="mx-auto max-w-7xl space-y-5 sm:space-y-6">
 
-                <div>
-                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#1E9E5A] dark:text-[#7AD8B5]">
-                        <i class="bi bi-grid"></i>
-                        Marketplace
-                    </div>
+    {{-- ==========================================================
+         HEADER
+    =========================================================== --}}
+    <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
 
-                    <h1 class="mt-2 text-2xl font-semibold tracking-tight text-[#123128] dark:text-[#E7F2EC] sm:text-3xl">
-                        Kategori
-                    </h1>
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
-                    <p class="mt-2 max-w-2xl text-sm leading-6 text-[#71837B] dark:text-[#9CB0A5]">
-                        Kelola kategori yang digunakan untuk mengelompokkan jasa di marketplace.
-                    </p>
+            <div class="min-w-0">
+
+                <div class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600 dark:text-blue-400">
+                    <i class="bi bi-grid"></i>
+                    Marketplace
                 </div>
 
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#EAF7EF] text-[#0F6B3A] dark:bg-[#173B29] dark:text-[#7AD8B5]">
-                    <i class="bi bi-grid text-xl"></i>
-                </div>
+                <h1 class="mt-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                    Kategori
+                </h1>
+
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    Kelola kategori yang digunakan untuk mengelompokkan jasa di marketplace.
+                </p>
 
             </div>
+
+
+            <div class="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 sm:flex">
+                <i class="bi bi-grid text-xl"></i>
+            </div>
+
         </div>
 
-        {{-- Success --}}
-        @if(session('success'))
-            <div class="flex items-start gap-3 rounded-xl border border-[#BFE3CE] bg-[#EAF7EF] px-4 py-3.5 text-sm text-[#17663D] dark:border-[#2A543E] dark:bg-[#173B29] dark:text-[#A8E5C2]">
+    </section>
 
-                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#0F6B3A] dark:bg-[#1C402C] dark:text-[#7AD8B5]">
-                    <i class="bi bi-check-circle"></i>
+
+    {{-- ==========================================================
+         SUCCESS MESSAGE
+    =========================================================== --}}
+    @if(session('success'))
+
+        <div class="flex items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3.5 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm dark:bg-slate-900 dark:text-emerald-400">
+                <i class="bi bi-check-circle"></i>
+            </div>
+
+            <div class="min-w-0">
+                <p class="font-semibold">
+                    Berhasil
+                </p>
+
+                <p class="mt-0.5 leading-5">
+                    {{ session('success') }}
+                </p>
+            </div>
+
+        </div>
+
+    @endif
+
+
+    {{-- ==========================================================
+         ERROR MESSAGE
+    =========================================================== --}}
+    @if(session('error'))
+
+        <div class="flex items-start gap-3 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3.5 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-400">
+
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-rose-600 shadow-sm dark:bg-slate-900 dark:text-rose-400">
+                <i class="bi bi-exclamation-circle"></i>
+            </div>
+
+            <div class="min-w-0">
+                <p class="font-semibold">
+                    Tidak dapat diproses
+                </p>
+
+                <p class="mt-0.5 leading-5">
+                    {{ session('error') }}
+                </p>
+            </div>
+
+        </div>
+
+    @endif
+
+
+    {{-- ==========================================================
+         ADD CATEGORY
+    =========================================================== --}}
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+        {{-- Section Header --}}
+        <div class="border-b border-slate-100 px-4 py-4 dark:border-slate-800 sm:px-6 sm:py-5">
+
+            <div class="flex items-center gap-3">
+
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                    <i class="bi bi-plus-lg text-lg"></i>
                 </div>
 
                 <div>
-                    <p class="font-semibold">
-                        Berhasil
-                    </p>
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white sm:text-base">
+                        Tambah Kategori
+                    </h2>
 
-                    <p class="mt-0.5">
-                        {{ session('success') }}
+                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
+                        Buat kategori baru untuk marketplace.
                     </p>
                 </div>
 
             </div>
-        @endif
 
-        {{-- Error --}}
-        @if(session('error'))
-            <div class="flex items-start gap-3 rounded-xl border border-[#F0CCCC] bg-[#FEF1F1] px-4 py-3.5 text-sm text-[#B42318] dark:border-[#5A332F] dark:bg-[#321B1B] dark:text-[#F3A39D]">
+        </div>
 
-                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#B42318] dark:bg-[#422321]">
-                    <i class="bi bi-exclamation-circle"></i>
-                </div>
 
+        {{-- Form --}}
+        <form
+            action="{{ route('admin.categories.store') }}"
+            method="POST"
+            class="space-y-5 p-4 sm:p-6"
+        >
+
+            @csrf
+
+
+            {{-- ==================================================
+                 NAME + SLUG
+            =================================================== --}}
+            <div class="grid gap-5 md:grid-cols-2">
+
+                {{-- Name --}}
                 <div>
-                    <p class="font-semibold">
-                        Tidak dapat diproses
-                    </p>
 
-                    <p class="mt-0.5">
-                        {{ session('error') }}
-                    </p>
-                </div>
-
-            </div>
-        @endif
-
-        {{-- Add Category --}}
-        <div class="rounded-2xl border border-[#D8E5DE] bg-white dark:border-[#2B4337] dark:bg-[#111F18]">
-
-            {{-- Section Header --}}
-            <div class="border-b border-[#E5EEE9] px-6 py-5 dark:border-[#263B31] sm:px-7">
-
-                <div class="flex items-center gap-3">
-
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#0F6B3A] dark:bg-[#173B29] dark:text-[#7AD8B5]">
-                        <i class="bi bi-plus-lg"></i>
-                    </div>
-
-                    <div>
-                        <h2 class="text-base font-semibold text-[#123128] dark:text-[#E7F2EC]">
-                            Tambah Kategori
-                        </h2>
-
-                        <p class="mt-0.5 text-sm text-[#8A9B94] dark:text-[#71877B]">
-                            Buat kategori baru untuk marketplace.
-                        </p>
-                    </div>
-
-                </div>
-
-            </div>
-
-            {{-- Form --}}
-            <form
-                action="{{ route('admin.categories.store') }}"
-                method="POST"
-                class="space-y-6 p-6 sm:p-7"
-            >
-                @csrf
-
-                {{-- Name + Slug --}}
-                <div class="grid gap-5 md:grid-cols-2">
-
-                    {{-- Name --}}
-                    <div>
-                        <label
-                            for="name"
-                            class="block text-sm font-semibold text-[#345047] dark:text-[#C4D4CC]"
-                        >
-                            Nama Kategori
-                        </label>
-
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value="{{ old('name') }}"
-                            placeholder="Contoh: Desain Grafis"
-                            class="mt-2 block w-full rounded-xl border border-[#BFCFC7] bg-white px-4 py-3.5 text-sm text-[#123128] shadow-none outline-none transition placeholder:text-[#9AA8A1] hover:border-[#AFC2B8] focus:border-[#1E9E5A] focus:ring-4 focus:ring-[#EAF7EF] dark:border-[#3A5245] dark:bg-[#16251D] dark:text-[#E7F2EC] dark:placeholder:text-[#71877B] dark:hover:border-[#4B6658] dark:focus:border-[#4BAF78] dark:focus:ring-[#173B29]"
-                            required
-                        >
-
-                        @error('name')
-                            <p class="mt-2 text-sm text-[#B42318]">
-                                {{ $message }}
-                            </p>
-                        @enderror
-                    </div>
-
-                    {{-- Slug --}}
-                    <div>
-                        <label
-                            for="slug"
-                            class="block text-sm font-semibold text-[#345047] dark:text-[#C4D4CC]"
-                        >
-                            Slug
-                        </label>
-
-                        <input
-                            type="text"
-                            id="slug"
-                            name="slug"
-                            value="{{ old('slug') }}"
-                            placeholder="desain-grafis"
-                            class="mt-2 block w-full rounded-xl border border-[#BFCFC7] bg-white px-4 py-3.5 text-sm text-[#123128] shadow-none outline-none transition placeholder:text-[#9AA8A1] hover:border-[#AFC2B8] focus:border-[#1E9E5A] focus:ring-4 focus:ring-[#EAF7EF] dark:border-[#3A5245] dark:bg-[#16251D] dark:text-[#E7F2EC] dark:placeholder:text-[#71877B] dark:hover:border-[#4B6658] dark:focus:border-[#4BAF78] dark:focus:ring-[#173B29]"
-                        >
-
-                        <p class="mt-2 text-xs text-[#8A9B94] dark:text-[#71877B]">
-                            Kosongkan untuk membuat slug otomatis.
-                        </p>
-
-                        @error('slug')
-                            <p class="mt-2 text-sm text-[#B42318]">
-                                {{ $message }}
-                            </p>
-                        @enderror
-                    </div>
-
-                </div>
-
-                {{-- Description --}}
-                <div>
                     <label
-                        for="description"
-                        class="block text-sm font-semibold text-[#345047] dark:text-[#C4D4CC]"
+                        for="name"
+                        class="block text-sm font-semibold text-slate-700 dark:text-slate-200"
                     >
-                        Deskripsi
+                        Nama Kategori
                     </label>
 
-                    <textarea
-                        id="description"
-                        name="description"
-                        rows="4"
-                        placeholder="Jelaskan kategori ini..."
-                        class="mt-2 block w-full resize-none rounded-xl border border-[#BFCFC7] bg-white px-4 py-3.5 text-sm leading-6 text-[#123128] shadow-none outline-none transition placeholder:text-[#9AA8A1] hover:border-[#AFC2B8] focus:border-[#1E9E5A] focus:ring-4 focus:ring-[#EAF7EF] dark:border-[#3A5245] dark:bg-[#16251D] dark:text-[#E7F2EC] dark:placeholder:text-[#71877B] dark:hover:border-[#4B6658] dark:focus:border-[#4BAF78] dark:focus:ring-[#173B29]"
-                    >{{ old('description') }}</textarea>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value="{{ old('name') }}"
+                        placeholder="Contoh: Desain Grafis"
+                        required
+                        class="mt-2 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus:border-blue-500 dark:focus:bg-slate-800"
+                    >
 
-                    @error('description')
-                        <p class="mt-2 text-sm text-[#B42318]">
+                    @error('name')
+                        <p class="mt-2 text-xs font-medium text-rose-600 dark:text-rose-400">
                             {{ $message }}
                         </p>
                     @enderror
-                </div>
-
-                {{-- Icon + Sort --}}
-                <div class="grid gap-5 md:grid-cols-2">
-
-                    {{-- Icon --}}
-                    <div>
-                        <label
-                            for="icon"
-                            class="block text-sm font-semibold text-[#345047] dark:text-[#C4D4CC]"
-                        >
-                            Icon
-                        </label>
-
-                        <div class="relative mt-2">
-                            <i class="bi bi-palette pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8A9B94] dark:text-[#71877B]"></i>
-
-                            <input
-                                type="text"
-                                id="icon"
-                                name="icon"
-                                value="{{ old('icon') }}"
-                                placeholder="bi-palette"
-                                class="block w-full rounded-xl border border-[#BFCFC7] bg-white py-3.5 pl-11 pr-4 text-sm text-[#123128] shadow-none outline-none transition placeholder:text-[#9AA8A1] hover:border-[#AFC2B8] focus:border-[#1E9E5A] focus:ring-4 focus:ring-[#EAF7EF] dark:border-[#3A5245] dark:bg-[#16251D] dark:text-[#E7F2EC] dark:placeholder:text-[#71877B] dark:hover:border-[#4B6658] dark:focus:border-[#4BAF78] dark:focus:ring-[#173B29]"
-                            >
-                        </div>
-
-                        <p class="mt-2 text-xs text-[#8A9B94] dark:text-[#71877B]">
-                            Contoh class Bootstrap Icons: bi-palette.
-                        </p>
-
-                        @error('icon')
-                            <p class="mt-2 text-sm text-[#B42318]">
-                                {{ $message }}
-                            </p>
-                        @enderror
-                    </div>
-
-                    {{-- Sort Order --}}
-                    <div>
-                        <label
-                            for="sort_order"
-                            class="block text-sm font-semibold text-[#345047] dark:text-[#C4D4CC]"
-                        >
-                            Urutan
-                        </label>
-
-                        <input
-                            type="number"
-                            id="sort_order"
-                            name="sort_order"
-                            value="{{ old('sort_order', 0) }}"
-                            min="0"
-                            max="9999"
-                            class="mt-2 block w-full rounded-xl border border-[#BFCFC7] bg-white px-4 py-3.5 text-sm text-[#123128] shadow-none outline-none transition hover:border-[#AFC2B8] focus:border-[#1E9E5A] focus:ring-4 focus:ring-[#EAF7EF] dark:border-[#3A5245] dark:bg-[#16251D] dark:text-[#E7F2EC] dark:hover:border-[#4B6658] dark:focus:border-[#4BAF78] dark:focus:ring-[#173B29]"
-                        >
-
-                        @error('sort_order')
-                            <p class="mt-2 text-sm text-[#B42318]">
-                                {{ $message }}
-                            </p>
-                        @enderror
-                    </div>
 
                 </div>
 
-                {{-- Active --}}
-                <div class="flex flex-col gap-4 rounded-xl border border-[#D8E5DE] bg-[#F8FCF9] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 dark:border-[#2B4337] dark:bg-[#16251D]">
 
-                    <div>
-                        <p class="text-sm font-semibold text-[#123128] dark:text-[#E7F2EC]">
-                            Aktifkan kategori
-                        </p>
+                {{-- Slug --}}
+                <div>
 
-                        <p class="mt-1 text-sm leading-5 text-[#71837B] dark:text-[#8FA69A]">
-                            Kategori aktif dapat digunakan pada marketplace.
-                        </p>
-                    </div>
-
-                    <label class="relative inline-flex shrink-0 cursor-pointer items-center">
-
-                        <input
-                            type="checkbox"
-                            name="is_active"
-                            value="1"
-                            class="peer sr-only"
-                            {{ old('is_active', true) ? 'checked' : '' }}
-                        >
-
-                        <div class="h-6 w-11 rounded-full bg-[#C6D2CC] transition peer-checked:bg-[#1E9E5A] peer-focus:ring-4 peer-focus:ring-[#EAF7EF] dark:bg-[#465A50] dark:peer-focus:ring-[#173B29]"></div>
-
-                        <div class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5"></div>
-
+                    <label
+                        for="slug"
+                        class="block text-sm font-semibold text-slate-700 dark:text-slate-200"
+                    >
+                        Slug
                     </label>
 
-                </div>
-
-                {{-- Submit --}}
-                <div class="flex justify-end border-t border-[#E5EEE9] pt-5 dark:border-[#263B31]">
-
-                    <button
-                        type="submit"
-                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0F6B3A] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0B542D] focus:outline-none focus:ring-4 focus:ring-[#D9F3E3] dark:bg-[#1E9E5A] dark:hover:bg-[#18854A] dark:focus:ring-[#173B29]"
+                    <input
+                        type="text"
+                        id="slug"
+                        name="slug"
+                        value="{{ old('slug') }}"
+                        placeholder="desain-grafis"
+                        class="mt-2 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus:border-blue-500 dark:focus:bg-slate-800"
                     >
-                        <i class="bi bi-plus-lg"></i>
-                        Tambah Kategori
-                    </button>
+
+                    <p class="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                        Kosongkan untuk membuat slug otomatis.
+                    </p>
+
+                    @error('slug')
+                        <p class="mt-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                            {{ $message }}
+                        </p>
+                    @enderror
 
                 </div>
 
-            </form>
+            </div>
 
-        </div>
 
-        {{-- Category List --}}
-        <div class="overflow-hidden rounded-2xl border border-[#D8E5DE] bg-white dark:border-[#2B4337] dark:bg-[#111F18]">
+            {{-- ==================================================
+                 DESCRIPTION
+            =================================================== --}}
+            <div>
 
-            {{-- List Header --}}
-            <div class="border-b border-[#E5EEE9] px-6 py-5 dark:border-[#263B31] sm:px-7">
+                <label
+                    for="description"
+                    class="block text-sm font-semibold text-slate-700 dark:text-slate-200"
+                >
+                    Deskripsi
+                </label>
 
-                <div class="flex items-center gap-3">
+                <textarea
+                    id="description"
+                    name="description"
+                    rows="4"
+                    placeholder="Jelaskan kategori ini..."
+                    class="mt-2 block w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus:border-blue-500 dark:focus:bg-slate-800"
+                >{{ old('description') }}</textarea>
 
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#0F6B3A] dark:bg-[#173B29] dark:text-[#7AD8B5]">
-                        <i class="bi bi-list-ul"></i>
+                @error('description')
+                    <p class="mt-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                        {{ $message }}
+                    </p>
+                @enderror
+
+            </div>
+
+
+            {{-- ==================================================
+                 ICON + SORT
+            =================================================== --}}
+            <div class="grid gap-5 md:grid-cols-2">
+
+                {{-- Icon --}}
+                <div>
+
+                    <label
+                        for="icon"
+                        class="block text-sm font-semibold text-slate-700 dark:text-slate-200"
+                    >
+                        Icon
+                    </label>
+
+                    <div class="relative mt-2">
+
+                        <i class="bi bi-palette pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
+
+                        <input
+                            type="text"
+                            id="icon"
+                            name="icon"
+                            value="{{ old('icon') }}"
+                            placeholder="bi-palette"
+                            class="block w-full rounded-xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus:border-blue-500 dark:focus:bg-slate-800"
+                        >
+
                     </div>
 
-                    <div>
-                        <h2 class="text-base font-semibold text-[#123128] dark:text-[#E7F2EC]">
-                            Daftar Kategori
-                        </h2>
+                    <p class="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                        Contoh class Bootstrap Icons: bi-palette.
+                    </p>
 
-                        <p class="mt-0.5 text-sm text-[#8A9B94] dark:text-[#71877B]">
-                            {{ $categories->total() }} kategori terdaftar.
+                    @error('icon')
+                        <p class="mt-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                            {{ $message }}
                         </p>
+                    @enderror
+
+                </div>
+
+
+                {{-- Sort Order --}}
+                <div>
+
+                    <label
+                        for="sort_order"
+                        class="block text-sm font-semibold text-slate-700 dark:text-slate-200"
+                    >
+                        Urutan
+                    </label>
+
+                    <input
+                        type="number"
+                        id="sort_order"
+                        name="sort_order"
+                        value="{{ old('sort_order', 0) }}"
+                        min="0"
+                        max="9999"
+                        class="mt-2 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:border-slate-600 dark:focus:border-blue-500 dark:focus:bg-slate-800"
+                    >
+
+                    @error('sort_order')
+                        <p class="mt-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                            {{ $message }}
+                        </p>
+                    @enderror
+
+                </div>
+
+            </div>
+
+
+            {{-- ==================================================
+                 ACTIVE TOGGLE
+            =================================================== --}}
+            <div class="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+
+                <div class="min-w-0">
+
+                    <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                        Aktifkan kategori
+                    </p>
+
+                    <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400 sm:text-sm">
+                        Kategori aktif dapat digunakan pada marketplace.
+                    </p>
+
+                </div>
+
+
+                <label class="relative inline-flex shrink-0 cursor-pointer items-center">
+
+                    <input
+                        type="checkbox"
+                        name="is_active"
+                        value="1"
+                        class="peer sr-only"
+                        {{ old('is_active', true) ? 'checked' : '' }}
+                    >
+
+                    <div class="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-blue-600 peer-focus:ring-4 peer-focus:ring-blue-500/10 dark:bg-slate-600"></div>
+
+                    <div class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5"></div>
+
+                </label>
+
+            </div>
+
+
+            {{-- ==================================================
+                 SUBMIT
+            =================================================== --}}
+            <div class="flex justify-end border-t border-slate-100 pt-5 dark:border-slate-800">
+
+                <button
+                    type="submit"
+                    class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold !text-white transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 sm:w-auto"
+                >
+                    <i class="bi bi-plus-lg"></i>
+                    Tambah Kategori
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+
+    {{-- ==========================================================
+         CATEGORY LIST
+    =========================================================== --}}
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+        {{-- List Header --}}
+        <div class="border-b border-slate-100 px-4 py-4 dark:border-slate-800 sm:px-6 sm:py-5">
+
+            <div class="flex items-center justify-between gap-3">
+
+                <div class="flex min-w-0 items-center gap-3">
+
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                        <i class="bi bi-list-ul text-lg"></i>
+                    </div>
+
+                    <div class="min-w-0">
+
+                        <div class="flex items-center gap-2">
+
+                            <h2 class="text-sm font-bold text-slate-900 dark:text-white sm:text-base">
+                                Daftar Kategori
+                            </h2>
+
+                            <span class="rounded-md bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                                {{ number_format($categories->total()) }}
+                            </span>
+
+                        </div>
+
+                        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                            Kategori yang tersedia di marketplace.
+                        </p>
+
                     </div>
 
                 </div>
 
             </div>
 
-            @if($categories->count())
+        </div>
 
-                {{-- Desktop --}}
-                <div class="hidden overflow-x-auto md:block">
 
-                    <table class="min-w-full">
+        @if($categories->count())
 
-                        <thead class="bg-[#F8FCF9] dark:bg-[#16251D]">
-                            <tr class="border-b border-[#E5EEE9] dark:border-[#263B31]">
+            {{-- ==================================================
+                 DESKTOP TABLE
+            =================================================== --}}
+            <div class="hidden overflow-x-auto md:block">
 
-                                <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#7C8F87] dark:text-[#71877B]">
-                                    Kategori
-                                </th>
+                <table class="min-w-full">
 
-                                <th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-[#7C8F87] dark:text-[#71877B]">
-                                    Jasa
-                                </th>
+                    <thead class="bg-slate-50 dark:bg-slate-800/70">
 
-                                <th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-[#7C8F87] dark:text-[#71877B]">
-                                    Subkategori
-                                </th>
+                        <tr class="border-b border-slate-100 dark:border-slate-800">
 
-                                <th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-[#7C8F87] dark:text-[#71877B]">
-                                    Status
-                                </th>
+                            <th class="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Kategori
+                            </th>
 
-                                <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-[#7C8F87] dark:text-[#71877B]">
-                                    Aksi
-                                </th>
+                            <th class="px-6 py-4 text-center text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Jasa
+                            </th>
+
+                            <th class="px-6 py-4 text-center text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Subkategori
+                            </th>
+
+                            <th class="px-6 py-4 text-center text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Status
+                            </th>
+
+                            <th class="px-6 py-4 text-right text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Aksi
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+
+                        @foreach($categories as $category)
+
+                            <tr class="transition hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
+
+                                {{-- Category --}}
+                                <td class="px-6 py-4">
+
+                                    <div class="flex items-center gap-3">
+
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                                            <i class="bi {{ $category->icon ?: 'bi-grid' }}"></i>
+                                        </div>
+
+                                        <div class="min-w-0">
+
+                                            <p class="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                                                {{ $category->name }}
+                                            </p>
+
+                                            <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                                {{ $category->slug }}
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+                                </td>
+
+
+                                {{-- Services --}}
+                                <td class="px-6 py-4 text-center">
+
+                                    <span class="inline-flex min-w-8 items-center justify-center rounded-lg bg-slate-100 px-2.5 py-1.5 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                        {{ $category->services_count }}
+                                    </span>
+
+                                </td>
+
+
+                                {{-- Subcategories --}}
+                                <td class="px-6 py-4 text-center">
+
+                                    <span class="inline-flex min-w-8 items-center justify-center rounded-lg bg-slate-100 px-2.5 py-1.5 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                        {{ $category->subcategories_count }}
+                                    </span>
+
+                                </td>
+
+
+                                {{-- Status --}}
+                                <td class="px-6 py-4 text-center">
+
+                                    @if($category->is_active)
+
+                                        <span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                            Aktif
+                                        </span>
+
+                                    @else
+
+                                        <span class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                                            Nonaktif
+                                        </span>
+
+                                    @endif
+
+                                </td>
+
+
+                                {{-- Actions --}}
+                                <td class="px-6 py-4 text-right">
+
+                                    <div class="flex justify-end gap-2">
+
+                                        <a
+                                            href="{{ route('admin.categories.edit', $category) }}"
+                                            class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
+                                        >
+                                            <i class="bi bi-pencil"></i>
+                                            Edit
+                                        </a>
+
+
+                                        @if($category->services_count === 0 && $category->subcategories_count === 0)
+
+                                            <form
+                                                action="{{ route('admin.categories.destroy', $category) }}"
+                                                method="POST"
+                                            >
+
+                                                @csrf
+                                                @method('DELETE')
+
+                                                <button
+                                                    type="submit"
+                                                    onclick="return confirm('Hapus kategori ini?')"
+                                                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-3.5 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/20 dark:bg-slate-900 dark:hover:bg-rose-500/10"
+                                                >
+                                                    <i class="bi bi-trash"></i>
+                                                    Hapus
+                                                </button>
+
+                                            </form>
+
+                                        @endif
+
+                                    </div>
+
+                                </td>
 
                             </tr>
-                        </thead>
 
-                        <tbody class="divide-y divide-[#E5EEE9] dark:divide-[#263B31]">
+                        @endforeach
 
-                            @foreach($categories as $category)
+                    </tbody>
 
-                                <tr class="transition hover:bg-[#FBFDFC] dark:hover:bg-[#16251D]">
+                </table>
 
-                                    {{-- Category --}}
-                                    <td class="px-6 py-4">
+            </div>
 
-                                        <div class="flex items-center gap-3">
 
-                                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#0F6B3A] dark:bg-[#173B29] dark:text-[#7AD8B5]">
-                                                <i class="bi {{ $category->icon ?: 'bi-grid' }}"></i>
-                                            </div>
+            {{-- ==================================================
+                 MOBILE LIST
+            =================================================== --}}
+            <div class="divide-y divide-slate-100 md:hidden dark:divide-slate-800">
 
-                                            <div class="min-w-0">
+                @foreach($categories as $category)
 
-                                                <p class="truncate text-sm font-semibold text-[#123128] dark:text-[#E7F2EC]">
-                                                    {{ $category->name }}
-                                                </p>
+                    <div class="p-4 sm:p-5">
 
-                                                <p class="mt-0.5 truncate text-xs text-[#8A9B94] dark:text-[#71877B]">
-                                                    {{ $category->slug }}
-                                                </p>
+                        <div class="flex items-start gap-3">
 
-                                            </div>
+                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                                <i class="bi {{ $category->icon ?: 'bi-grid' }}"></i>
+                            </div>
 
-                                        </div>
 
-                                    </td>
+                            <div class="min-w-0 flex-1">
 
-                                    {{-- Services --}}
-                                    <td class="px-6 py-4 text-center">
-                                        <span class="text-sm font-semibold text-[#123128] dark:text-[#E7F2EC]">
+                                <p class="text-sm font-bold text-slate-900 dark:text-white">
+                                    {{ $category->name }}
+                                </p>
+
+                                <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                    {{ $category->slug }}
+                                </p>
+
+
+                                <div class="mt-3 grid grid-cols-2 gap-2">
+
+                                    <div class="rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-slate-800/70">
+
+                                        <p class="text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                            Jasa
+                                        </p>
+
+                                        <p class="mt-1 text-sm font-bold text-slate-800 dark:text-white">
                                             {{ $category->services_count }}
-                                        </span>
-                                    </td>
+                                        </p>
 
-                                    {{-- Subcategories --}}
-                                    <td class="px-6 py-4 text-center">
-                                        <span class="text-sm font-semibold text-[#123128] dark:text-[#E7F2EC]">
+                                    </div>
+
+
+                                    <div class="rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-slate-800/70">
+
+                                        <p class="text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                            Subkategori
+                                        </p>
+
+                                        <p class="mt-1 text-sm font-bold text-slate-800 dark:text-white">
                                             {{ $category->subcategories_count }}
-                                        </span>
-                                    </td>
-
-                                    {{-- Status --}}
-                                    <td class="px-6 py-4 text-center">
-
-                                        @if($category->is_active)
-
-                                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-[#EAF7EF] px-2.5 py-1.5 text-xs font-semibold text-[#17663D] dark:bg-[#173B29] dark:text-[#7AD8B5]">
-                                                <span class="h-1.5 w-1.5 rounded-full bg-[#1E9E5A]"></span>
-                                                Aktif
-                                            </span>
-
-                                        @else
-
-                                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-[#F3F5F4] px-2.5 py-1.5 text-xs font-semibold text-[#667D73] dark:bg-[#1A2B22] dark:text-[#B3C4BC]">
-                                                <span class="h-1.5 w-1.5 rounded-full bg-[#94A3A0]"></span>
-                                                Nonaktif
-                                            </span>
-
-                                        @endif
-
-                                    </td>
-
-                                    {{-- Actions --}}
-                                    <td class="px-6 py-4 text-right">
-
-                                        <div class="flex justify-end gap-2">
-
-                                            <a
-                                                href="{{ route('admin.categories.edit', $category) }}"
-                                                class="inline-flex items-center justify-center gap-2 rounded-lg border border-[#C9D8D1] bg-white px-3.5 py-2 text-xs font-semibold text-[#526960] transition hover:border-[#BFE7CF] hover:bg-[#EAF7EF] hover:text-[#0F6B3A] dark:border-[#365143] dark:bg-[#16251D] dark:text-[#B3C4BC] dark:hover:border-[#4A6857] dark:hover:bg-[#1A3025] dark:hover:text-[#7AD8B5]"
-                                            >
-                                                <i class="bi bi-pencil"></i>
-                                                Edit
-                                            </a>
-
-                                            @if($category->services_count === 0 && $category->subcategories_count === 0)
-
-                                                <form
-                                                    action="{{ route('admin.categories.destroy', $category) }}"
-                                                    method="POST"
-                                                >
-                                                    @csrf
-                                                    @method('DELETE')
-
-                                                    <button
-                                                        type="submit"
-                                                        onclick="return confirm('Hapus kategori ini?')"
-                                                        class="inline-flex items-center justify-center gap-2 rounded-lg border border-[#EBCACA] bg-white px-3.5 py-2 text-xs font-semibold text-[#B42318] transition hover:bg-[#FEF1F1] dark:border-[#59312E] dark:bg-[#16251D] dark:hover:bg-[#321B1B]"
-                                                    >
-                                                        <i class="bi bi-trash"></i>
-                                                        Hapus
-                                                    </button>
-                                                </form>
-
-                                            @endif
-
-                                        </div>
-
-                                    </td>
-
-                                </tr>
-
-                            @endforeach
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-                {{-- Mobile --}}
-                <div class="divide-y divide-[#E5EEE9] dark:divide-[#263B31] md:hidden">
-
-                    @foreach($categories as $category)
-
-                        <div class="p-5">
-
-                            <div class="flex items-start gap-3">
-
-                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#0F6B3A] dark:bg-[#173B29] dark:text-[#7AD8B5]">
-                                    <i class="bi {{ $category->icon ?: 'bi-grid' }}"></i>
-                                </div>
-
-                                <div class="min-w-0 flex-1">
-
-                                    <p class="text-sm font-semibold text-[#123128] dark:text-[#E7F2EC]">
-                                        {{ $category->name }}
-                                    </p>
-
-                                    <p class="mt-0.5 text-xs text-[#8A9B94] dark:text-[#71877B]">
-                                        {{ $category->slug }}
-                                    </p>
-
-                                    <div class="mt-3 flex flex-wrap gap-2">
-
-                                        @if($category->is_active)
-
-                                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-[#EAF7EF] px-2.5 py-1 text-xs font-semibold text-[#17663D] dark:bg-[#173B29] dark:text-[#7AD8B5]">
-                                                <span class="h-1.5 w-1.5 rounded-full bg-[#1E9E5A]"></span>
-                                                Aktif
-                                            </span>
-
-                                        @else
-
-                                            <span class="inline-flex items-center gap-1.5 rounded-lg bg-[#F3F5F4] px-2.5 py-1 text-xs font-semibold text-[#667D73] dark:bg-[#1A2B22] dark:text-[#B3C4BC]">
-                                                <span class="h-1.5 w-1.5 rounded-full bg-[#94A3A0]"></span>
-                                                Nonaktif
-                                            </span>
-
-                                        @endif
-
-                                        <span class="rounded-lg bg-[#F3F8F5] px-2.5 py-1 text-xs font-medium text-[#667D73] dark:bg-[#1A2B22] dark:text-[#B3C4BC]">
-                                            {{ $category->services_count }} jasa
-                                        </span>
-
-                                        <span class="rounded-lg bg-[#F3F8F5] px-2.5 py-1 text-xs font-medium text-[#667D73] dark:bg-[#1A2B22] dark:text-[#B3C4BC]">
-                                            {{ $category->subcategories_count }} subkategori
-                                        </span>
+                                        </p>
 
                                     </div>
 
                                 </div>
 
-                            </div>
 
-                            <div class="mt-4 flex gap-2">
+                                <div class="mt-3">
 
-                                <a
-                                    href="{{ route('admin.categories.edit', $category) }}"
-                                    class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#C9D8D1] bg-white px-4 py-2.5 text-xs font-semibold text-[#526960] transition hover:bg-[#F8FCF9] dark:border-[#365143] dark:bg-[#16251D] dark:text-[#B3C4BC] dark:hover:bg-[#1A3025]"
-                                >
-                                    <i class="bi bi-pencil"></i>
-                                    Edit
-                                </a>
+                                    @if($category->is_active)
 
-                                @if($category->services_count === 0 && $category->subcategories_count === 0)
+                                        <span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                            Aktif
+                                        </span>
 
-                                    <form
-                                        action="{{ route('admin.categories.destroy', $category) }}"
-                                        method="POST"
-                                        class="flex-1"
-                                    >
-                                        @csrf
-                                        @method('DELETE')
+                                    @else
 
-                                        <button
-                                            type="submit"
-                                            onclick="return confirm('Hapus kategori ini?')"
-                                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#EBCACA] bg-white px-4 py-2.5 text-xs font-semibold text-[#B42318] transition hover:bg-[#FEF1F1] dark:border-[#59312E] dark:bg-[#16251D] dark:hover:bg-[#321B1B]"
-                                        >
-                                            <i class="bi bi-trash"></i>
-                                            Hapus
-                                        </button>
-                                    </form>
+                                        <span class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                            <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                                            Nonaktif
+                                        </span>
 
-                                @endif
+                                    @endif
+
+                                </div>
 
                             </div>
 
                         </div>
 
-                    @endforeach
 
-                </div>
+                        {{-- Actions --}}
+                        <div class="mt-4 flex gap-2">
 
-                {{-- Pagination --}}
-                @if($categories->hasPages())
-                    <div class="border-t border-[#E5EEE9] px-6 py-4 dark:border-[#263B31] sm:px-7">
-                        {{ $categories->links() }}
+                            <a
+                                href="{{ route('admin.categories.edit', $category) }}"
+                                class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
+                            >
+                                <i class="bi bi-pencil"></i>
+                                Edit
+                            </a>
+
+
+                            @if($category->services_count === 0 && $category->subcategories_count === 0)
+
+                                <form
+                                    action="{{ route('admin.categories.destroy', $category) }}"
+                                    method="POST"
+                                    class="flex-1"
+                                >
+
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button
+                                        type="submit"
+                                        onclick="return confirm('Hapus kategori ini?')"
+                                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/20 dark:bg-slate-900 dark:hover:bg-rose-500/10"
+                                    >
+                                        <i class="bi bi-trash"></i>
+                                        Hapus
+                                    </button>
+
+                                </form>
+
+                            @endif
+
+                        </div>
+
                     </div>
-                @endif
 
-            @else
+                @endforeach
 
-                {{-- Empty --}}
-                <div class="px-6 py-16 text-center sm:px-8">
+            </div>
 
-                    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EAF7EF] text-[#0F6B3A] dark:bg-[#173B29] dark:text-[#7AD8B5]">
-                        <i class="bi bi-grid text-2xl"></i>
-                    </div>
 
-                    <h3 class="mt-5 text-sm font-semibold text-[#123128] dark:text-[#E7F2EC]">
-                        Belum ada kategori
-                    </h3>
+            {{-- ==================================================
+                 PAGINATION
+            =================================================== --}}
+            @if($categories->hasPages())
 
-                    <p class="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#8A9B94] dark:text-[#71877B]">
-                        Tambahkan kategori pertama untuk mulai mengelompokkan jasa di marketplace.
-                    </p>
-
+                <div class="border-t border-slate-100 px-4 py-4 dark:border-slate-800 sm:px-6">
+                    {{ $categories->links() }}
                 </div>
 
             @endif
 
-        </div>
 
-    </div>
+        @else
+
+            {{-- ==================================================
+                 EMPTY STATE
+            =================================================== --}}
+            <div class="px-5 py-16 text-center sm:px-8">
+
+                <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+                    <i class="bi bi-grid text-2xl"></i>
+                </div>
+
+                <h3 class="mt-5 text-sm font-bold text-slate-900 dark:text-white">
+                    Belum ada kategori
+                </h3>
+
+                <p class="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    Tambahkan kategori pertama untuk mulai mengelompokkan jasa di marketplace.
+                </p>
+
+            </div>
+
+        @endif
+
+    </section>
+
+</div>
+
 
 </x-layouts.admin>

@@ -1,247 +1,266 @@
 <x-layouts.admin title="Detail Penarikan">
 
-    @php
-        $statusMap = [
-            'pending' => [
-                'label' => 'Menunggu',
-                'class' => 'bg-[#FEF3C7] text-[#92400E] border-[#F2D99B] dark:bg-[#48391E] dark:text-[#E8C67A] dark:border-[#665326]',
-                'icon' => 'bi-hourglass-split',
-            ],
-            'processing' => [
-                'label' => 'Diproses',
-                'class' => 'bg-[#DBEAFE] text-[#1D4ED8] border-[#BFDBFE] dark:bg-[#243A59] dark:text-[#9CC4FF] dark:border-[#35547E]',
-                'icon' => 'bi-arrow-repeat',
-            ],
-            'approved' => [
-                'label' => 'Disetujui',
-                'class' => 'bg-[#DCFCE7] text-[#166534] border-[#B8E6C8] dark:bg-[#244732] dark:text-[#A0E8B7] dark:border-[#315C43]',
-                'icon' => 'bi-check-circle-fill',
-            ],
-            'rejected' => [
-                'label' => 'Ditolak',
-                'class' => 'bg-[#FEE2E2] text-[#991B1B] border-[#F2C5C5] dark:bg-[#492727] dark:text-[#F0A3A3] dark:border-[#6A3B3B]',
-                'icon' => 'bi-x-circle-fill',
-            ],
-        ];
 
-        $withdrawalStatus = $statusMap[$withdrawal->status] ?? [
-            'label' => ucfirst(str_replace('_', ' ', $withdrawal->status ?? 'Unknown')),
-            'class' => 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600',
-            'icon' => 'bi-question-circle',
-        ];
+@php
+    $statusMap = [
+        'pending' => [
+            'label' => 'Menunggu',
+            'class' => 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300',
+            'icon' => 'bi-hourglass-split',
+        ],
+        'processing' => [
+            'label' => 'Diproses',
+            'class' => 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-300',
+            'icon' => 'bi-arrow-repeat',
+        ],
+        'approved' => [
+            'label' => 'Disetujui',
+            'class' => 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300',
+            'icon' => 'bi-check-circle-fill',
+        ],
+        'rejected' => [
+            'label' => 'Ditolak',
+            'class' => 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300',
+            'icon' => 'bi-x-circle-fill',
+        ],
+    ];
 
-        $freelancer = $withdrawal->freelancerProfile;
-        $freelancerUser = $freelancer?->user;
-    @endphp
+    $withdrawalStatus = $statusMap[$withdrawal->status] ?? [
+        'label' => ucfirst(str_replace('_', ' ', $withdrawal->status ?? 'Unknown')),
+        'class' => 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
+        'icon' => 'bi-question-circle',
+    ];
 
+    /* =========================================================
+     * FREELANCER
+     * ======================================================= */
+    $freelancer = $withdrawal->freelancerProfile;
+    $freelancerUser = $freelancer?->user;
+    $freelancerAvatar = $freelancer?->avatar;
 
-    <div class="space-y-6">
+    $freelancerAvatarUrl = null;
 
-        {{-- Header --}}
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    if ($freelancerAvatar) {
+        $freelancerAvatarUrl =
+            str_starts_with($freelancerAvatar, 'http://')
+            || str_starts_with($freelancerAvatar, 'https://')
+            ? $freelancerAvatar
+            : asset('storage/' . ltrim($freelancerAvatar, '/'));
+    }
 
-            <div>
+    $freelancerName = $freelancerUser?->name ?? 'Freelancer tidak tersedia';
 
-                <a
-                    href="{{ route('admin.withdrawals.index') }}"
-                    class="inline-flex items-center gap-2 text-sm font-medium text-[#667D73] transition hover:text-[#1E9E5A] dark:text-[#93A89F] dark:hover:text-[#7AD8B5]"
-                >
-                    <i class="bi bi-arrow-left"></i>
-                    Kembali ke penarikan
-                </a>
+    $freelancerInitials = collect(explode(' ', trim($freelancerName)))
+        ->filter()
+        ->take(2)
+        ->map(fn ($word) => strtoupper(substr($word, 0, 1)))
+        ->implode('');
+@endphp
 
-                <div class="mt-4">
+<div class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
 
-                    <div class="flex flex-wrap items-center gap-2">
+    {{-- =========================================================
+         HEADER
+    ========================================================== --}}
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
 
-                        <p class="text-sm font-medium text-[#1E9E5A] dark:text-[#7AD8B5]">
-                            Detail Penarikan
-                        </p>
+        <div class="min-w-0">
 
-                        <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold {{ $withdrawalStatus['class'] }}">
-                            <i class="bi {{ $withdrawalStatus['icon'] }}"></i>
-                            {{ $withdrawalStatus['label'] }}
-                        </span>
+            <a
+                href="{{ route('admin.withdrawals.index') }}"
+                class="inline-flex items-center gap-2 text-[10px] font-semibold text-slate-400 transition hover:text-blue-600 dark:text-slate-500 dark:hover:text-blue-400 sm:text-xs"
+            >
+                <i class="bi bi-arrow-left"></i>
+                Kembali ke penarikan
+            </a>
 
-                    </div>
+            <div class="mt-5 flex flex-wrap items-center gap-2">
 
+                <div class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 dark:border-blue-900/40 dark:bg-blue-950/30">
+                    <span class="h-1.5 w-1.5 rounded-full bg-blue-600"></span>
 
-                    <h1 class="mt-2 text-2xl font-semibold tracking-tight text-[#123128] dark:text-white">
-                        Penarikan #{{ $withdrawal->id }}
-                    </h1>
-
-                    <p class="mt-1 text-sm text-[#667D73] dark:text-[#A9BCB2]">
-                        Pengajuan penarikan saldo freelancer.
+                    <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">
+                        Detail Penarikan
                     </p>
-
                 </div>
+
+                <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[9px] font-bold {{ $withdrawalStatus['class'] }}">
+                    <i class="bi {{ $withdrawalStatus['icon'] }}"></i>
+                    {{ $withdrawalStatus['label'] }}
+                </span>
 
             </div>
 
+            <h1 class="mt-3 break-all text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                Penarikan #{{ $withdrawal->id }}
+            </h1>
 
-            {{-- Amount --}}
-            <div class="rounded-xl border border-[#D6E4DD] bg-white px-5 py-4 dark:border-[#2E473A] dark:bg-[#13221A]">
+            <p class="mt-1 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                Pengajuan penarikan saldo freelancer.
+            </p>
 
-                <p class="text-[11px] font-medium uppercase tracking-wide text-[#71837B] dark:text-[#8FA59A]">
-                    Net Amount
-                </p>
+        </div>
 
-                <p class="mt-1 text-2xl font-semibold text-[#1E9E5A] dark:text-[#7AD8B5]">
-                    Rp {{ number_format((float) $withdrawal->net_amount, 0, ',', '.') }}
-                </p>
+        {{-- NET AMOUNT --}}
+        <div class="w-full rounded-2xl border border-blue-100 bg-blue-50 p-4 shadow-sm dark:border-blue-900/40 dark:bg-blue-950/20 sm:w-auto sm:min-w-[250px] sm:p-5">
+
+            <div class="flex items-center justify-between gap-4">
+
+                <div>
+                    <p class="text-[9px] font-bold uppercase tracking-[0.14em] text-blue-600 dark:text-blue-400">
+                        Net Amount
+                    </p>
+
+                    <p class="mt-1 text-2xl font-bold tracking-tight text-blue-700 dark:text-blue-300">
+                        Rp {{ number_format((float) $withdrawal->net_amount, 0, ',', '.') }}
+                    </p>
+
+                    <p class="mt-1 text-[10px] text-blue-600/70 dark:text-blue-400/70">
+                        Dana yang diterima freelancer
+                    </p>
+                </div>
+
+                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm dark:bg-slate-900 dark:text-blue-400">
+                    <i class="bi bi-wallet2 text-lg"></i>
+                </div>
 
             </div>
 
         </div>
 
+    </div>
 
-        {{-- Success --}}
-        @if (session('success'))
+    {{-- =========================================================
+         SUCCESS
+    ========================================================== --}}
+    @if (session('success'))
+        <div class="overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/30">
+            <div class="flex items-start gap-3 px-5 py-4">
 
-            <div class="rounded-2xl border border-[#BFE7CE] bg-[#F0FBF4] px-4 py-3 dark:border-[#315C43] dark:bg-[#14271C]">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm dark:bg-slate-900 dark:text-emerald-400">
+                    <i class="bi bi-check-lg"></i>
+                </div>
 
-                <div class="flex items-start gap-3">
+                <div class="min-w-0">
+                    <p class="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                        Berhasil
+                    </p>
 
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#DCFCE7] text-[#15803D] dark:bg-[#234632] dark:text-[#8FE2AB]">
-                        <i class="bi bi-check-lg"></i>
-                    </div>
-
-                    <div>
-
-                        <p class="text-sm font-semibold text-[#166534] dark:text-[#9BE7B0]">
-                            Berhasil
-                        </p>
-
-                        <p class="mt-0.5 text-sm text-[#47705A] dark:text-[#B0C5B9]">
-                            {{ session('success') }}
-                        </p>
-
-                    </div>
-
+                    <p class="mt-0.5 text-xs leading-5 text-emerald-700 dark:text-emerald-400">
+                        {{ session('success') }}
+                    </p>
                 </div>
 
             </div>
+        </div>
+    @endif
 
-        @endif
+    {{-- =========================================================
+         VALIDATION ERROR
+    ========================================================== --}}
+    @if ($errors->any())
+        <div class="overflow-hidden rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30">
+            <div class="flex items-start gap-3 px-5 py-4">
 
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm dark:bg-slate-900 dark:text-red-400">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
 
-        {{-- Validation --}}
-        @if ($errors->any())
+                <div class="min-w-0">
+                    <p class="text-xs font-bold text-red-800 dark:text-red-300">
+                        Periksa kembali data
+                    </p>
 
-            <div class="rounded-2xl border border-[#F0C8C8] bg-[#FFF5F5] px-4 py-4 dark:border-[#6A3B3B] dark:bg-[#2A1919]">
-
-                <div class="flex items-start gap-3">
-
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FDE8E8] text-[#C62828] dark:bg-[#4A2525] dark:text-[#F39A9A]">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                    </div>
-
-                    <div>
-
-                        <p class="text-sm font-semibold text-[#991B1B] dark:text-[#FFAAAA]">
-                            Periksa kembali data
-                        </p>
-
-                        <ul class="mt-2 space-y-1 text-sm text-[#7F4B4B] dark:text-[#D0A7A7]">
-
-                            @foreach ($errors->all() as $error)
-
-                                <li>
-                                    • {{ $error }}
-                                </li>
-
-                            @endforeach
-
-                        </ul>
-
-                    </div>
-
+                    <ul class="mt-2 space-y-1">
+                        @foreach ($errors->all() as $error)
+                            <li class="text-xs leading-5 text-red-700 dark:text-red-400">
+                                • {{ $error }}
+                            </li>
+                        @endforeach
+                    </ul>
                 </div>
 
             </div>
+        </div>
+    @endif
 
-        @endif
+    {{-- =========================================================
+         MAIN CONTENT
+    ========================================================== --}}
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
 
+        {{-- =====================================================
+             LEFT
+        ====================================================== --}}
+        <div class="space-y-6">
 
-        {{-- Main --}}
-        <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+            {{-- =================================================
+                 FREELANCER
+            ================================================== --}}
+            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
-
-            {{-- Left --}}
-            <div class="space-y-6">
-
-
-                {{-- Freelancer --}}
-                <div class="rounded-2xl border border-[#D6E4DD] bg-white p-6 dark:border-[#2E473A] dark:bg-[#13221A]">
+                <div class="border-b border-slate-100 px-5 py-5 dark:border-slate-800 sm:px-6">
 
                     <div class="flex items-center gap-3">
 
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
                             <i class="bi bi-person-badge-fill"></i>
                         </div>
 
                         <div>
-                            <h2 class="text-sm font-semibold text-[#123128] dark:text-white">
+                            <h2 class="text-sm font-bold text-slate-900 dark:text-white">
                                 Freelancer
                             </h2>
 
-                            <p class="text-xs text-[#71837B] dark:text-[#8FA59A]">
+                            <p class="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">
                                 Pemilik saldo
                             </p>
                         </div>
 
                     </div>
 
+                </div>
 
-                    <div class="mt-5 flex items-center gap-4">
+                <div class="p-5 sm:p-6">
 
-                        <div class="h-14 w-14 shrink-0 overflow-hidden rounded-full border border-[#D6E4DD] bg-[#EAF7EF] dark:border-[#2E473A] dark:bg-[#234632]">
+                    <div class="flex items-center gap-4">
 
-                            @if ($freelancer?->avatar)
+                        <div class="h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-white bg-blue-50 shadow-sm dark:border-slate-700 dark:bg-blue-950/30">
+
+                            @if ($freelancerAvatarUrl)
 
                                 <img
-                                    src="{{ asset('storage/' . $freelancer->avatar) }}"
-                                    alt="{{ $freelancerUser?->name ?? 'Freelancer' }}"
+                                    src="{{ $freelancerAvatarUrl }}"
+                                    alt="{{ $freelancerName }}"
                                     class="h-full w-full object-cover"
                                 >
 
-                            @elseif ($freelancerUser)
-
-                                <div class="flex h-full w-full items-center justify-center text-lg font-semibold text-[#1E9E5A] dark:text-[#7AD8B5]">
-                                    {{ strtoupper(substr($freelancerUser->name, 0, 1)) }}
-                                </div>
-
                             @else
 
-                                <div class="flex h-full w-full items-center justify-center">
-                                    <i class="bi bi-person text-xl text-[#1E9E5A] dark:text-[#7AD8B5]"></i>
+                                <div class="flex h-full w-full items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400">
+                                    {{ $freelancerInitials ?: 'FR' }}
                                 </div>
 
                             @endif
 
                         </div>
 
+                        <div class="min-w-0 flex-1">
 
-                        <div class="min-w-0">
-
-                            <p class="truncate text-sm font-semibold text-[#123128] dark:text-white">
-                                {{ $freelancerUser?->name ?? 'Freelancer tidak tersedia' }}
+                            <p class="truncate text-sm font-bold text-slate-900 dark:text-white">
+                                {{ $freelancerName }}
                             </p>
 
                             @if ($freelancerUser?->email)
-
-                                <p class="mt-0.5 truncate text-xs text-[#71837B] dark:text-[#8FA59A]">
+                                <p class="mt-1 truncate text-xs text-slate-400">
                                     {{ $freelancerUser->email }}
                                 </p>
-
                             @endif
 
                             @if ($freelancer?->username)
-
-                                <p class="mt-1 truncate text-xs text-[#71837B] dark:text-[#8FA59A]">
+                                <p class="mt-1 truncate text-[10px] font-semibold text-blue-600 dark:text-blue-400">
                                     {{ '@' . $freelancer->username }}
                                 </p>
-
                             @endif
 
                         </div>
@@ -250,71 +269,109 @@
 
                 </div>
 
+            </section>
 
-                {{-- Withdrawal Information --}}
-                <div class="rounded-2xl border border-[#D6E4DD] bg-white p-6 dark:border-[#2E473A] dark:bg-[#13221A]">
+            {{-- =================================================
+                 WITHDRAWAL INFORMATION
+            ================================================== --}}
+            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+                <div class="border-b border-slate-100 px-5 py-5 dark:border-slate-800 sm:px-6">
 
                     <div class="flex items-center gap-3">
 
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
                             <i class="bi bi-bank2"></i>
                         </div>
 
                         <div>
-                            <h2 class="text-sm font-semibold text-[#123128] dark:text-white">
+                            <h2 class="text-sm font-bold text-slate-900 dark:text-white">
                                 Informasi Penarikan
                             </h2>
 
-                            <p class="text-xs text-[#71837B] dark:text-[#8FA59A]">
+                            <p class="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">
                                 Detail rekening dan metode pencairan
                             </p>
                         </div>
 
                     </div>
 
+                </div>
 
-                    <div class="mt-6 grid gap-5 sm:grid-cols-2">
+                <div class="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 sm:p-6">
 
-                        <div>
-                            <p class="text-xs text-[#71837B] dark:text-[#8FA59A]">
-                                Metode
-                            </p>
+                    <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+                        <p class="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                            Metode
+                        </p>
 
-                            <p class="mt-1 text-sm font-semibold text-[#123128] dark:text-white">
+                        <div class="mt-2 flex items-center gap-2">
+
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-blue-600 shadow-sm dark:bg-slate-900 dark:text-blue-400">
+                                <i class="bi bi-credit-card text-xs"></i>
+                            </div>
+
+                            <p class="text-xs font-bold uppercase text-slate-700 dark:text-slate-200">
                                 {{ strtoupper($withdrawal->method ?? '-') }}
                             </p>
+
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+                        <p class="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                            Nama Rekening
+                        </p>
+
+                        <p class="mt-2 break-words text-xs font-bold text-slate-700 dark:text-slate-200">
+                            {{ $withdrawal->account_name ?: '-' }}
+                        </p>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+                        <p class="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                            Nomor Rekening
+                        </p>
+
+                        <p class="mt-2 break-all text-xs font-bold text-slate-700 dark:text-slate-200">
+                            {{ $withdrawal->account_number ?: '-' }}
+                        </p>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+                        <p class="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                            Diproses
+                        </p>
+
+                        <p class="mt-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                            {{ $withdrawal->processed_at?->format('d M Y, H:i') ?? '-' }}
+                        </p>
+                    </div>
+
+                </div>
+
+            </section>
+
+            {{-- =================================================
+                 NOTE
+            ================================================== --}}
+            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+                <div class="border-b border-slate-100 px-5 py-5 dark:border-slate-800 sm:px-6">
+
+                    <div class="flex items-center gap-3">
+
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
+                            <i class="bi bi-chat-square-text-fill"></i>
                         </div>
 
-
                         <div>
-                            <p class="text-xs text-[#71837B] dark:text-[#8FA59A]">
-                                Nama Rekening
-                            </p>
+                            <h2 class="text-sm font-bold text-slate-900 dark:text-white">
+                                Catatan
+                            </h2>
 
-                            <p class="mt-1 text-sm font-medium text-[#263F35] dark:text-[#D7E3DE]">
-                                {{ $withdrawal->account_name ?: '-' }}
-                            </p>
-                        </div>
-
-
-                        <div>
-                            <p class="text-xs text-[#71837B] dark:text-[#8FA59A]">
-                                Nomor Rekening
-                            </p>
-
-                            <p class="mt-1 break-all text-sm font-medium text-[#263F35] dark:text-[#D7E3DE]">
-                                {{ $withdrawal->account_number ?: '-' }}
-                            </p>
-                        </div>
-
-
-                        <div>
-                            <p class="text-xs text-[#71837B] dark:text-[#8FA59A]">
-                                Diproses
-                            </p>
-
-                            <p class="mt-1 text-sm font-medium text-[#263F35] dark:text-[#D7E3DE]">
-                                {{ $withdrawal->processed_at?->format('d M Y, H:i') ?? '-' }}
+                            <p class="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">
+                                Informasi tambahan dari freelancer
                             </p>
                         </div>
 
@@ -322,42 +379,25 @@
 
                 </div>
 
+                <div class="p-5 sm:p-6">
 
-                {{-- Note --}}
-                <div class="rounded-2xl border border-[#D6E4DD] bg-white p-6 dark:border-[#2E473A] dark:bg-[#13221A]">
-
-                    <div class="flex items-center gap-3">
-
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
-                            <i class="bi bi-chat-square-text-fill"></i>
-                        </div>
-
-                        <div>
-                            <h2 class="text-sm font-semibold text-[#123128] dark:text-white">
-                                Catatan
-                            </h2>
-
-                            <p class="text-xs text-[#71837B] dark:text-[#8FA59A]">
-                                Informasi tambahan dari freelancer
-                            </p>
-                        </div>
-
-                    </div>
-
-
-                    <div class="mt-5 rounded-xl border border-[#D6E4DD] bg-[#F8FCF9] p-4 dark:border-[#3A5245] dark:bg-[#17271F]">
+                    <div class="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
 
                         @if ($withdrawal->note)
 
-                            <p class="whitespace-pre-line text-sm leading-7 text-[#536B60] dark:text-[#B7C7C0]">
+                            <p class="whitespace-pre-line text-xs leading-6 text-slate-600 dark:text-slate-300">
                                 {{ $withdrawal->note }}
                             </p>
 
                         @else
 
-                            <p class="text-sm text-[#71837B] dark:text-[#8FA59A]">
-                                Tidak ada catatan tambahan.
-                            </p>
+                            <div class="flex items-center gap-3 text-slate-400 dark:text-slate-500">
+                                <i class="bi bi-chat-square-dots"></i>
+
+                                <p class="text-xs">
+                                    Tidak ada catatan tambahan.
+                                </p>
+                            </div>
 
                         @endif
 
@@ -365,25 +405,30 @@
 
                 </div>
 
+            </section>
 
-                {{-- Rejection --}}
-                @if ($withdrawal->rejection_reason)
+            {{-- =================================================
+                 REJECTION
+            ================================================== --}}
+            @if ($withdrawal->rejection_reason)
 
-                    <div class="rounded-2xl border border-[#F2C5C5] bg-[#FFF5F5] p-6 dark:border-[#6A3B3B] dark:bg-[#2A1919]">
+                <section class="overflow-hidden rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/30">
+
+                    <div class="p-5 sm:p-6">
 
                         <div class="flex items-start gap-3">
 
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FDE8E8] text-[#C62828] dark:bg-[#4A2525] dark:text-[#F39A9A]">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm dark:bg-slate-900 dark:text-red-400">
                                 <i class="bi bi-x-circle-fill"></i>
                             </div>
 
-                            <div>
+                            <div class="min-w-0">
 
-                                <p class="text-sm font-semibold text-[#991B1B] dark:text-[#FFAAAA]">
+                                <p class="text-xs font-bold text-red-800 dark:text-red-300">
                                     Alasan Penolakan
                                 </p>
 
-                                <p class="mt-1 whitespace-pre-line text-sm leading-6 text-[#7F4B4B] dark:text-[#D0A7A7]">
+                                <p class="mt-2 whitespace-pre-line text-xs leading-6 text-red-700 dark:text-red-400">
                                     {{ $withdrawal->rejection_reason }}
                                 </p>
 
@@ -393,76 +438,97 @@
 
                     </div>
 
-                @endif
+                </section>
 
-            </div>
+            @endif
 
+        </div>
 
-            {{-- Right --}}
-            <div class="space-y-6">
+        {{-- =====================================================
+             RIGHT SIDEBAR
+        ====================================================== --}}
+        <div class="space-y-6">
 
+            {{-- =================================================
+                 FINANCIAL SUMMARY
+            ================================================== --}}
+            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
 
-                {{-- Financial Summary --}}
-                <div class="rounded-2xl border border-[#D6E4DD] bg-white p-6 dark:border-[#2E473A] dark:bg-[#13221A]">
+                <div class="border-b border-slate-100 px-5 py-5 dark:border-slate-800">
 
                     <div class="flex items-center gap-3">
 
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
                             <i class="bi bi-calculator"></i>
                         </div>
 
                         <div>
-                            <h2 class="text-sm font-semibold text-[#123128] dark:text-white">
+                            <h2 class="text-sm font-bold text-slate-900 dark:text-white">
                                 Rincian Nominal
                             </h2>
 
-                            <p class="text-xs text-[#71837B] dark:text-[#8FA59A]">
+                            <p class="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">
                                 Perhitungan pencairan
                             </p>
                         </div>
 
                     </div>
 
+                </div>
 
-                    <div class="mt-6 space-y-4">
+                <div class="p-5 sm:p-6">
 
-                        <div class="flex items-center justify-between gap-4">
+                    <div class="space-y-4">
 
-                            <span class="text-sm text-[#667D73] dark:text-[#A9BCB2]">
-                                Pengajuan
-                            </span>
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-xs text-slate-400">
+                                    Pengajuan
+                                </p>
 
-                            <span class="text-sm font-medium text-[#263F35] dark:text-[#D7E3DE]">
+                                <p class="mt-1 text-[10px] text-slate-400">
+                                    Jumlah yang diajukan
+                                </p>
+                            </div>
+
+                            <p class="text-right text-xs font-bold text-slate-800 dark:text-slate-200">
                                 Rp {{ number_format((float) $withdrawal->amount, 0, ',', '.') }}
-                            </span>
-
+                            </p>
                         </div>
 
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-xs text-slate-400">
+                                    Fee Admin
+                                </p>
 
-                        <div class="flex items-center justify-between gap-4">
+                                <p class="mt-1 text-[10px] text-slate-400">
+                                    Biaya administrasi
+                                </p>
+                            </div>
 
-                            <span class="text-sm text-[#667D73] dark:text-[#A9BCB2]">
-                                Fee Admin
-                            </span>
-
-                            <span class="text-sm font-medium text-[#263F35] dark:text-[#D7E3DE]">
+                            <p class="text-right text-xs font-bold text-slate-800 dark:text-slate-200">
                                 Rp {{ number_format((float) $withdrawal->admin_fee, 0, ',', '.') }}
-                            </span>
-
+                            </p>
                         </div>
 
-
-                        <div class="border-t border-[#E1EBE6] pt-4 dark:border-[#294036]">
+                        <div class="rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
 
                             <div class="flex items-center justify-between gap-4">
 
-                                <span class="text-sm font-semibold text-[#123128] dark:text-white">
-                                    Net Amount
-                                </span>
+                                <div>
+                                    <p class="text-xs font-bold text-blue-700 dark:text-blue-300">
+                                        Net Amount
+                                    </p>
 
-                                <span class="text-lg font-semibold text-[#1E9E5A] dark:text-[#7AD8B5]">
+                                    <p class="mt-1 text-[10px] text-blue-600/70 dark:text-blue-400/70">
+                                        Diterima freelancer
+                                    </p>
+                                </div>
+
+                                <p class="text-right text-base font-bold text-blue-700 dark:text-blue-300">
                                     Rp {{ number_format((float) $withdrawal->net_amount, 0, ',', '.') }}
-                                </span>
+                                </p>
 
                             </div>
 
@@ -472,45 +538,51 @@
 
                 </div>
 
+            </section>
 
-                {{-- Processing --}}
-                <div class="rounded-2xl border border-[#D6E4DD] bg-white p-6 dark:border-[#2E473A] dark:bg-[#13221A]">
+            {{-- =================================================
+                 PROCESSING
+            ================================================== --}}
+            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+
+                <div class="border-b border-slate-100 px-5 py-5 dark:border-slate-800">
 
                     <div class="flex items-center gap-3">
 
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF7EF] text-[#1E9E5A] dark:bg-[#234632] dark:text-[#7AD8B5]">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
                             <i class="bi bi-shield-check"></i>
                         </div>
 
                         <div>
-                            <h2 class="text-sm font-semibold text-[#123128] dark:text-white">
+                            <h2 class="text-sm font-bold text-slate-900 dark:text-white">
                                 Proses Penarikan
                             </h2>
 
-                            <p class="text-xs text-[#71837B] dark:text-[#8FA59A]">
+                            <p class="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">
                                 Perbarui status pengajuan
                             </p>
                         </div>
 
                     </div>
 
+                </div>
+
+                <div class="p-5 sm:p-6">
 
                     <form
                         action="{{ route('admin.withdrawals.update', $withdrawal) }}"
                         method="POST"
-                        class="mt-6 space-y-5"
+                        class="space-y-5"
                     >
-
                         @csrf
                         @method('PATCH')
 
-
-                        {{-- Status --}}
+                        {{-- STATUS --}}
                         <div>
 
                             <label
                                 for="status"
-                                class="mb-2 block text-sm font-medium text-[#355247] dark:text-[#D0DED8]"
+                                class="mb-2 block text-xs font-semibold text-slate-700 dark:text-slate-300"
                             >
                                 Status
                             </label>
@@ -519,22 +591,22 @@
                                 id="status"
                                 name="status"
                                 required
-                                class="w-full rounded-xl border border-[#BFCFC7] bg-white px-4 py-3 text-sm text-[#123128] outline-none transition hover:border-[#AFC2B8] focus:border-[#1E9E5A] focus:ring-4 focus:ring-[#EAF7EF] dark:border-[#3A5245] dark:bg-[#16251D] dark:text-white dark:hover:border-[#4C695B] dark:focus:border-[#7AD8B5] dark:focus:ring-[#214532]"
+                                class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs text-slate-700 outline-none transition hover:border-slate-300 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-600 dark:focus:border-blue-500 dark:focus:bg-slate-900"
                             >
 
-                                <option value="pending">
-                                    Pending
+                                <option value="pending" @selected(old('status', $withdrawal->status) === 'pending')>
+                                    Menunggu
                                 </option>
 
-                                <option value="processing">
+                                <option value="processing" @selected(old('status', $withdrawal->status) === 'processing')>
                                     Diproses
                                 </option>
 
-                                <option value="completed">
-                                    Disetujui / Selesai
+                                <option value="approved" @selected(old('status', $withdrawal->status) === 'approved')>
+                                    Disetujui
                                 </option>
 
-                                <option value="rejected">
+                                <option value="rejected" @selected(old('status', $withdrawal->status) === 'rejected')>
                                     Ditolak
                                 </option>
 
@@ -542,16 +614,15 @@
 
                         </div>
 
-
-                        {{-- Rejection Reason --}}
+                        {{-- REJECTION --}}
                         <div>
 
                             <label
                                 for="rejection_reason"
-                                class="mb-2 block text-sm font-medium text-[#355247] dark:text-[#D0DED8]"
+                                class="mb-2 block text-xs font-semibold text-slate-700 dark:text-slate-300"
                             >
                                 Alasan Penolakan
-                                <span class="font-normal text-[#8A9B94]">
+                                <span class="font-normal text-slate-400">
                                     (opsional)
                                 </span>
                             </label>
@@ -561,16 +632,15 @@
                                 name="rejection_reason"
                                 rows="4"
                                 placeholder="Tulis alasan apabila pengajuan ditolak..."
-                                class="w-full rounded-xl border border-[#BFCFC7] bg-white px-4 py-3 text-sm text-[#123128] outline-none transition placeholder:text-[#95A79F] hover:border-[#AFC2B8] focus:border-[#1E9E5A] focus:ring-4 focus:ring-[#EAF7EF] dark:border-[#3A5245] dark:bg-[#16251D] dark:text-white dark:placeholder:text-[#789086] dark:hover:border-[#4C695B] dark:focus:border-[#7AD8B5] dark:focus:ring-[#214532]"
+                                class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:placeholder:text-slate-500 dark:hover:border-slate-600 dark:focus:border-blue-500 dark:focus:bg-slate-900"
                             >{{ old('rejection_reason', $withdrawal->rejection_reason) }}</textarea>
 
                         </div>
 
-
-                        {{-- Button --}}
+                        {{-- BUTTON --}}
                         <button
                             type="submit"
-                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1E9E5A] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#17844A] focus:outline-none focus:ring-4 focus:ring-[#D8F3E2] dark:focus:ring-[#28533B]"
+                            class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-xs font-semibold !text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/15"
                         >
                             <i class="bi bi-check2-circle"></i>
                             Simpan Status
@@ -580,23 +650,28 @@
 
                 </div>
 
+            </section>
 
-                {{-- Warning --}}
-                <div class="rounded-2xl border border-[#E8D8AE] bg-[#FFFBEE] p-6 dark:border-[#665326] dark:bg-[#302818]">
+            {{-- =================================================
+                 WARNING
+            ================================================== --}}
+            <section class="overflow-hidden rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20">
+
+                <div class="p-5 sm:p-6">
 
                     <div class="flex items-start gap-3">
 
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#A16207] shadow-sm dark:bg-[#3B321F] dark:text-[#E8C67A]">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm dark:bg-slate-900 dark:text-amber-400">
                             <i class="bi bi-exclamation-triangle-fill"></i>
                         </div>
 
-                        <div>
+                        <div class="min-w-0">
 
-                            <p class="text-sm font-semibold text-[#7C5810] dark:text-[#E8CA85]">
+                            <p class="text-xs font-bold text-amber-800 dark:text-amber-300">
                                 Perhatian
                             </p>
 
-                            <p class="mt-1 text-sm leading-6 text-[#866D38] dark:text-[#C8B47E]">
+                            <p class="mt-1.5 text-xs leading-6 text-amber-800/70 dark:text-amber-300/70">
                                 Persetujuan penarikan di halaman ini adalah pencatatan status. Proses transfer dana ke rekening freelancer akan dihubungkan ke sistem pembayaran pada tahap integrasi berikutnya.
                             </p>
 
@@ -606,44 +681,58 @@
 
                 </div>
 
+            </section>
 
-                {{-- System Information --}}
-                <div class="rounded-2xl border border-[#D6E4DD] bg-[#F8FCF9] p-6 dark:border-[#2E473A] dark:bg-[#17271F]">
+            {{-- =================================================
+                 SYSTEM INFORMATION
+            ================================================== --}}
+            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/50">
+
+                <div class="p-5 sm:p-6">
 
                     <div class="flex items-start gap-3">
 
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#1E9E5A] shadow-sm dark:bg-[#1D3025] dark:text-[#7AD8B5]">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm dark:bg-slate-900 dark:text-blue-400">
                             <i class="bi bi-info-circle-fill"></i>
                         </div>
 
-                        <div>
+                        <div class="min-w-0 flex-1">
 
-                            <p class="text-sm font-semibold text-[#123128] dark:text-white">
+                            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">
                                 Informasi Sistem
                             </p>
 
-                            <div class="mt-3 space-y-2 text-xs text-[#71837B] dark:text-[#8FA59A]">
+                            <div class="mt-4 space-y-3">
 
-                                <p>
-                                    ID:
-                                    <span class="font-medium text-[#536B60] dark:text-[#B7C7C0]">
+                                <div class="flex items-center justify-between gap-4 border-b border-slate-200 pb-3 dark:border-slate-800">
+                                    <span class="text-[10px] text-slate-400">
+                                        ID
+                                    </span>
+
+                                    <span class="break-all text-right text-[10px] font-semibold text-slate-600 dark:text-slate-300">
                                         #{{ $withdrawal->id }}
                                     </span>
-                                </p>
+                                </div>
 
-                                <p>
-                                    Dibuat:
-                                    <span class="font-medium text-[#536B60] dark:text-[#B7C7C0]">
+                                <div class="flex items-center justify-between gap-4 border-b border-slate-200 pb-3 dark:border-slate-800">
+                                    <span class="text-[10px] text-slate-400">
+                                        Dibuat
+                                    </span>
+
+                                    <span class="text-right text-[10px] font-semibold text-slate-600 dark:text-slate-300">
                                         {{ $withdrawal->created_at?->format('d M Y, H:i') ?? '-' }}
                                     </span>
-                                </p>
+                                </div>
 
-                                <p>
-                                    Diperbarui:
-                                    <span class="font-medium text-[#536B60] dark:text-[#B7C7C0]">
+                                <div class="flex items-center justify-between gap-4">
+                                    <span class="text-[10px] text-slate-400">
+                                        Diperbarui
+                                    </span>
+
+                                    <span class="text-right text-[10px] font-semibold text-slate-600 dark:text-slate-300">
                                         {{ $withdrawal->updated_at?->format('d M Y, H:i') ?? '-' }}
                                     </span>
-                                </p>
+                                </div>
 
                             </div>
 
@@ -653,10 +742,13 @@
 
                 </div>
 
-            </div>
+            </section>
 
         </div>
 
     </div>
+
+</div>
+
 
 </x-layouts.admin>
