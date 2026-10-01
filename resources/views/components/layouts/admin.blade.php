@@ -152,7 +152,7 @@
 
                 /*
                 |--------------------------------------------------------------------------
-                | Nanti ketika Log Activity tersedia
+                | Nanti setelah Log Activity dibuat
                 |--------------------------------------------------------------------------
                 |
                 | [
@@ -388,34 +388,32 @@
 
         #pk-admin-sidebar .pk-admin-sidebar-link {
             color: #475569 !important;
-            background: transparent !important;
+            background-color: transparent !important;
         }
 
         #pk-admin-sidebar .pk-admin-sidebar-link:hover {
             color: #0f172a !important;
-            background: #f1f5f9 !important;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | DARK MODE LINK
-        |--------------------------------------------------------------------------
-        */
-
-        html.dark #pk-admin-sidebar .pk-admin-sidebar-link {
-            color: #cbd5e1 !important;
-            background: transparent !important;
-        }
-
-        html.dark #pk-admin-sidebar .pk-admin-sidebar-link:hover {
-            color: #f8fafc !important;
-            background: #0f172a !important;
+            background-color: #f1f5f9 !important;
         }
 
 
         /* =====================================================
-           SIDEBAR LABEL
+           SIDEBAR DARK LINK
+        ====================================================== */
+
+        html.dark #pk-admin-sidebar .pk-admin-sidebar-link {
+            color: #cbd5e1 !important;
+            background-color: transparent !important;
+        }
+
+        html.dark #pk-admin-sidebar .pk-admin-sidebar-link:hover {
+            color: #f8fafc !important;
+            background-color: #0f172a !important;
+        }
+
+
+        /* =====================================================
+           SIDEBAR MENU LABEL
         ====================================================== */
 
         #pk-admin-sidebar .pk-admin-sidebar-label {
@@ -426,7 +424,8 @@
             color: #cbd5e1 !important;
         }
 
-        html.dark #pk-admin-sidebar .pk-admin-sidebar-link:hover
+        html.dark #pk-admin-sidebar
+        .pk-admin-sidebar-link:hover
         .pk-admin-sidebar-label {
             color: #f8fafc !important;
         }
@@ -438,25 +437,28 @@
 
         #pk-admin-sidebar .pk-admin-sidebar-icon {
             color: #64748b !important;
-            background: #f1f5f9 !important;
+            background-color: #f1f5f9 !important;
         }
 
-        #pk-admin-sidebar .pk-admin-sidebar-link:hover
+        #pk-admin-sidebar
+        .pk-admin-sidebar-link:hover
         .pk-admin-sidebar-icon {
             color: #2563eb !important;
-            background: #ffffff !important;
+            background-color: #ffffff !important;
         }
 
 
-        html.dark #pk-admin-sidebar .pk-admin-sidebar-icon {
+        html.dark #pk-admin-sidebar
+        .pk-admin-sidebar-icon {
             color: #94a3b8 !important;
-            background: #0f172a !important;
+            background-color: #0f172a !important;
         }
 
-        html.dark #pk-admin-sidebar .pk-admin-sidebar-link:hover
+        html.dark #pk-admin-sidebar
+        .pk-admin-sidebar-link:hover
         .pk-admin-sidebar-icon {
             color: #60a5fa !important;
-            background: #1e293b !important;
+            background-color: #1e293b !important;
         }
 
 
@@ -464,24 +466,31 @@
            ACTIVE MENU
         ====================================================== */
 
-        #pk-admin-sidebar .pk-admin-sidebar-link.is-active {
+        #pk-admin-sidebar
+        .pk-admin-sidebar-link.is-active {
             color: #1d4ed8 !important;
-            background: #eff6ff !important;
+            background-color: #eff6ff !important;
         }
 
-        html.dark #pk-admin-sidebar .pk-admin-sidebar-link.is-active {
-            color: #93c5fd !important;
-            background: #172554 !important;
+        html.dark #pk-admin-sidebar
+        .pk-admin-sidebar-link.is-active {
+            color: #bfdbfe !important;
+            background-color: #172554 !important;
         }
 
 
-        #pk-admin-sidebar .pk-admin-sidebar-link.is-active
+        /* =====================================================
+           ACTIVE LABEL
+        ====================================================== */
+
+        #pk-admin-sidebar
+        .pk-admin-sidebar-link.is-active
         .pk-admin-sidebar-label {
             color: #1d4ed8 !important;
         }
 
-        html.dark
-        #pk-admin-sidebar .pk-admin-sidebar-link.is-active
+        html.dark #pk-admin-sidebar
+        .pk-admin-sidebar-link.is-active
         .pk-admin-sidebar-label {
             color: #bfdbfe !important;
         }
@@ -491,35 +500,21 @@
            ACTIVE ICON
         ====================================================== */
 
-        #pk-admin-sidebar .pk-admin-sidebar-link.is-active
+        #pk-admin-sidebar
+        .pk-admin-sidebar-link.is-active
         .pk-admin-sidebar-icon {
             color: #2563eb !important;
-            background: #ffffff !important;
-            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
-        }
-
-        html.dark
-        #pk-admin-sidebar .pk-admin-sidebar-link.is-active
-        .pk-admin-sidebar-icon {
-            color: #60a5fa !important;
-            background: rgba(37, 99, 235, 0.12) !important;
-            box-shadow: none !important;
-        }
-
-
-        /* =====================================================
-           ACTIVE ARROW
-        ====================================================== */
-
-        #pk-admin-sidebar .pk-admin-sidebar-active-arrow {
-            color: #2563eb !important;
-            background: #dbeafe !important;
+            background-color: #ffffff !important;
+            box-shadow:
+                0 1px 3px rgba(15, 23, 42, 0.08) !important;
         }
 
         html.dark #pk-admin-sidebar
-        .pk-admin-sidebar-active-arrow {
-            color: #bfdbfe !important;
-            background: rgba(30, 64, 175, 0.55) !important;
+        .pk-admin-sidebar-link.is-active
+        .pk-admin-sidebar-icon {
+            color: #60a5fa !important;
+            background-color: rgba(37, 99, 235, 0.14) !important;
+            box-shadow: none !important;
         }
 
 
@@ -527,13 +522,31 @@
            ACTIVE BAR
         ====================================================== */
 
-        #pk-admin-sidebar .pk-admin-sidebar-active-bar {
-            background: #2563eb !important;
+        #pk-admin-sidebar
+        .pk-admin-sidebar-active-bar {
+            background-color: #2563eb !important;
         }
 
         html.dark #pk-admin-sidebar
         .pk-admin-sidebar-active-bar {
-            background: #60a5fa !important;
+            background-color: #60a5fa !important;
+        }
+
+
+        /* =====================================================
+           ACTIVE ARROW
+        ====================================================== */
+
+        #pk-admin-sidebar
+        .pk-admin-sidebar-active-arrow {
+            color: #2563eb !important;
+            background-color: #dbeafe !important;
+        }
+
+        html.dark #pk-admin-sidebar
+        .pk-admin-sidebar-active-arrow {
+            color: #bfdbfe !important;
+            background-color: rgba(30, 64, 175, 0.55) !important;
         }
 
 
@@ -609,7 +622,6 @@
         html.dark .pk-admin-content textarea::placeholder {
             color: #64748b !important;
         }
-
 
         html.dark .pk-admin-content input:focus,
         html.dark .pk-admin-content textarea:focus,
@@ -804,7 +816,7 @@
                     class="mb-6 last:mb-1"
                 >
 
-                    {{-- Group title --}}
+                    {{-- Group Title --}}
                     <div
                         class="mb-2 flex items-center gap-2 px-3"
                     >
@@ -841,7 +853,6 @@
                                 class="pk-admin-sidebar-link group relative flex min-h-[46px] items-center gap-3 rounded-xl px-3 py-2 transition-all duration-200 {{ $isActive ? 'is-active' : '' }}"
                             >
 
-
                                 {{-- Active bar --}}
                                 @if ($isActive)
 
@@ -864,7 +875,7 @@
                                 </span>
 
 
-                                {{-- Menu label --}}
+                                {{-- Label --}}
                                 <span
                                     class="pk-admin-sidebar-label min-w-0 flex-1 truncate text-[13px] font-semibold"
                                 >
@@ -886,7 +897,6 @@
                                     </span>
 
                                 @endif
-
 
                             </a>
 
@@ -926,7 +936,7 @@
 
 
                 {{-- =================================================
-                    MOBILE BUTTON
+                    MOBILE MENU
                 ================================================== --}}
 
                 <button
@@ -1122,7 +1132,6 @@
                             class="pointer-events-none absolute right-0 top-[52px] z-[120] w-[290px] translate-y-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 opacity-0 shadow-2xl shadow-slate-900/10 transition-all duration-150 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
                             aria-hidden="true"
                         >
-
 
                             {{-- User summary --}}
                             <div
