@@ -40,7 +40,7 @@
                                     {{ $initial }}
                                 </div>
                             @endif
-
+                                
                             <span
                                 class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#F8FAFC] bg-[#22C55E]"
                             ></span>

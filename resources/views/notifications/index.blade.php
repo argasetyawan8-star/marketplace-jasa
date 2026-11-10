@@ -1,249 +1,314 @@
-@php
-    $layout = match ($role) {
-        'freelancer' => 'layouts.freelancer',
-        'admin' => 'layouts.admin',
-        default => 'layouts.client',
-    };
-@endphp
 
-<x-dynamic-component :component="$layout" title="Notifikasi">
+<x-layouts.marketplace title="Notifikasi - ProKerja">
+    @php
+        $notificationItems = $notifications ?? collect();
 
-<div class="min-h-[calc(100vh-72px)] bg-[#F8FCF9]">
-    <div class="mx-auto max-w-5xl px-4 py-7 sm:px-6 lg:px-8 lg:py-9">
+        $getNotificationValue = function ($notification, $key, $fallback = null) {
+            $value = data_get($notification, $key);
 
-        @if(session('success'))
-            <div class="mb-5 rounded-2xl border border-[#CDE8D7] bg-white px-4 py-3.5 shadow-[0_4px_16px_rgba(18,49,40,0.04)]">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF7EF] text-[#1E9E5A]">
-                        <i class="bi bi-check-lg"></i>
-                    </div>
+            if ($value !== null && $value !== '') {
+                return $value;
+            }
 
-                    <p class="text-sm text-[#355248]">
-                        {{ session('success') }}
+            return $fallback;
+        };
+
+        $isReadNotification = function ($notification) {
+            if (isset($notification->read_at)) {
+                return $notification->read_at !== null;
+            }
+
+            if (isset($notification->is_read)) {
+                return (bool) $notification->is_read;
+            }
+
+            return false;
+        };
+
+        $getNotificationExtra = function ($notification) {
+            $extra = data_get($notification, 'extra', []);
+
+            if (empty($extra)) {
+                $extra = data_get($notification, 'data.extra', []);
+            }
+
+            if (is_string($extra)) {
+                $decoded = json_decode($extra, true);
+                $extra = is_array($decoded) ? $decoded : [];
+            }
+
+            return is_array($extra) ? $extra : [];
+        };
+    @endphp
+
+    <div class="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-4xl">
+
+            {{-- HEADER --}}
+            <div class="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p class="mb-2 text-xs font-bold uppercase tracking-wider text-blue-600">
+                        Pusat Informasi
+                    </p>
+
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                        Notifikasi
+                    </h1>
+
+                    <p class="mt-2 text-sm leading-6 text-slate-500">
+                        Lihat pembaruan akun, pengajuan, dan aktivitas kamu di ProKerja.
                     </p>
                 </div>
+
+                @if (Route::has('notifications.read_all'))
+                    <form
+                        method="POST"
+                        action="{{ route('notifications.read_all') }}"
+                    >
+                        @csrf
+
+                        <button
+                            type="submit"
+                            class="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                        >
+                            Tandai semua dibaca
+                        </button>
+                    </form>
+                @endif
             </div>
-        @endif
 
-        <section class="overflow-hidden rounded-3xl border border-[#E1EAE5] bg-white shadow-[0_8px_28px_rgba(18,49,40,0.045)]">
-
-            <div class="border-b border-[#E8EFEB] px-5 py-5 sm:px-7">
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-
-                    <div>
-                        <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#1E9E5A]">
-                            Akun
-                        </p>
-
-                        <h1 class="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#123128] sm:text-2xl">
-                            Notifikasi
-                        </h1>
-
-                        <p class="mt-1.5 text-xs leading-5 text-[#71837B]">
-                            Informasi penting tentang order, pembayaran, pesan, refund, dan aktivitas akunmu.
-                        </p>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2">
-
-                        <a
-                            href="{{ route('notifications.index') }}"
-                            class="inline-flex h-9 items-center justify-center rounded-xl px-3 text-[10px] font-semibold transition
-                                {{ $filter !== 'unread'
-                                    ? 'bg-[#EAF7EF] text-[#168A4D]'
-                                    : 'border border-[#DCE7E1] bg-white text-[#66766E] hover:bg-[#F5FAF7]' }}"
-                        >
-                            Semua
-                        </a>
-
-                        <a
-                            href="{{ route('notifications.index', ['filter' => 'unread']) }}"
-                            class="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-[10px] font-semibold transition
-                                {{ $filter === 'unread'
-                                    ? 'bg-[#EAF7EF] text-[#168A4D]'
-                                    : 'border border-[#DCE7E1] bg-white text-[#66766E] hover:bg-[#F5FAF7]' }}"
-                        >
-                            Belum dibaca
-
-                            @if($unreadCount > 0)
-                                <span class="rounded-full bg-[#1E9E5A] px-1.5 py-0.5 text-[8px] text-white">
-                                    {{ $unreadCount > 99 ? '99+' : $unreadCount }}
-                                </span>
-                            @endif
-                        </a>
-
-                        @if($unreadCount > 0)
-                            <form
-                                action="{{ route('notifications.read_all') }}"
-                                method="POST"
-                            >
-                                @csrf
-
-                                <button
-                                    type="submit"
-                                    class="inline-flex h-9 items-center justify-center rounded-xl border border-[#DCE7E1] bg-white px-3 text-[10px] font-semibold text-[#66766E] transition hover:bg-[#F5FAF7] hover:text-[#1E9E5A]"
-                                >
-                                    Tandai semua dibaca
-                                </button>
-                            </form>
-                        @endif
-
-                    </div>
-
+            {{-- FLASH MESSAGES --}}
+            @if (session('success'))
+                <div role="status" class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                    {{ session('success') }}
                 </div>
-            </div>
+            @endif
 
-            <div class="divide-y divide-[#EDF2EF]">
+            @if (session('error'))
+                <div role="alert" class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                    {{ session('error') }}
+                </div>
+            @endif
 
-                @forelse($notifications as $notification)
-
+            {{-- NOTIFICATION LIST --}}
+            <div class="space-y-3">
+                @forelse ($notificationItems as $notification)
                     @php
-                        $data = $notification->data ?? [];
+                        $title = $getNotificationValue(
+                            $notification,
+                            'title',
+                            data_get($notification, 'data.title', 'Notifikasi ProKerja')
+                        );
 
-                        $title = $data['title'] ?? 'Notifikasi JASAIN';
-                        $message = $data['message'] ?? 'Ada aktivitas baru pada akunmu.';
-                        $event = $data['event'] ?? null;
-                        $priority = $data['priority'] ?? 'normal';
-                        $icon = $data['icon'] ?? 'bi-bell';
-                        $actionUrl = $data['action_url'] ?? null;
+                        $message = $getNotificationValue(
+                            $notification,
+                            'message',
+                            data_get($notification, 'data.message', '')
+                        );
 
-                        $iconClass = match($priority) {
-                            'critical' => 'bg-[#FFF1F1] text-[#C65353]',
-                            'action' => 'bg-[#FFF9EA] text-[#B7791F]',
-                            'info' => 'bg-[#EEF5FF] text-[#315A91]',
-                            default => 'bg-[#EAF7EF] text-[#1E9E5A]',
-                        };
+                        $event = (string) $getNotificationValue(
+                            $notification,
+                            'event',
+                            data_get($notification, 'data.event', '')
+                        );
 
-                        $isUnread = is_null($notification->read_at);
+                        $priority = (string) $getNotificationValue(
+                            $notification,
+                            'priority',
+                            data_get($notification, 'data.priority', 'info')
+                        );
+
+                        $actionUrl = $getNotificationValue(
+                            $notification,
+                            'action_url',
+                            data_get($notification, 'data.action_url')
+                        );
+
+                        $extra = $getNotificationExtra($notification);
+
+                        $rejectionReason = $getNotificationValue(
+                            $notification,
+                            'rejection_reason',
+                            data_get($extra, 'rejection_reason',
+                                data_get($notification, 'data.rejection_reason')
+                            )
+                        );
+
+                        $isRead = $isReadNotification($notification);
+
+                        $normalizedEvent = strtolower($event);
+                        $normalizedTitle = strtolower((string) $title);
+
+                        $isKycRejected = str_contains($normalizedEvent, 'rejected')
+                            || str_contains($normalizedEvent, 'rejected')
+                            || str_contains($normalizedTitle, 'ditolak');
+
+                        $isKycReviewing = str_contains($normalizedEvent, 'reviewing')
+                            || str_contains($normalizedTitle, 'sedang diperiksa');
+
+                        $isKycNotification = $isKycRejected || $isKycReviewing
+                            || str_contains($normalizedEvent, 'kyc');
+
+                        $notificationDate = $getNotificationValue(
+                            $notification,
+                            'created_at',
+                            data_get($notification, 'createdAt')
+                        );
+
+                        $dateLabel = null;
+
+                        if ($notificationDate instanceof \DateTimeInterface) {
+                            $dateLabel = $notificationDate->format('d M Y, H:i');
+                        } elseif (is_string($notificationDate) && $notificationDate !== '') {
+                            try {
+                                $dateLabel = \Illuminate\Support\Carbon::parse($notificationDate)
+                                    ->format('d M Y, H:i');
+                            } catch (\Throwable $e) {
+                                $dateLabel = null;
+                            }
+                        }
+
+                        $iconClass = $isKycRejected
+                            ? 'bg-red-50 text-red-600'
+                            : ($isKycReviewing
+                                ? 'bg-amber-50 text-amber-600'
+                                : 'bg-blue-50 text-blue-600');
                     @endphp
 
-                    <div class="px-5 py-5 sm:px-7 {{ $isUnread ? 'bg-[#FBFEFC]' : 'bg-white' }}">
+                    <article class="overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-md
+                        {{ $isRead ? 'border-slate-200' : 'border-blue-200' }}">
 
-                        <div class="flex items-start gap-3.5">
-
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ $iconClass }}">
-                                <i class="bi {{ $icon }} text-[15px]"></i>
+                        <div class="flex gap-3 p-4 sm:gap-4 sm:p-5">
+                            {{-- ICON --}}
+                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ $iconClass }}">
+                                @if ($isKycRejected)
+                                    <span class="text-lg font-bold" aria-hidden="true">!</span>
+                                @elseif ($isKycReviewing)
+                                    <span class="text-lg" aria-hidden="true">&#9203;</span>
+                                @else
+                                    <span class="text-lg" aria-hidden="true">&#9679;</span>
+                                @endif
                             </div>
 
+                            {{-- CONTENT --}}
                             <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h2 class="break-words text-sm font-bold text-slate-900 sm:text-base">
+                                        {{ $title }}
+                                    </h2>
 
-                                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-
-                                    <div class="min-w-0">
-
-                                        <div class="flex flex-wrap items-center gap-2">
-
-                                            <h2 class="text-sm font-semibold text-[#18382E]">
-                                                {{ $title }}
-                                            </h2>
-
-                                            @if($isUnread)
-                                                <span class="inline-flex items-center gap-1.5 rounded-full bg-[#EAF7EF] px-2 py-1 text-[8px] font-semibold text-[#168A4D]">
-                                                    <span class="h-1.5 w-1.5 rounded-full bg-[#35C978]"></span>
-                                                    Baru
-                                                </span>
-                                            @endif
-
-                                        </div>
-
-                                        <p class="mt-1.5 max-w-3xl text-xs leading-5 text-[#6E8178]">
-                                            {{ $message }}
-                                        </p>
-
-                                    </div>
-
-                                    <span class="shrink-0 text-[9px] text-[#A0ADA7]">
-                                        {{ $notification->created_at?->diffForHumans() }}
-                                    </span>
-
-                                </div>
-
-                                <div class="mt-3 flex flex-wrap items-center gap-2">
-
-                                    @if($event)
-                                        <span class="rounded-full bg-[#F4F7F5] px-2 py-1 text-[8px] font-medium text-[#84938C]">
-                                            {{ $event }}
+                                    @if (! $isRead)
+                                        <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700">
+                                            Baru
                                         </span>
                                     @endif
+                                </div>
 
-                                    @if($actionUrl)
+                                @if ($message)
+                                    <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
+                                        {{ $message }}
+                                    </p>
+                                @endif
 
-                                        <form
-                                            action="{{ route('notifications.read', $notification->id) }}"
-                                            method="POST"
-                                            class="inline-flex"
-                                        >
-                                            @csrf
+                                {{-- REJECTION REASON --}}
+                                @if ($isKycRejected && $rejectionReason)
+                                    <div class="mt-4 rounded-xl border border-red-100 bg-red-50 p-4">
+                                        <p class="text-xs font-bold uppercase tracking-wider text-red-700">
+                                            Alasan penolakan
+                                        </p>
 
-                                            <button
-                                                type="submit"
-                                                class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#F8FCF9] px-3 text-[9px] font-semibold text-[#1E9E5A] transition hover:bg-[#EAF7EF]"
+                                        <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $rejectionReason }}</p>
+                                    </div>
+                                @endif
+
+                                {{-- DATE AND PRIORITY --}}
+                                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                                    @if ($dateLabel)
+                                        <span>{{ $dateLabel }}</span>
+                                    @endif
+
+                                    @if ($priority === 'action')
+                                        <span class="rounded-full bg-red-50 px-2 py-1 font-semibold text-red-600">
+                                            Perlu tindakan
+                                        </span>
+                                    @elseif ($priority === 'critical')
+                                        <span class="rounded-full bg-amber-50 px-2 py-1 font-semibold text-amber-700">
+                                            Penting
+                                        </span>
+                                    @endif
+                                </div>
+
+                                {{-- ACTIONS --}}
+                                <div class="mt-4 flex flex-wrap items-center gap-2">
+                                    @if ($actionUrl)
+                                        @if ($isKycRejected)
+                                            <a
+                                                href="{{ route('freelancer.onboarding', ['step' => 1]) }}"
+                                                class="inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700"
+                                            >
+                                                Perbaiki Pengajuan
+                                            </a>
+                                        @elseif ($isKycReviewing)
+                                            <a
+                                                href="{{ route('freelancer.onboarding', ['step' => 5]) }}"
+                                                class="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                            >
+                                                Lihat Status
+                                            </a>
+                                        @else
+                                            <a
+                                                href="{{ $actionUrl }}"
+                                                class="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                                             >
                                                 Lihat detail
-                                                <i class="bi bi-arrow-right text-[9px]"></i>
-                                            </button>
-                                        </form>
+                                            </a>
+                                        @endif
+                                    @endif
 
-                                    @elseif($isUnread)
-
+                                    @if (! $isRead && Route::has('notifications.read'))
                                         <form
-                                            action="{{ route('notifications.read', $notification->id) }}"
                                             method="POST"
-                                            class="inline-flex"
+                                            action="{{ route('notifications.read', ['notification' => $notification->id]) }}"
                                         >
                                             @csrf
 
                                             <button
                                                 type="submit"
-                                                class="inline-flex h-8 items-center rounded-lg bg-[#F8FCF9] px-3 text-[9px] font-semibold text-[#62766D] transition hover:bg-[#EEF5F1]"
+                                                class="inline-flex min-h-10 items-center justify-center rounded-xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
                                             >
                                                 Tandai dibaca
                                             </button>
                                         </form>
-
                                     @endif
-
                                 </div>
-
                             </div>
-
                         </div>
-
-                    </div>
-
+                    </article>
                 @empty
-
-                    <div class="px-5 py-16 text-center sm:px-7">
-
-                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EAF7EF] text-[#1E9E5A]">
-                            <i class="bi bi-bell-slash text-xl"></i>
+                    <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-14 text-center">
+                        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl text-slate-400">
+                            &#9675;
                         </div>
 
-                        <h2 class="mt-4 text-sm font-semibold text-[#18382E]">
+                        <h2 class="mt-4 font-bold text-slate-900">
                             Belum ada notifikasi
                         </h2>
 
-                        <p class="mt-1.5 text-xs leading-5 text-[#8B9992]">
-                            Notifikasi penting akan muncul di sini ketika ada aktivitas pada akunmu.
+                        <p class="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
+                            Jika ada pembaruan pengajuan atau aktivitas akun,
+                            notifikasi akan muncul di sini.
                         </p>
-
                     </div>
-
                 @endforelse
-
             </div>
 
-            @if($notifications->hasPages())
-
-                <div class="border-t border-[#E8EFEB] px-5 py-4 sm:px-7">
-                    {{ $notifications->onEachSide(1)->links() }}
+            {{-- PAGINATION --}}
+            @if (is_object($notificationItems) && method_exists($notificationItems, 'links'))
+                <div class="mt-6">
+                    {{ $notificationItems->links() }}
                 </div>
-
             @endif
 
-        </section>
-
+        </div>
     </div>
-</div>
-
-</x-dynamic-component>
+</x-layouts.marketplace>

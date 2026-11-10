@@ -1,3 +1,4 @@
+
 @php
     use Illuminate\Support\Facades\Route;
 
@@ -6,9 +7,10 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Public URLs
+    | PUBLIC URLS
     |--------------------------------------------------------------------------
     */
+
     $homeUrl = Route::has('marketplace.home')
         ? route('marketplace.home')
         : url('/');
@@ -23,9 +25,10 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Role URLs
+    | ROLE URLS
     |--------------------------------------------------------------------------
     */
+
     $dashboardUrl = '#';
     $ordersUrl = '#';
     $messagesUrl = '#';
@@ -36,6 +39,22 @@
     $walletUrl = '#';
     $withdrawalsUrl = '#';
     $verificationUrl = '#';
+
+    // Link pembelian dan percakapan sebagai buyer.
+    // Freelancer tetap menggunakan route freelancer.* untuk aktivitas menjual.
+    $buyerOrdersUrl = Route::has('client.orders.index')
+        ? route('client.orders.index')
+        : '#';
+
+    $buyerMessagesUrl = Route::has('client.messages.index')
+        ? route('client.messages.index')
+        : '#';
+
+    /*
+    |--------------------------------------------------------------------------
+    | CLIENT
+    |--------------------------------------------------------------------------
+    */
 
     if ($role === 'client') {
         $dashboardUrl = Route::has('client.dashboard')
@@ -62,6 +81,12 @@
             ? route('client.favorites.index')
             : '#';
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | FREELANCER
+    |--------------------------------------------------------------------------
+    */
 
     if ($role === 'freelancer') {
         $dashboardUrl = Route::has('freelancer.dashboard')
@@ -103,9 +128,10 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Admin URLs
+    | ADMIN URLS
     |--------------------------------------------------------------------------
     */
+
     $adminDashboardUrl = Route::has('admin.dashboard')
         ? route('admin.dashboard')
         : '#';
@@ -126,15 +152,48 @@
         ? route('admin.banners.index')
         : '#';
 
+    /*
+    |--------------------------------------------------------------------------
+    | NOTIFICATION URLS
+    |--------------------------------------------------------------------------
+    */
+
     $notificationUrl = Route::has('notifications.index')
         ? route('notifications.index')
         : '#';
 
+    $notificationCountUrl = Route::has('notifications.unread_count')
+        ? route('notifications.unread_count')
+        : null;
+
     /*
     |--------------------------------------------------------------------------
-    | Active States
+    | FREELANCER REGISTRATION / ONBOARDING
     |--------------------------------------------------------------------------
     */
+
+    $freelancerRegisterUrl = Route::has('freelancer.register')
+        ? route('freelancer.register')
+        : '#';
+
+    $freelancerOnboardingUrl = Route::has('freelancer.onboarding')
+        ? route('freelancer.onboarding')
+        : '#';
+
+    $becomeFreelancerUrl =
+        $isAuth && $role === 'client'
+            ? $freelancerOnboardingUrl
+            : $freelancerRegisterUrl;
+
+    $showFreelancerRegistration =
+        !$isAuth || $role === 'client';
+
+    /*
+    |--------------------------------------------------------------------------
+    | ACTIVE STATES
+    |--------------------------------------------------------------------------
+    */
+
     $isHome = request()->routeIs('marketplace.home');
 
     $isSearch = request()->routeIs(
@@ -154,22 +213,22 @@
         'freelancer.profile.*'
     );
 
-    $isMessages = request()->routeIs(
-        'client.messages.*',
-        'freelancer.messages.*',
-        'client.jobs.chat.*'
-    );
+    // Tab bawah tetap mengarah ke aktivitas utama sesuai role.
+    // Link buyer Freelancer diberi status aktif tersendiri di menu profil.
+    $isMessages = $role === 'freelancer'
+        ? request()->routeIs('freelancer.messages.*')
+        : request()->routeIs('client.messages.*', 'client.jobs.chat.*');
 
-    $isOrders = request()->routeIs(
-        'client.orders.*',
-        'freelancer.orders.*'
-    );
+    $isBuyerMessages = request()->routeIs('client.messages.*');
 
-    $isNotifications = request()->routeIs(
-        'notifications.*'
-    );
+    $isOrders = $role === 'freelancer'
+        ? request()->routeIs('freelancer.orders.*')
+        : request()->routeIs('client.orders.*');
+
+    $isBuyerOrders = request()->routeIs('client.orders.*');
+
+    $isNotifications = request()->routeIs('notifications.*');
 @endphp
-
 
 {{-- ============================================================
      DESKTOP NAVIGATION
@@ -180,25 +239,15 @@
 >
     <div class="mx-auto flex h-full max-w-7xl items-center px-6">
 
-        {{-- Logo --}}
-        <a
-            href="{{ $homeUrl }}"
-            class="group flex shrink-0 items-center gap-3"
-        >
-            <div
-                class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-sm transition duration-200 group-hover:scale-105 group-hover:bg-blue-700"
-            >
-                <svg
-                    class="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path d="M12 3v18"/>
-                    <path d="M5 8h14"/>
-                    <path d="M7 8c0 4 2 6 5 6s5-2 5-6"/>
-                    <path d="M5 18h14"/>
+        {{-- LOGO --}}
+
+        <a href="{{ $homeUrl }}" class="group flex shrink-0 items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-sm transition duration-200 group-hover:scale-105 group-hover:bg-blue-700">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 3v18" />
+                    <path d="M5 8h14" />
+                    <path d="M7 8c0 4 2 6 5 6s5-2 5-6" />
+                    <path d="M5 18h14" />
                 </svg>
             </div>
 
@@ -206,151 +255,115 @@
                 <div class="text-lg font-extrabold tracking-tight text-slate-900">
                     ProKerja
                 </div>
-
                 <div class="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-slate-400">
                     Marketplace Jasa
                 </div>
             </div>
         </a>
 
+        {{-- MAIN MENU --}}
 
-        {{-- Main Menu --}}
         <nav class="ml-10 flex h-full items-center gap-2">
-
-            {{-- Beranda --}}
             <a
                 href="{{ $homeUrl }}"
-                class="{{ $isHome
-                    ? 'bg-blue-50 text-[#2563EB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}
-                    inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition"
+                class="{{ $isHome ? 'bg-blue-50 text-[#2563EB]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition"
             >
-                <svg
-                    class="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path d="m3 10 9-7 9 7"/>
-                    <path d="M5 9v11h14V9"/>
-                    <path d="M9 20v-6h6v6"/>
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m3 10 9-7 9 7" />
+                    <path d="M5 9v11h14V9" />
+                    <path d="M9 20v-6h6v6" />
                 </svg>
-
                 <span>Beranda</span>
             </a>
 
-
-            {{-- Cari Jasa --}}
             <a
                 href="{{ $searchUrl }}"
-                class="{{ $isSearch
-                    ? 'bg-blue-50 text-[#2563EB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}
-                    inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition"
+                class="{{ $isSearch ? 'bg-blue-50 text-[#2563EB]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition"
             >
-                <svg
-                    class="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <circle cx="11" cy="11" r="7"/>
-                    <path d="m20 20-4-4"/>
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-4-4" />
                 </svg>
-
                 <span>Cari Jasa</span>
             </a>
 
-
-            {{-- Kategori --}}
             <a
                 href="{{ $searchUrl }}#kategori"
                 class="inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
             >
-                <svg
-                    class="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path d="M4 5h6v6H4z"/>
-                    <path d="M14 5h6v6h-6z"/>
-                    <path d="M4 15h6v4H4z"/>
-                    <path d="M14 15h6v4h-6z"/>
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 5h6v6H4z" />
+                    <path d="M14 5h6v6h-6z" />
+                    <path d="M4 15h6v4H4z" />
+                    <path d="M14 15h6v4h-6z" />
                 </svg>
-
                 <span>Kategori</span>
             </a>
 
-
-            {{-- JobBoard --}}
             <a
                 href="{{ $jobsUrl }}"
-                class="{{ $isJobs
-                    ? 'bg-blue-50 text-[#2563EB]'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}
-                    inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition"
+                class="{{ $isJobs ? 'bg-blue-50 text-[#2563EB]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition"
             >
-                <svg
-                    class="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <rect x="3" y="5" width="18" height="15" rx="2"/>
-                    <path d="M8 5V3h8v2"/>
-                    <path d="M3 10h18"/>
-                    <path d="M9 14h6"/>
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="5" width="18" height="15" rx="2" />
+                    <path d="M8 5V3h8v2" />
+                    <path d="M3 10h18" />
+                    <path d="M9 14h6" />
                 </svg>
-
                 <span>JobBoard</span>
             </a>
-
         </nav>
 
+        {{-- RIGHT SIDE --}}
 
-        {{-- Right Side --}}
         <div class="ml-auto flex items-center gap-3">
-
             @auth
+                {{-- NOTIFICATION --}}
 
-                {{-- Notification --}}
                 <a
                     href="{{ $notificationUrl }}"
-                    class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+                    class="relative flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-slate-50 {{ $isNotifications ? 'bg-blue-50 text-[#2563EB]' : 'text-slate-500 hover:text-slate-900' }}"
                     aria-label="Notifikasi"
                 >
-                    <svg
-                        class="h-5 w-5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
-                        <path d="M10 21h4"/>
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                        <path d="M10 21h4" />
                     </svg>
 
                     <span
                         id="marketplace-notification-badge"
-                        class="absolute right-1 top-1 hidden min-w-[17px] rounded-full bg-rose-500 px-1 text-center text-[9px] font-bold leading-[17px] text-white"
+                        class="absolute right-1 top-1 hidden min-w-[17px] items-center justify-center rounded-full bg-rose-500 px-1 text-center text-[9px] font-bold leading-[17px] text-white"
+                        aria-live="polite"
                     ></span>
                 </a>
 
+                {{-- DAFTAR SEBAGAI FREELANCER: CLIENT SAJA --}}
 
-                {{-- Profile --}}
+                @if ($role === 'client')
+                    <a
+                        href="{{ $becomeFreelancerUrl }}"
+                        class="inline-flex h-10 items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-semibold text-[#2563EB] shadow-sm transition duration-200 hover:border-blue-300 hover:bg-blue-100 hover:shadow-md"
+                    >
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 7h-9" />
+                            <path d="M5 7h3" />
+                            <path d="M5 12h14" />
+                            <path d="M5 17h9" />
+                        </svg>
+                        <span>Daftar sebagai Freelancer</span>
+                    </a>
+                @endif
+
+                {{-- PROFILE DROPDOWN --}}
+
                 <div class="relative">
-
                     <button
                         type="button"
                         id="marketplace-profile-button"
                         class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 transition hover:border-blue-200 hover:bg-blue-50/50"
+                        aria-expanded="false"
+                        aria-controls="marketplace-profile-menu"
                     >
-
                         <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 text-sm font-bold text-blue-700">
                             {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
                         </div>
@@ -359,34 +372,24 @@
                             <div class="max-w-[120px] truncate text-sm font-semibold text-slate-800">
                                 {{ auth()->user()->name }}
                             </div>
-
                             <div class="text-[11px] font-medium capitalize text-slate-400">
                                 {{ $role ?? 'User' }}
                             </div>
                         </div>
 
-                        <svg
-                            class="h-4 w-4 text-slate-400"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <path d="m6 9 6 6 6-6"/>
+                        <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m6 9 6 6 6-6" />
                         </svg>
-
                     </button>
 
-
-                    {{-- Profile Dropdown --}}
                     <div
                         id="marketplace-profile-menu"
                         class="absolute right-0 top-[52px] hidden w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10"
                     >
+                        {{-- USER HEADER --}}
 
                         <div class="border-b border-slate-100 bg-slate-50/70 p-4">
                             <div class="flex items-center gap-3">
-
                                 <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 font-bold text-blue-700">
                                     {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
                                 </div>
@@ -395,121 +398,128 @@
                                     <div class="truncate text-sm font-bold text-slate-900">
                                         {{ auth()->user()->name }}
                                     </div>
-
                                     <div class="truncate text-xs text-slate-500">
                                         {{ auth()->user()->email }}
                                     </div>
                                 </div>
-
                             </div>
                         </div>
 
+                        {{-- ROLE MENU --}}
 
                         <div class="p-2">
-
-                            @if($role === 'client')
-
-                                <a href="{{ $dashboardUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                            @if ($role === 'client')
+                                <a href="{{ $dashboardUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Dashboard
                                 </a>
 
-                                <a href="{{ $projectsUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                <a href="{{ $projectsUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Proyek Saya
                                 </a>
 
-                                <a href="{{ $ordersUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                <a href="{{ $ordersUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Pesanan
                                 </a>
 
-                                <a href="{{ $messagesUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                <a href="{{ $messagesUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Pesan
                                 </a>
 
-                                <a href="{{ $favoritesUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                <a href="{{ $favoritesUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Favorit
                                 </a>
 
-                            @elseif($role === 'freelancer')
+                                @if ($showFreelancerRegistration)
+                                    <div class="my-2 border-t border-slate-100"></div>
 
-                                <a href="{{ $dashboardUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                    <a
+                                        href="{{ $becomeFreelancerUrl }}"
+                                        class="flex items-center gap-3 rounded-xl bg-blue-50 px-3 py-3 text-sm font-semibold text-[#2563EB] transition hover:bg-blue-100"
+                                    >
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#2563EB] shadow-sm">
+                                            <i class="bi bi-briefcase"></i>
+                                        </span>
+
+                                        <span class="min-w-0 flex-1">
+                                            <span class="block">Daftar sebagai Freelancer</span>
+                                            <span class="mt-0.5 block text-[10px] font-medium text-blue-500">
+                                                Mulai tawarkan jasa dan dapatkan project
+                                            </span>
+                                        </span>
+
+                                        <i class="bi bi-chevron-right text-xs text-blue-400"></i>
+                                    </a>
+                                @endif
+
+                            @elseif ($role === 'freelancer')
+                                <a href="{{ $dashboardUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Dashboard
                                 </a>
 
-                                <a href="{{ $projectsUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                <a href="{{ $projectsUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Cari Job
                                 </a>
 
-                                <a href="{{ $servicesUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                <a href="{{ $servicesUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Layanan Saya
                                 </a>
 
-                                <a href="{{ $ordersUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
-                                    Pesanan
+                                <a href="{{ $ordersUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
+                                    Pesanan Masuk
                                 </a>
 
-                                <a href="{{ $messagesUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
-                                    Pesan
+                                <a href="{{ $buyerOrdersUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition {{ $isBuyerOrders ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-blue-50 hover:text-blue-700' }}">
+                                    Pembelian Saya
                                 </a>
 
-                                <a href="{{ $walletUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                <a href="{{ $messagesUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
+                                    Pesan Penjual
+                                </a>
+
+                                <a href="{{ $buyerMessagesUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition {{ $isBuyerMessages ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-blue-50 hover:text-blue-700' }}">
+                                    Pesan Pembelian
+                                </a>
+
+                                <a href="{{ $walletUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Wallet
                                 </a>
 
-                                <a href="{{ $withdrawalsUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                <a href="{{ $withdrawalsUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Penarikan
                                 </a>
 
-                                <a href="{{ $verificationUrl }}"
-                                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                <a href="{{ $verificationUrl }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Verifikasi
                                 </a>
 
-                            @elseif($role === 'admin')
-
-                                <a href="{{ $adminDashboardUrl }}"
-                                   class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                            @elseif ($role === 'admin')
+                                <a href="{{ $adminDashboardUrl }}" class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Admin Dashboard
                                 </a>
 
-                                <a href="{{ $adminUsersUrl }}"
-                                   class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                <a href="{{ $adminUsersUrl }}" class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Pengguna
                                 </a>
 
-                                <a href="{{ $adminServicesUrl }}"
-                                   class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                <a href="{{ $adminServicesUrl }}" class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Layanan
                                 </a>
 
-                                <a href="{{ $adminCategoriesUrl }}"
-                                   class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                                <a href="{{ $adminCategoriesUrl }}" class="flex items-center rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                     Kategori
                                 </a>
-
                             @endif
 
-                            <a href="{{ $profileUrl }}"
-                               class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700">
+                            {{-- PROFILE --}}
+
+                            <a href="{{ $profileUrl }}" class="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
                                 Profil
                             </a>
-
                         </div>
 
+                        {{-- LOGOUT --}}
 
                         <div class="border-t border-slate-100 p-2">
-
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
 
@@ -517,30 +527,20 @@
                                     type="submit"
                                     class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
                                 >
-                                    <svg
-                                        class="h-4 w-4"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                    >
-                                        <path d="M10 17l5-5-5-5"/>
-                                        <path d="M15 12H3"/>
-                                        <path d="M21 19V5a2 2 0 0 0-2-2h-6"/>
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M10 17l5-5-5-5" />
+                                        <path d="M15 12H3" />
+                                        <path d="M21 19V5a2 2 0 0 0-2-2h-6" />
                                     </svg>
-
                                     Keluar
                                 </button>
-
                             </form>
-
                         </div>
-
                     </div>
-
                 </div>
 
             @else
+                {{-- GUEST LOGIN --}}
 
                 <a
                     href="{{ Route::has('login') ? route('login') : '#' }}"
@@ -549,57 +549,52 @@
                     Masuk
                 </a>
 
+                @if ($showFreelancerRegistration)
+                    <a
+                        href="{{ $becomeFreelancerUrl }}"
+                        class="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-[#2563EB] shadow-sm transition hover:border-blue-300 hover:bg-blue-100"
+                    >
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 7h-9" />
+                            <path d="M5 7h3" />
+                            <path d="M5 12h14" />
+                            <path d="M5 17h9" />
+                        </svg>
+                        Daftar sebagai Freelancer
+                    </a>
+                @endif
+
                 <a
                     href="{{ Route::has('register') ? route('register') : '#' }}"
-                    class="rounded-xl bg-[#2563EB] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                    class="rounded-xl bg-[#2563EB] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md"
                 >
                     Daftar
                 </a>
-
             @endauth
-
         </div>
-
     </div>
 </nav>
-
 
 {{-- ============================================================
      MOBILE TOP NAVIGATION
 ============================================================ --}}
 
-<nav
-    class="fixed inset-x-0 top-0 z-50 flex h-16 items-center border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-xl lg:hidden"
->
-
-    {{-- Logo --}}
+<nav class="fixed inset-x-0 top-0 z-50 flex h-16 items-center border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-xl lg:hidden">
     <a href="{{ $homeUrl }}" class="flex items-center gap-2">
-
         <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2563EB] text-white">
-            <svg
-                class="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <path d="M12 3v18"/>
-                <path d="M5 8h14"/>
-                <path d="M7 8c0 4 2 6 5 6s5-2 5-6"/>
-                <path d="M5 18h14"/>
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 3v18" />
+                <path d="M5 8h14" />
+                <path d="M7 8c0 4 2 6 5 6s5-2 5-6" />
+                <path d="M5 18h14" />
             </svg>
         </div>
-
         <span class="text-base font-extrabold tracking-tight text-slate-900">
             ProKerja
         </span>
-
     </a>
 
-
     <div class="ml-auto flex items-center gap-1">
-
-        {{-- Quick JobBoard --}}
         <a
             href="{{ $jobsUrl }}"
             class="flex h-10 items-center rounded-xl px-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
@@ -607,58 +602,41 @@
             JobBoard
         </a>
 
-
         @auth
-
-            {{-- Notification --}}
             <a
                 href="{{ $notificationUrl }}"
-                class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500"
+                class="relative flex h-10 w-10 items-center justify-center rounded-xl {{ $isNotifications ? 'bg-blue-50 text-[#2563EB]' : 'text-slate-500' }}"
+                aria-label="Notifikasi"
             >
-                <svg
-                    class="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
-                    <path d="M10 21h4"/>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                    <path d="M10 21h4" />
                 </svg>
 
                 <span
                     id="marketplace-mobile-notification-badge"
-                    class="absolute right-1 top-1 hidden min-w-[17px] rounded-full bg-rose-500 px-1 text-center text-[9px] font-bold leading-[17px] text-white"
+                    class="absolute right-1 top-1 hidden min-w-[17px] items-center justify-center rounded-full bg-rose-500 px-1 text-center text-[9px] font-bold leading-[17px] text-white"
+                    aria-live="polite"
                 ></span>
             </a>
-
         @endauth
 
-
-        {{-- More --}}
         <button
             type="button"
             id="marketplace-mobile-menu-button"
             class="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-50"
             aria-label="Menu"
+            aria-expanded="false"
+            aria-controls="marketplace-mobile-menu"
         >
-            <svg
-                class="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <circle cx="5" cy="12" r="1"/>
-                <circle cx="12" cy="12" r="1"/>
-                <circle cx="19" cy="12" r="1"/>
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="5" cy="12" r="1" />
+                <circle cx="12" cy="12" r="1" />
+                <circle cx="19" cy="12" r="1" />
             </svg>
         </button>
-
     </div>
-
 </nav>
-
 
 {{-- ============================================================
      MOBILE MORE MENU
@@ -668,260 +646,269 @@
     id="marketplace-mobile-menu"
     class="fixed inset-x-0 top-16 z-40 hidden border-b border-slate-200 bg-white shadow-xl lg:hidden"
 >
-
     <div class="mx-auto max-w-7xl p-4">
-
         <div class="grid grid-cols-2 gap-2">
-
-            <a
-                href="{{ $homeUrl }}"
-                class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-            >
+            <a href="{{ $homeUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100">
                 Beranda
             </a>
 
-            <a
-                href="{{ $searchUrl }}"
-                class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-            >
+            <a href="{{ $searchUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100">
                 Cari Jasa
             </a>
 
-            <a
-                href="{{ $searchUrl }}#kategori"
-                class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-            >
+            <a href="{{ $searchUrl }}#kategori" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100">
                 Kategori
             </a>
 
             @auth
+                @if ($role === 'client')
+                    @if ($showFreelancerRegistration)
+                        <a
+                            href="{{ $becomeFreelancerUrl }}"
+                            class="col-span-2 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-semibold text-[#2563EB] transition hover:border-blue-300 hover:bg-blue-100"
+                        >
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#2563EB] shadow-sm">
+                                    <i class="bi bi-briefcase"></i>
+                                </div>
 
-                @if($role === 'client')
+                                <div class="min-w-0 flex-1">
+                                    <div class="font-bold">Daftar sebagai Freelancer</div>
+                                    <div class="mt-0.5 text-xs font-medium text-blue-500">
+                                        Mulai tawarkan jasa dan dapatkan project
+                                    </div>
+                                </div>
 
-                    <a
-                        href="{{ $dashboardUrl }}"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-                    >
+                                <i class="bi bi-chevron-right text-xs text-blue-400"></i>
+                            </div>
+                        </a>
+                    @endif
+
+                    <a href="{{ $dashboardUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                         Dashboard
                     </a>
 
-                    <a
-                        href="{{ $projectsUrl }}"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-                    >
+                    <a href="{{ $projectsUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                         Proyek Saya
                     </a>
 
-                    <a
-                        href="{{ $favoritesUrl }}"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-                    >
+                    <a href="{{ $favoritesUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                         Favorit
                     </a>
 
-                @elseif($role === 'freelancer')
+                    <a href="{{ $ordersUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                        Pesanan
+                    </a>
 
-                    <a
-                        href="{{ $dashboardUrl }}"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-                    >
+                    <a href="{{ $messagesUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                        Pesan
+                    </a>
+
+                    <a href="{{ $profileUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                        Profil
+                    </a>
+
+                @elseif ($role === 'freelancer')
+                    <a href="{{ $dashboardUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                         Dashboard
                     </a>
 
-                    <a
-                        href="{{ $projectsUrl }}"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-                    >
+                    <a href="{{ $projectsUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                         Cari Job
                     </a>
 
-                    <a
-                        href="{{ $servicesUrl }}"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-                    >
+                    <a href="{{ $servicesUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                         Layanan Saya
                     </a>
 
-                    <a
-                        href="{{ $walletUrl }}"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-                    >
+                    <a href="{{ $walletUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                         Wallet
                     </a>
 
-                    <a
-                        href="{{ $withdrawalsUrl }}"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-                    >
+                    <a href="{{ $withdrawalsUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                         Penarikan
                     </a>
 
-                    <a
-                        href="{{ $verificationUrl }}"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-                    >
+                    <a href="{{ $verificationUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                         Verifikasi
                     </a>
 
-                @elseif($role === 'admin')
+                    <a href="{{ $ordersUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                        Pesanan Masuk
+                    </a>
 
-                    <a
-                        href="{{ $adminDashboardUrl }}"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-                    >
+                    <a href="{{ $buyerOrdersUrl }}" class="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100">
+                        Pembelian Saya
+                    </a>
+
+                    <a href="{{ $messagesUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                        Pesan Penjual
+                    </a>
+
+                    <a href="{{ $buyerMessagesUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                        Pesan Pembelian
+                    </a>
+
+                    <a href="{{ $profileUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                        Profil
+                    </a>
+
+                @elseif ($role === 'admin')
+                    <a href="{{ $adminDashboardUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                         Admin Dashboard
                     </a>
 
-                    <a
-                        href="{{ $adminUsersUrl }}"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-                    >
+                    <a href="{{ $adminUsersUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
                         Pengguna
                     </a>
 
+                    <a href="{{ $adminServicesUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                        Layanan
+                    </a>
+
+                    <a href="{{ $adminCategoriesUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                        Kategori
+                    </a>
+
+                    <a href="{{ $adminBannersUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                        Banner
+                    </a>
+
+                    <a href="{{ $profileUrl }}" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                        Profil
+                    </a>
                 @endif
 
-                <a
-                    href="{{ $profileUrl }}"
-                    class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
-                >
-                    Profil
-                </a>
+                {{-- LOGOUT --}}
 
-                <form
-                    method="POST"
-                    action="{{ route('logout') }}"
-                    class="col-span-2"
-                >
+                <form method="POST" action="{{ route('logout') }}" class="col-span-2">
                     @csrf
 
                     <button
                         type="submit"
-                        class="w-full rounded-2xl border border-rose-100 bg-rose-50 p-4 text-left text-sm font-semibold text-rose-600"
+                        class="w-full rounded-2xl border border-rose-100 bg-rose-50 p-4 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
                     >
-                        Keluar
+                        <div class="flex items-center gap-3">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Keluar</span>
+                        </div>
                     </button>
                 </form>
 
             @else
-
                 <a
                     href="{{ Route::has('login') ? route('login') : '#' }}"
-                    class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"
+                    class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
                 >
-                    Masuk
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm">
+                            <i class="bi bi-box-arrow-in-right"></i>
+                        </div>
+                        <span>Masuk</span>
+                    </div>
                 </a>
+
+                @if ($showFreelancerRegistration)
+                    <a
+                        href="{{ $becomeFreelancerUrl }}"
+                        class="col-span-2 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-semibold text-[#2563EB] transition hover:border-blue-300 hover:bg-blue-100"
+                    >
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#2563EB] shadow-sm">
+                                <i class="bi bi-briefcase"></i>
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <div class="font-bold">Daftar sebagai Freelancer</div>
+                                <div class="mt-0.5 text-xs font-medium text-blue-500">
+                                    Mulai tawarkan jasa dan dapatkan project
+                                </div>
+                            </div>
+
+                            <i class="bi bi-chevron-right text-xs text-blue-400"></i>
+                        </div>
+                    </a>
+                @endif
 
                 <a
                     href="{{ Route::has('register') ? route('register') : '#' }}"
-                    class="rounded-2xl bg-[#2563EB] p-4 text-sm font-semibold text-white"
+                    class="col-span-2 rounded-2xl bg-[#2563EB] p-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
                 >
-                    Daftar
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15">
+                            <i class="bi bi-person-plus"></i>
+                        </div>
+                        <span>Daftar sebagai Pengguna</span>
+                    </div>
                 </a>
-
             @endauth
-
         </div>
-
     </div>
-
 </div>
-
 
 {{-- ============================================================
      MOBILE BOTTOM NAVIGATION
 ============================================================ --}}
 
-<nav
-    class="fixed inset-x-0 bottom-0 z-50 h-[72px] border-t border-slate-200/80 bg-white/95 px-3 pb-safe backdrop-blur-xl lg:hidden"
->
-
+<nav class="fixed inset-x-0 bottom-0 z-50 h-[72px] border-t border-slate-200/80 bg-white/95 px-3 pb-safe backdrop-blur-xl lg:hidden">
     <div class="mx-auto grid h-full max-w-lg grid-cols-5 items-center">
 
-        {{-- Home --}}
+        {{-- HOME --}}
+
         <a
             href="{{ $homeUrl }}"
             class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold {{ $isHome ? 'text-[#2563EB]' : 'text-slate-400' }}"
         >
-            <svg
-                class="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <path d="m3 10 9-7 9 7"/>
-                <path d="M5 9v11h14V9"/>
-                <path d="M9 20v-6h6v6"/>
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m3 10 9-7 9 7" />
+                <path d="M5 9v11h14V9" />
+                <path d="M9 20v-6h6v6" />
             </svg>
-
             <span>Beranda</span>
         </a>
 
+        {{-- SEARCH --}}
 
-        {{-- Search --}}
         <a
             href="{{ $searchUrl }}"
             class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold {{ $isSearch ? 'text-[#2563EB]' : 'text-slate-400' }}"
         >
-            <svg
-                class="h-5 w-5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <circle cx="11" cy="11" r="7"/>
-                <path d="m20 20-4-4"/>
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-4-4" />
             </svg>
-
             <span>Cari</span>
         </a>
 
-
         @auth
+            {{-- MESSAGES --}}
 
-            {{-- Messages --}}
             <a
                 href="{{ $messagesUrl }}"
                 class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold {{ $isMessages ? 'text-[#2563EB]' : 'text-slate-400' }}"
             >
-                <svg
-                    class="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-4.5A7.5 7.5 0 1 1 20 11.5Z"/>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-4.5A7.5 7.5 0 1 1 20 11.5Z" />
                 </svg>
-
                 <span>Pesan</span>
             </a>
 
+            {{-- ORDERS --}}
 
-            {{-- Orders --}}
             <a
                 href="{{ $ordersUrl }}"
                 class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold {{ $isOrders ? 'text-[#2563EB]' : 'text-slate-400' }}"
             >
-                <svg
-                    class="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <rect x="4" y="4" width="16" height="16" rx="2"/>
-                    <path d="M8 9h8"/>
-                    <path d="M8 13h5"/>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="4" width="16" height="16" rx="2" />
+                    <path d="M8 9h8" />
+                    <path d="M8 13h5" />
                 </svg>
-
                 <span>Pesanan</span>
             </a>
 
+            {{-- PROFILE --}}
 
-            {{-- Profile --}}
             <a
                 href="{{ $profileUrl }}"
                 class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold {{ $isProfile ? 'text-[#2563EB]' : 'text-slate-400' }}"
@@ -929,90 +916,59 @@
                 <div class="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-500">
                     {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
                 </div>
-
                 <span>Profil</span>
             </a>
 
         @else
+            {{-- GUEST JOBBOARD --}}
 
-            {{-- JobBoard --}}
             <a
                 href="{{ $jobsUrl }}"
                 class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold {{ $isJobs ? 'text-[#2563EB]' : 'text-slate-400' }}"
             >
-                <svg
-                    class="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <rect x="3" y="5" width="18" height="15" rx="2"/>
-                    <path d="M8 5V3h8v2"/>
-                    <path d="M3 10h18"/>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="5" width="18" height="15" rx="2" />
+                    <path d="M8 5V3h8v2" />
+                    <path d="M3 10h18" />
                 </svg>
-
                 <span>JobBoard</span>
             </a>
 
+            {{-- GUEST LOGIN --}}
 
-            {{-- Login --}}
             <a
                 href="{{ Route::has('login') ? route('login') : '#' }}"
                 class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold text-slate-400"
             >
-                <svg
-                    class="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <path d="M10 17l5-5-5-5"/>
-                    <path d="M15 12H3"/>
-                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"/>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 17l5-5-5-5" />
+                    <path d="M15 12H3" />
+                    <path d="M21 19V5a2 2 0 0 0-2-2h-6" />
                 </svg>
-
                 <span>Masuk</span>
             </a>
 
+            {{-- GUEST REGISTER --}}
 
-            {{-- Register --}}
             <a
                 href="{{ Route::has('register') ? route('register') : '#' }}"
                 class="flex h-full flex-col items-center justify-center gap-1 text-[10px] font-semibold text-slate-400"
             >
-                <svg
-                    class="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-                    <circle cx="12" cy="8" r="4"/>
-                    <path d="M5 21a7 7 0 0 1 14 0"/>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M5 21a7 7 0 0 1 14 0" />
                 </svg>
-
                 <span>Daftar</span>
             </a>
-
         @endauth
-
     </div>
-
 </nav>
-
 
 {{-- ============================================================
      NAVBAR SPACER
-     Ini yang memastikan konten halaman tidak tertutup navbar.
 ============================================================ --}}
 
-<div
-    class="h-16 w-full lg:h-[72px]"
-    aria-hidden="true"
-></div>
-
+<div class="h-16 w-full lg:h-[72px]" aria-hidden="true"></div>
 
 {{-- ============================================================
      JAVASCRIPT
@@ -1020,12 +976,12 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-
     /*
     |--------------------------------------------------------------------------
-    | Desktop Profile Dropdown
+    | DESKTOP PROFILE DROPDOWN
     |--------------------------------------------------------------------------
     */
+
     const profileButton = document.getElementById(
         'marketplace-profile-button'
     );
@@ -1035,34 +991,34 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
     if (profileButton && profileMenu) {
-
         profileButton.addEventListener('click', function (event) {
-
             event.stopPropagation();
 
-            profileMenu.classList.toggle('hidden');
+            const isHidden = profileMenu.classList.toggle('hidden');
 
+            profileButton.setAttribute(
+                'aria-expanded',
+                String(!isHidden)
+            );
         });
 
         document.addEventListener('click', function (event) {
-
             if (
                 !profileMenu.contains(event.target) &&
                 !profileButton.contains(event.target)
             ) {
                 profileMenu.classList.add('hidden');
+                profileButton.setAttribute('aria-expanded', 'false');
             }
-
         });
-
     }
-
 
     /*
     |--------------------------------------------------------------------------
-    | Mobile More Menu
+    | MOBILE MORE MENU
     |--------------------------------------------------------------------------
     */
+
     const mobileMenuButton = document.getElementById(
         'marketplace-mobile-menu-button'
     );
@@ -1072,70 +1028,134 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
     if (mobileMenuButton && mobileMenu) {
+        mobileMenuButton.addEventListener('click', function (event) {
+            event.stopPropagation();
 
-        mobileMenuButton.addEventListener('click', function () {
+            const isHidden = mobileMenu.classList.toggle('hidden');
 
-            mobileMenu.classList.toggle('hidden');
-
+            mobileMenuButton.setAttribute(
+                'aria-expanded',
+                String(!isHidden)
+            );
         });
 
         document.addEventListener('click', function (event) {
-
             if (
                 !mobileMenu.contains(event.target) &&
                 !mobileMenuButton.contains(event.target)
             ) {
                 mobileMenu.classList.add('hidden');
+                mobileMenuButton.setAttribute('aria-expanded', 'false');
             }
-
         });
-
     }
-
 
     /*
     |--------------------------------------------------------------------------
-    | Hide Mobile Bottom Navigation While Typing
+    | HIDE MOBILE BOTTOM NAV WHEN TYPING
     |--------------------------------------------------------------------------
     */
-    const bottomNavigation = document.querySelector(
-        'nav.fixed.bottom-0'
-    );
+
+    const bottomNavigation = document.querySelector('nav.fixed.bottom-0');
 
     if (bottomNavigation) {
-
         document.addEventListener('focusin', function (event) {
-
             const target = event.target;
 
             if (
+                target instanceof Element &&
                 target.matches('input, textarea, select')
             ) {
                 bottomNavigation.classList.add('translate-y-full');
             }
-
         });
 
-        document.addEventListener('focusout', function (event) {
-
-            setTimeout(function () {
-
+        document.addEventListener('focusout', function () {
+            window.setTimeout(function () {
                 const active = document.activeElement;
 
                 if (
                     !active ||
                     !active.matches('input, textarea, select')
                 ) {
-                    bottomNavigation.classList.remove(
-                        'translate-y-full'
+                    bottomNavigation.classList.remove('translate-y-full');
+                }
+            }, 100);
+        });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NOTIFICATION BADGE
+    |--------------------------------------------------------------------------
+    | Gunakan endpoint JSON notifications.unread_count,
+    | bukan halaman HTML notifications.index.
+    |--------------------------------------------------------------------------
+    */
+
+    const desktopBadge = document.getElementById(
+        'marketplace-notification-badge'
+    );
+
+    const mobileBadge = document.getElementById(
+        'marketplace-mobile-notification-badge'
+    );
+
+    function updateNotificationBadge(count) {
+        const badges = [desktopBadge, mobileBadge].filter(Boolean);
+        const safeCount = Number(count);
+
+        badges.forEach(function (badge) {
+            if (Number.isFinite(safeCount) && safeCount > 0) {
+                badge.textContent = safeCount > 99
+                    ? '99+'
+                    : String(safeCount);
+
+                badge.classList.remove('hidden');
+                badge.classList.add('flex');
+            } else {
+                badge.textContent = '';
+                badge.classList.add('hidden');
+                badge.classList.remove('flex');
+            }
+        });
+    }
+
+    @auth
+        const unreadCountUrl = @json($notificationCountUrl);
+
+        if (unreadCountUrl) {
+            fetch(unreadCountUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error(
+                        'Gagal mengambil jumlah notifikasi.'
                     );
                 }
 
-            }, 100);
+                return response.json();
+            })
+            .then(function (data) {
+                updateNotificationBadge(
+                    data.count ?? data.unread_count ?? data.unread ?? 0
+                );
+            })
+            .catch(function (error) {
+                console.error(
+                    'Gagal memuat badge notifikasi:',
+                    error
+                );
 
-        });
-
-    }
-
+                updateNotificationBadge(0);
+            });
+        }
+    @endauth
 });
 </script>

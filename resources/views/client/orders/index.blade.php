@@ -89,7 +89,7 @@
     $totalOrders = $orders->total();
 @endphp
 
-<x-layouts.marketplace title="Pesanan Saya - ProKerja">
+<x-layouts.marketplace title="Pembelian Saya - ProKerja">
     <div class="min-h-screen bg-[#F8FAFC]">
         <div class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
 
@@ -104,11 +104,11 @@
                                     <path d="M3 6h.01M3 12h.01M3 18h.01"/>
                                 </svg>
                             </span>
-                            Area Client
+                            Area Pembelian
                         </div>
 
                         <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                            Pesanan Saya
+                            Pembelian Saya
                         </h1>
 
                         <p class="mt-2 text-sm leading-6 text-slate-500 sm:text-base">

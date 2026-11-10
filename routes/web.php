@@ -8,38 +8,39 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+use App\Http\Controllers\Admin\BannerController as AdminBannerController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\CancellationController as AdminCancellationController;
 use App\Http\Controllers\Admin\CommissionController as AdminCommissionController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\DisputeController as AdminDisputeController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Admin\RefundController as AdminRefundController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
-use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\Admin\WithdrawalController as AdminWithdrawalController;
-use App\Http\Controllers\Admin\VerificationController as AdminVerificationController;
 use App\Http\Controllers\Admin\ServiceModerationController as AdminServiceModerationController;
-use App\Http\Controllers\Admin\CancellationController as AdminCancellationController;
-use App\Http\Controllers\Admin\DisputeController as AdminDisputeController;
-use App\Http\Controllers\Admin\RefundController as AdminRefundController;
-use App\Http\Controllers\Admin\BannerController as AdminBannerController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\VerificationController as AdminVerificationController;
+use App\Http\Controllers\Admin\WithdrawalController as AdminWithdrawalController;
+
 /*
 |--------------------------------------------------------------------------
 | Client Controllers
 |--------------------------------------------------------------------------
 */
 
+use App\Http\Controllers\Client\CancellationController as ClientCancellationController;
 use App\Http\Controllers\Client\DashboardController as ClientDashboardController;
+use App\Http\Controllers\Client\DeliveryController as ClientDeliveryController;
+use App\Http\Controllers\Client\DisputeController as ClientDisputeController;
 use App\Http\Controllers\Client\FavoriteController as ClientFavoriteController;
+use App\Http\Controllers\Client\InvoiceController as ClientInvoiceController;
+use App\Http\Controllers\Client\JobController as ClientJobController;
 use App\Http\Controllers\Client\MessageController as ClientMessageController;
 use App\Http\Controllers\Client\OfferController as ClientOfferController;
 use App\Http\Controllers\Client\OrderController as ClientOrderController;
-use App\Http\Controllers\Client\DeliveryController as ClientDeliveryController;
 use App\Http\Controllers\Client\ReviewController as ClientReviewController;
-use App\Http\Controllers\Client\JobController as ClientJobController;
-use App\Http\Controllers\Client\InvoiceController as ClientInvoiceController;
-use App\Http\Controllers\Client\CancellationController as ClientCancellationController;
-use App\Http\Controllers\Client\DisputeController as ClientDisputeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,23 +57,35 @@ use App\Http\Controllers\PaymentController;
 |--------------------------------------------------------------------------
 */
 
+use App\Http\Controllers\Freelancer\CancellationController as FreelancerCancellationController;
 use App\Http\Controllers\Freelancer\DashboardController as FreelancerDashboardController;
 use App\Http\Controllers\Freelancer\DeliveryController as FreelancerDeliveryController;
+use App\Http\Controllers\Freelancer\DisputeController as FreelancerDisputeController;
+use App\Http\Controllers\Freelancer\JobController as FreelancerJobController;
+use App\Http\Controllers\Freelancer\JobProposalController as FreelancerJobProposalController;
 use App\Http\Controllers\Freelancer\MessageController as FreelancerMessageController;
 use App\Http\Controllers\Freelancer\OfferController as FreelancerOfferController;
 use App\Http\Controllers\Freelancer\OrderController as FreelancerOrderController;
 use App\Http\Controllers\Freelancer\ProfileController as FreelancerProfileController;
 use App\Http\Controllers\Freelancer\ServiceController as FreelancerServiceController;
+use App\Http\Controllers\Freelancer\ServiceModerationController as FreelancerServiceModerationController;
+use App\Http\Controllers\Freelancer\VerificationController as FreelancerVerificationController;
 use App\Http\Controllers\Freelancer\WalletController as FreelancerWalletController;
 use App\Http\Controllers\Freelancer\WithdrawalController as FreelancerWithdrawalController;
-use App\Http\Controllers\Freelancer\JobController as FreelancerJobController;
-use App\Http\Controllers\Freelancer\JobProposalController as FreelancerJobProposalController;
-use App\Http\Controllers\Freelancer\VerificationController as FreelancerVerificationController;
-use App\Http\Controllers\Freelancer\ServiceModerationController as FreelancerServiceModerationController;
-use App\Http\Controllers\Freelancer\CancellationController as FreelancerCancellationController;
-use App\Http\Controllers\Freelancer\DisputeController as FreelancerDisputeController;
-use App\Http\Controllers\Freelancer\DisputeController;
 
+/*
+|--------------------------------------------------------------------------
+| Freelancer Onboarding
+|--------------------------------------------------------------------------
+|
+| User yang sedang mendaftar menjadi freelancer belum mempunyai
+| role freelancer. Biasanya masih role client.
+|
+| Karena itu onboarding hanya memakai middleware auth.
+|
+*/
+
+use App\Http\Controllers\Freelancer\OnboardingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -83,17 +96,9 @@ use App\Http\Controllers\Freelancer\DisputeController;
 use App\Http\Controllers\Marketplace\CategoryController;
 use App\Http\Controllers\Marketplace\FreelancerController;
 use App\Http\Controllers\Marketplace\HomeController;
+use App\Http\Controllers\Marketplace\JobController as MarketplaceJobController;
 use App\Http\Controllers\Marketplace\SearchController;
 use App\Http\Controllers\Marketplace\ServiceController;
-use App\Http\Controllers\Marketplace\JobController as MarketplaceJobController;
-
-/*
-|--------------------------------------------------------------------------
-| Job Board Chat
-|--------------------------------------------------------------------------
-*/
-
-use App\Http\Controllers\JobBoardChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -101,8 +106,10 @@ use App\Http\Controllers\JobBoardChatController;
 |--------------------------------------------------------------------------
 */
 
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\JobBoardChatController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProfileController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -130,6 +137,7 @@ Route::get(
     [ServiceController::class, 'show']
 )->name('marketplace.service');
 
+
 /*
 |--------------------------------------------------------------------------
 | Public Job Board
@@ -146,13 +154,20 @@ Route::get(
     [MarketplaceJobController::class, 'show']
 )->name('marketplace.jobs.show');
 
+
 /*
 |--------------------------------------------------------------------------
-| User Profile
+| Authenticated User Profile & Notifications
 |--------------------------------------------------------------------------
 */
 
 Route::middleware('auth')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profile
+    |--------------------------------------------------------------------------
+    */
 
     Route::get(
         '/profile',
@@ -179,27 +194,133 @@ Route::middleware('auth')->group(function () {
         [ProfileController::class, 'destroy']
     )->name('profile.destroy');
 
-    
-    Route::get('/notifications', [NotificationController::class, 'index'])
-    ->name('notifications.index');
 
-    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])
-        ->name('notifications.unread_count');
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    */
 
-    Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])
-        ->name('notifications.read');
+    Route::get(
+        '/notifications',
+        [NotificationController::class, 'index']
+    )->name('notifications.index');
 
-    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])
-        ->name('notifications.read_all');
+    Route::get(
+        '/notifications/unread-count',
+        [NotificationController::class, 'unreadCount']
+    )->name('notifications.unread_count');
+
+    Route::post(
+        '/notifications/{notification}/read',
+        [NotificationController::class, 'read']
+    )->name('notifications.read');
+
+    Route::post(
+        '/notifications/read-all',
+        [NotificationController::class, 'markAllRead']
+    )->name('notifications.read_all');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Freelancer Onboarding
+    |--------------------------------------------------------------------------
+    |
+    | Berlaku untuk user yang sudah memiliki akun ProKerja.
+    |
+    | Guest yang memilih "Daftar sebagai Freelancer" akan melalui
+    | register + OTP terlebih dahulu, lalu diarahkan ke route ini.
+    |
+    | Client yang sudah login bisa langsung masuk ke sini dari navbar.
+    |
+    */
+
+    Route::get(
+        '/freelancer/onboarding',
+        [OnboardingController::class, 'index']
+    )->name('freelancer.onboarding');
+
+    Route::post(
+        '/freelancer/onboarding',
+        [OnboardingController::class, 'update']
+    )->name('freelancer.onboarding.update');
+
 });
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Buyer Orders — Client dan Freelancer
+|--------------------------------------------------------------------------
+| Kedua role dapat membeli jasa. Nama route client.orders.* dipertahankan
+| agar Blade checkout yang sudah ada tetap kompatibel.
+| Controller tetap wajib memeriksa kepemilikan order.
+*/
+Route::middleware(['auth', 'role:client,freelancer'])
+    ->prefix('client')
+    ->name('client.')
+    ->group(function () {
+        Route::get('/orders', [ClientOrderController::class, 'index'])->name('orders.index');
+        Route::post('/orders', [ClientOrderController::class, 'store'])->name('orders.store');
+        Route::get('/orders/{order}/checkout', [ClientOrderController::class, 'checkout'])->name('orders.checkout');
+        Route::get('/orders/{order}', [ClientOrderController::class, 'show'])->name('orders.show');
+        Route::get('/orders/{order}/invoice', [ClientInvoiceController::class, 'show'])->name('orders.invoice');
+        Route::post('/orders/{order}/payment/token', [PaymentController::class, 'token'])->name('orders.payment.token');
+        Route::post('/orders/{order}/payment/simulate', [DevelopmentPaymentController::class, 'simulate'])->name('orders.payment.simulate');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Messages — Buyer
+        |--------------------------------------------------------------------------
+        | Client DAN Freelancer dapat menggunakan chat sebagai pembeli.
+        */
+
+        Route::get('/messages', [ClientMessageController::class, 'index'])->name('messages.index');
+        Route::get('/messages/{conversation}', [ClientMessageController::class, 'show'])->name('messages.show');
+        Route::post('/messages/{conversation}', [ClientMessageController::class, 'store'])->name('messages.store');
+        Route::post('/messages/start/{service}', [ClientMessageController::class, 'start'])->name('messages.start');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Offers — Buyer
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post('/offers/{offer}/accept', [ClientOfferController::class, 'accept'])->name('offers.accept');
+        Route::post('/offers/{offer}/reject', [ClientOfferController::class, 'reject'])->name('offers.reject');
+
+        Route::get('/orders/{order}/delivery', [ClientDeliveryController::class, 'show'])->name('delivery.show');
+        Route::post('/orders/{order}/delivery/approve', [ClientDeliveryController::class, 'approve'])->name('delivery.approve');
+        Route::post('/orders/{order}/delivery/revision', [ClientDeliveryController::class, 'revision'])->name('delivery.revision');
+        Route::get('/orders/{order}/review', [ClientReviewController::class, 'create'])->name('reviews.create');
+        Route::post('/orders/{order}/review', [ClientReviewController::class, 'store'])->name('reviews.store');
+        Route::get('/orders/{order}/cancellation', [ClientCancellationController::class, 'create'])->name('orders.cancellation.create');
+        Route::post('/orders/{order}/cancellation', [ClientCancellationController::class, 'store'])->name('orders.cancellation.store');
+        Route::post('/orders/{order}/cancellation/mediation', [ClientCancellationController::class, 'mediation'])->name('orders.cancellation.mediation');
+        Route::get('/orders/{order}/dispute', [ClientDisputeController::class, 'create'])->name('orders.dispute.create');
+        Route::post('/orders/{order}/dispute', [ClientDisputeController::class, 'store'])->name('orders.dispute.store');
+        Route::get('/disputes/{dispute}', [ClientDisputeController::class, 'show'])->name('disputes.show');
+        Route::post('/disputes/{dispute}/message', [ClientDisputeController::class, 'message'])->name('disputes.message');
+        Route::post('/disputes/{dispute}/evidence', [ClientDisputeController::class, 'evidence'])->name('disputes.evidence');
+    });
+
 
 /*
 |--------------------------------------------------------------------------
 | Client
 |--------------------------------------------------------------------------
+|
+| User biasa ProKerja menggunakan role "client".
+| Register biasa tidak memilih role.
+|
 */
 
-Route::middleware(['auth', 'role:client'])
+Route::middleware([
+    'auth',
+    'role:client',
+])
     ->prefix('client')
     ->name('client.')
     ->group(function () {
@@ -215,42 +336,30 @@ Route::middleware(['auth', 'role:client'])
             [ClientDashboardController::class, 'index']
         )->name('dashboard');
 
+
         /*
         |--------------------------------------------------------------------------
         | Orders
         |--------------------------------------------------------------------------
         */
 
-        Route::get(
-            '/orders',
-            [ClientOrderController::class, 'index']
-        )->name('orders.index');
 
-        Route::post(
-            '/orders',
-            [ClientOrderController::class, 'store']
-        )->name('orders.store');
 
-        Route::get(
-            '/orders/{order}/checkout',
-            [ClientOrderController::class, 'checkout']
-        )->name('orders.checkout');
+
+
+
+
+
+
 
         /*
         |--------------------------------------------------------------------------
-        | Invoice & Transaction Detail
+        | Invoice
         |--------------------------------------------------------------------------
         */
 
-        Route::get(
-            '/orders/{order}/invoice',
-            [ClientInvoiceController::class, 'show']
-        )->name('orders.invoice');
 
-        Route::get(
-            '/orders/{order}',
-            [ClientOrderController::class, 'show']
-        )->name('orders.show');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -258,15 +367,10 @@ Route::middleware(['auth', 'role:client'])
         |--------------------------------------------------------------------------
         */
 
-        Route::post(
-            '/orders/{order}/payment/token',
-            [PaymentController::class, 'token']
-        )->name('orders.payment.token');
 
-        Route::post(
-            '/orders/{order}/payment/simulate',
-            [DevelopmentPaymentController::class, 'simulate']
-        )->name('orders.payment.simulate');
+
+
+
 
         /*
         |--------------------------------------------------------------------------
@@ -289,47 +393,6 @@ Route::middleware(['auth', 'role:client'])
             [ClientFavoriteController::class, 'destroy']
         )->name('favorites.destroy');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Messages
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get(
-            '/messages',
-            [ClientMessageController::class, 'index']
-        )->name('messages.index');
-
-        Route::get(
-            '/messages/{conversation}',
-            [ClientMessageController::class, 'show']
-        )->name('messages.show');
-
-        Route::post(
-            '/messages/{conversation}',
-            [ClientMessageController::class, 'store']
-        )->name('messages.store');
-
-        Route::post(
-            '/messages/start/{service}',
-            [ClientMessageController::class, 'start']
-        )->name('messages.start');
-
-        /*
-        |--------------------------------------------------------------------------
-        | Offers / Quotations
-        |--------------------------------------------------------------------------
-        */
-
-        Route::post(
-            '/offers/{offer}/accept',
-            [ClientOfferController::class, 'accept']
-        )->name('offers.accept');
-
-        Route::post(
-            '/offers/{offer}/reject',
-            [ClientOfferController::class, 'reject']
-        )->name('offers.reject');
 
         /*
         |--------------------------------------------------------------------------
@@ -337,36 +400,23 @@ Route::middleware(['auth', 'role:client'])
         |--------------------------------------------------------------------------
         */
 
-        Route::get(
-            '/orders/{order}/delivery',
-            [ClientDeliveryController::class, 'show']
-        )->name('delivery.show');
 
-        Route::post(
-            '/orders/{order}/delivery/approve',
-            [ClientDeliveryController::class, 'approve']
-        )->name('delivery.approve');
 
-        Route::post(
-            '/orders/{order}/delivery/revision',
-            [ClientDeliveryController::class, 'revision']
-        )->name('delivery.revision');
+
+
+
+
 
         /*
         |--------------------------------------------------------------------------
-        | Review
+        | Reviews
         |--------------------------------------------------------------------------
         */
 
-        Route::get(
-            '/orders/{order}/review',
-            [ClientReviewController::class, 'create']
-        )->name('reviews.create');
 
-        Route::post(
-            '/orders/{order}/review',
-            [ClientReviewController::class, 'store']
-        )->name('reviews.store');
+
+
+
 
         /*
         |--------------------------------------------------------------------------
@@ -414,6 +464,7 @@ Route::middleware(['auth', 'role:client'])
             [ClientJobController::class, 'close']
         )->name('jobs.close');
 
+
         /*
         |--------------------------------------------------------------------------
         | Job Proposals
@@ -430,6 +481,7 @@ Route::middleware(['auth', 'role:client'])
             [ClientJobController::class, 'rejectProposal']
         )->name('jobs.proposals.reject');
 
+
         /*
         |--------------------------------------------------------------------------
         | Job Board Chat
@@ -441,26 +493,19 @@ Route::middleware(['auth', 'role:client'])
             [JobBoardChatController::class, 'start']
         )->name('jobs.chat.start');
 
+
         /*
         |--------------------------------------------------------------------------
         | Cancellation
         |--------------------------------------------------------------------------
         */
 
-        Route::get(
-            '/orders/{order}/cancellation',
-            [ClientCancellationController::class, 'create']
-        )->name('orders.cancellation.create');
 
-        Route::post(
-            '/orders/{order}/cancellation',
-            [ClientCancellationController::class, 'store']
-        )->name('orders.cancellation.store');
 
-        Route::post(
-            '/orders/{order}/cancellation/mediation',
-            [ClientCancellationController::class, 'mediation']
-        )->name('orders.cancellation.mediation');
+
+
+
+
 
         /*
         |--------------------------------------------------------------------------
@@ -468,39 +513,33 @@ Route::middleware(['auth', 'role:client'])
         |--------------------------------------------------------------------------
         */
 
-        Route::get(
-            '/orders/{order}/dispute',
-            [ClientDisputeController::class, 'create']
-        )->name('orders.dispute.create');
 
-        Route::post(
-            '/orders/{order}/dispute',
-            [ClientDisputeController::class, 'store']
-        )->name('orders.dispute.store');
 
-        Route::get(
-            '/disputes/{dispute}',
-            [ClientDisputeController::class, 'show']
-        )->name('disputes.show');
 
-        Route::post(
-            '/disputes/{dispute}/message',
-            [ClientDisputeController::class, 'message']
-        )->name('disputes.message');
 
-        Route::post(
-            '/disputes/{dispute}/evidence',
-            [ClientDisputeController::class, 'evidence']
-        )->name('disputes.evidence');
+
+
+
+
+
+
     });
+
 
 /*
 |--------------------------------------------------------------------------
 | Freelancer
 |--------------------------------------------------------------------------
+|
+| Hanya freelancer yang sudah aktif / approved yang boleh masuk
+| ke area ini.
+|
 */
 
-Route::middleware(['auth', 'role:freelancer'])
+Route::middleware([
+    'auth',
+    'role:freelancer',
+])
     ->prefix('freelancer')
     ->name('freelancer.')
     ->group(function () {
@@ -515,6 +554,7 @@ Route::middleware(['auth', 'role:freelancer'])
             '/dashboard',
             [FreelancerDashboardController::class, 'index']
         )->name('dashboard');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -537,6 +577,7 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerProfileController::class, 'update']
         )->name('profile.update');
 
+
         /*
         |--------------------------------------------------------------------------
         | Profile - Experience
@@ -557,6 +598,7 @@ Route::middleware(['auth', 'role:freelancer'])
             '/profile/experiences/{experience}',
             [FreelancerProfileController::class, 'destroyExperience']
         )->name('profile.experiences.destroy');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -579,6 +621,7 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerProfileController::class, 'destroyEducation']
         )->name('profile.educations.destroy');
 
+
         /*
         |--------------------------------------------------------------------------
         | Profile - Certificates
@@ -599,6 +642,7 @@ Route::middleware(['auth', 'role:freelancer'])
             '/profile/certificates/{certificate}',
             [FreelancerProfileController::class, 'destroyCertificate']
         )->name('profile.certificates.destroy');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -621,6 +665,7 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerProfileController::class, 'destroySkill']
         )->name('profile.skills.destroy');
 
+
         /*
         |--------------------------------------------------------------------------
         | Profile - Languages
@@ -641,6 +686,7 @@ Route::middleware(['auth', 'role:freelancer'])
             '/profile/languages/{language}',
             [FreelancerProfileController::class, 'destroyLanguage']
         )->name('profile.languages.destroy');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -683,6 +729,7 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerServiceController::class, 'destroy']
         )->name('services.destroy');
 
+
         /*
         |--------------------------------------------------------------------------
         | Service Moderation
@@ -693,6 +740,7 @@ Route::middleware(['auth', 'role:freelancer'])
             '/services/{service}/submit-review',
             [FreelancerServiceModerationController::class, 'submitReview']
         )->name('services.submit-review');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -710,6 +758,7 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerOrderController::class, 'show']
         )->name('orders.show');
 
+
         /*
         |--------------------------------------------------------------------------
         | Delivery
@@ -720,6 +769,7 @@ Route::middleware(['auth', 'role:freelancer'])
             '/orders/{order}/delivery',
             [FreelancerDeliveryController::class, 'store']
         )->name('orders.delivery.store');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -742,6 +792,7 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerMessageController::class, 'store']
         )->name('messages.store');
 
+
         /*
         |--------------------------------------------------------------------------
         | Offers / Quotations - Service Marketplace
@@ -757,6 +808,7 @@ Route::middleware(['auth', 'role:freelancer'])
             '/messages/{conversation}/offer',
             [FreelancerOfferController::class, 'storeService']
         )->name('messages.offers.store');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -774,6 +826,7 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerOfferController::class, 'storeJob']
         )->name('jobs.proposals.offer.store');
 
+
         /*
         |--------------------------------------------------------------------------
         | Wallet
@@ -784,6 +837,7 @@ Route::middleware(['auth', 'role:freelancer'])
             '/wallet',
             [FreelancerWalletController::class, 'index']
         )->name('wallet.index');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -806,6 +860,7 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerWithdrawalController::class, 'store']
         )->name('withdrawals.store');
 
+
         /*
         |--------------------------------------------------------------------------
         | Job Board - Freelancer
@@ -827,6 +882,7 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerJobProposalController::class, 'store']
         )->name('jobs.proposals.store');
 
+
         /*
         |--------------------------------------------------------------------------
         | Job Board Chat
@@ -837,6 +893,7 @@ Route::middleware(['auth', 'role:freelancer'])
             '/jobs/{job}/proposals/{proposal}/chat',
             [JobBoardChatController::class, 'start']
         )->name('jobs.chat.start');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -854,9 +911,10 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerOfferController::class, 'store']
         )->name('jobs.proposals.offer.store');
 
+
         /*
         |--------------------------------------------------------------------------
-        | Verifications
+        | Verification
         |--------------------------------------------------------------------------
         */
 
@@ -870,7 +928,8 @@ Route::middleware(['auth', 'role:freelancer'])
             [FreelancerVerificationController::class, 'store']
         )->name('verification.store');
 
-                /*
+
+        /*
         |--------------------------------------------------------------------------
         | Cancellation
         |--------------------------------------------------------------------------
@@ -890,7 +949,9 @@ Route::middleware(['auth', 'role:freelancer'])
             '/orders/{order}/cancellation/reject',
             [FreelancerCancellationController::class, 'reject']
         )->name('orders.cancellation.reject');
-         /*
+
+
+        /*
         |--------------------------------------------------------------------------
         | Dispute
         |--------------------------------------------------------------------------
@@ -917,21 +978,21 @@ Route::middleware(['auth', 'role:freelancer'])
         )->name('disputes.message');
 
         Route::post(
-            '/disputes/{dispute}/evidence',
+            '/freelancer/disputes/{dispute}/evidence',
             [FreelancerDisputeController::class, 'evidence']
         )->name('disputes.evidence');
 
-        
     });
+
 
 /*
 |--------------------------------------------------------------------------
 | Public Freelancer Profile
 |--------------------------------------------------------------------------
 |
-| Route public profile diletakkan setelah seluruh route internal
-| freelancer supaya /freelancer/dashboard dan route internal lainnya
-| tidak dianggap sebagai username.
+| Route ini diletakkan setelah seluruh route internal freelancer.
+| Dengan begitu /freelancer/dashboard, /freelancer/profile, dll
+| tidak dianggap sebagai username freelancer.
 |
 */
 
@@ -945,13 +1006,17 @@ Route::get(
     )
     ->name('marketplace.freelancer');
 
+
 /*
 |--------------------------------------------------------------------------
 | Admin
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:admin'])
+Route::middleware([
+    'auth',
+    'role:admin',
+])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -966,6 +1031,7 @@ Route::middleware(['auth', 'role:admin'])
             '/dashboard',
             [AdminDashboardController::class, 'index']
         )->name('dashboard');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -982,6 +1048,7 @@ Route::middleware(['auth', 'role:admin'])
             '/users/{user}',
             [AdminUserController::class, 'show']
         )->name('users.show');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -1014,6 +1081,7 @@ Route::middleware(['auth', 'role:admin'])
             [AdminCategoryController::class, 'destroy']
         )->name('categories.destroy');
 
+
         /*
         |--------------------------------------------------------------------------
         | Services
@@ -1045,6 +1113,7 @@ Route::middleware(['auth', 'role:admin'])
             [AdminServiceController::class, 'destroy']
         )->name('services.destroy');
 
+
         /*
         |--------------------------------------------------------------------------
         | Orders
@@ -1060,6 +1129,7 @@ Route::middleware(['auth', 'role:admin'])
             '/orders/{order}',
             [AdminOrderController::class, 'show']
         )->name('orders.show');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -1077,6 +1147,7 @@ Route::middleware(['auth', 'role:admin'])
             [AdminPaymentController::class, 'show']
         )->name('payments.show');
 
+
         /*
         |--------------------------------------------------------------------------
         | Commissions
@@ -1092,6 +1163,7 @@ Route::middleware(['auth', 'role:admin'])
             '/commissions/{commission}',
             [AdminCommissionController::class, 'show']
         )->name('commissions.show');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -1114,6 +1186,7 @@ Route::middleware(['auth', 'role:admin'])
             [AdminWithdrawalController::class, 'update']
         )->name('withdrawals.update');
 
+
         /*
         |--------------------------------------------------------------------------
         | Reviews
@@ -1134,6 +1207,7 @@ Route::middleware(['auth', 'role:admin'])
             '/reviews/{review}',
             [AdminReviewController::class, 'update']
         )->name('reviews.update');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -1166,6 +1240,7 @@ Route::middleware(['auth', 'role:admin'])
             [AdminVerificationController::class, 'reject']
         )->name('verifications.reject');
 
+
         /*
         |--------------------------------------------------------------------------
         | Service Moderation
@@ -1191,6 +1266,7 @@ Route::middleware(['auth', 'role:admin'])
             '/service-moderation/{service}/reject',
             [AdminServiceModerationController::class, 'reject']
         )->name('service-moderation.reject');
+
 
         /*
         |--------------------------------------------------------------------------
@@ -1218,7 +1294,8 @@ Route::middleware(['auth', 'role:admin'])
             [AdminCancellationController::class, 'reject']
         )->name('cancellations.reject');
 
-         /*
+
+        /*
         |--------------------------------------------------------------------------
         | Dispute
         |--------------------------------------------------------------------------
@@ -1244,7 +1321,8 @@ Route::middleware(['auth', 'role:admin'])
             [AdminDisputeController::class, 'close']
         )->name('disputes.close');
 
-                /* 
+
+        /*
         |--------------------------------------------------------------------------
         | Refunds
         |--------------------------------------------------------------------------
@@ -1276,7 +1354,7 @@ Route::middleware(['auth', 'role:admin'])
         )->name('refunds.reject');
 
 
-                /*
+        /*
         |--------------------------------------------------------------------------
         | Banners
         |--------------------------------------------------------------------------
@@ -1317,14 +1395,17 @@ Route::middleware(['auth', 'role:admin'])
             [AdminBannerController::class, 'toggleStatus']
         )->name('banners.status');
 
-        
-
     });
+
 
 /*
 |--------------------------------------------------------------------------
 | Authentication
 |--------------------------------------------------------------------------
+|
+| routes/auth.php berisi login, register, OTP, register freelancer,
+| dan logout.
+|
 */
 
 require __DIR__ . '/auth.php';

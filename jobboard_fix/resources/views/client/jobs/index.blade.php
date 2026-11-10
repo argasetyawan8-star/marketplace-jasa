@@ -1,4 +1,4 @@
-<x-layouts.client>
+<x-layouts.marketplace>
     <div class="min-h-[calc(100vh-72px)] bg-[#F8FCF9]">
         <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -40,4 +40,4 @@
             <div class="mt-5">{{ $jobs->links() }}</div>
         </div>
     </div>
-</x-layouts.client>
+</x-layouts.marketplace>

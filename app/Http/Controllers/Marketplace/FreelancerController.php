@@ -244,8 +244,12 @@ class FreelancerController extends Controller
         | Authentication State
         |--------------------------------------------------------------------------
         */
-        $isClient = auth()->check()
-            && auth()->user()->role === 'client';
+        $canContactFreelancer = auth()->check()
+            && in_array(
+                auth()->user()->role,
+                ['client', 'freelancer'],
+                true
+            );
 
         $isOwner = auth()->check()
             && $freelancerProfile->user_id === auth()->id();
@@ -326,7 +330,7 @@ class FreelancerController extends Controller
 
                 'isAvailable' => $isAvailable,
 
-                'isClient' => $isClient,
+                'canContactFreelancer' => $canContactFreelancer,
 
                 'isOwner' => $isOwner,
 

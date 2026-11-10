@@ -624,12 +624,12 @@ class MessageController extends Controller
             if ($type === 'image') {
 
                 $preview =
-                    'Client mengirim foto.';
+                    'Pembeli mengirim foto.';
 
             } elseif ($type === 'file') {
 
                 $preview =
-                    'Client mengirim file' .
+                    'Pembeli mengirim file' .
                     (
                         $attachmentName
                             ? ': ' . $attachmentName
@@ -639,7 +639,7 @@ class MessageController extends Controller
             } elseif ($type === 'voice') {
 
                 $preview =
-                    'Client mengirim voice note.';
+                    'Pembeli mengirim voice note.';
 
             } else {
 
@@ -677,7 +677,7 @@ class MessageController extends Controller
                     NotificationService::MESSAGE_RECEIVED,
 
                 title:
-                    'Pesan baru dari client',
+                    'Pesan baru dari pembeli',
 
                 message:
                     $preview,
@@ -897,10 +897,10 @@ class MessageController extends Controller
                         NotificationService::MESSAGE_RECEIVED,
 
                     title:
-                        'Pesan baru dari client',
+                        'Pesan baru dari pembeli',
 
                     message:
-                        'Client tertarik dengan jasa "' .
+                        'Pembeli tertarik dengan jasa "' .
                         $service->title .
                         '" dan mengirim pesan baru.',
 

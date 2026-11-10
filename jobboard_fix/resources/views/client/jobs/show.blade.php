@@ -1,4 +1,4 @@
-<x-layouts.client>
+<x-layouts.marketplace>
     <div class="min-h-[calc(100vh-72px)] bg-[#F8FCF9]">
         <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
             <a href="{{ route('client.jobs.index') }}" class="inline-flex items-center gap-2 text-xs text-[#71837B] hover:text-[#0F6B3A]"><i class="bi bi-arrow-left"></i>Kembali ke Job Saya</a>
@@ -88,4 +88,4 @@
             </div>
         </div>
     </div>
-</x-layouts.client>
+</x-layouts.marketplace>

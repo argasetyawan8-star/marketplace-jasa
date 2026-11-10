@@ -236,8 +236,13 @@ $isAvailable = (bool) (
     ?? false
 );
 
-$isClient = auth()->check()
-    && auth()->user()->role === 'client';
+$canContactFreelancer = (bool) (
+    $canContactFreelancer
+    ?? (
+        auth()->check()
+        && in_array(auth()->user()->role, ['client', 'freelancer'], true)
+    )
+);
 
 $isOwner = auth()->check()
     && $freelancerProfile->user_id === auth()->id();
@@ -561,7 +566,7 @@ $contactService = $contactService
 
                             </a>
 
-                        @elseif ($isClient && $contactService)
+                        @elseif ($canContactFreelancer && $contactService)
 
                             <form
                                 method="POST"
@@ -582,7 +587,7 @@ $contactService = $contactService
 
                             </form>
 
-                        @elseif (!$isClient)
+                        @elseif (!auth()->check())
 
                             <a
                                 href="{{ route('login') }}"
@@ -2040,7 +2045,7 @@ $contactService = $contactService
 
                                 </a>
 
-                            @elseif ($isClient && $contactService)
+                            @elseif ($canContactFreelancer && $contactService)
 
                                 <form
                                     method="POST"
@@ -2061,7 +2066,7 @@ $contactService = $contactService
 
                                 </form>
 
-                            @elseif (!$isClient)
+                            @elseif (!auth()->check())
 
                                 <a
                                     href="{{ route('login') }}"
@@ -2226,7 +2231,7 @@ $contactService = $contactService
 
         <div class="mx-auto max-w-7xl">
 
-            @if ($isClient && $contactService)
+            @if ($canContactFreelancer && $contactService)
 
                 <form
                     method="POST"
@@ -2247,7 +2252,7 @@ $contactService = $contactService
 
                 </form>
 
-            @elseif (!$isClient)
+            @elseif (!auth()->check())
 
                 <a
                     href="{{ route('login') }}"

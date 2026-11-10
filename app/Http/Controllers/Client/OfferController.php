@@ -70,8 +70,17 @@ class OfferController extends Controller
             'job',
             'jobProposal',
             'service',
-            'freelancerProfile',
+            'freelancerProfile.user',
         ]);
+
+        abort_unless($offer->freelancerProfile, 404);
+
+        // Pengguna tidak boleh menerima quotation dari profil miliknya sendiri.
+        abort_if(
+            (int) $offer->freelancerProfile->user_id === (int) Auth::id(),
+            403,
+            'Kamu tidak dapat membeli jasa dari akunmu sendiri.'
+        );
 
         /*
         |--------------------------------------------------------------------------

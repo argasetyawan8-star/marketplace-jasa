@@ -1,1001 +1,877 @@
 <x-layouts.marketplace :title="$service->title . ' - ProKerja'">
 
-
 @php
     $freelancer = $service->freelancerProfile;
-    $user = $freelancer?->user;
+    $freelancerUser = $freelancer?->user;
 
     $serviceImage = $service->thumbnail
-        ? asset('storage/' . $service->thumbnail)
+        ? asset('storage/' . ltrim($service->thumbnail, '/'))
         : null;
 
     $freelancerAvatar = $freelancer?->avatar
-        ? asset('storage/' . $freelancer->avatar)
+        ? asset('storage/' . ltrim($freelancer->avatar, '/'))
         : null;
 
+    $freelancerName = $freelancerUser?->name ?? 'Freelancer';
+    $freelancerUsername = $freelancer?->username;
+
     $isOwnService = auth()->check()
-        && $user
-        && auth()->id() === $user->id;
+        && $freelancerUser
+        && auth()->id() === $freelancerUser->id;
+
+    /*
+    |--------------------------------------------------------------------------
+    | BUYER RULE
+    |--------------------------------------------------------------------------
+    | Client dan Freelancer sama-sama dapat membeli jasa freelancer lain.
+    | Freelancer tetap memiliki role freelancer; konteksnya saja yang
+    | berubah menjadi buyer ketika melakukan pembelian.
+    */
+    $canBuyService = auth()->check()
+        && in_array(
+            auth()->user()->role,
+            ['client', 'freelancer'],
+            true
+        )
+        && !$isOwnService;
 
     $isFavorited = (bool) ($service->is_favorited ?? false);
+
+    $reviews = isset($reviews)
+        ? collect($reviews)
+        : collect();
+
+    $relatedServices = isset($relatedServices)
+        ? collect($relatedServices)
+        : collect();
+
+    $rating = (float) (
+        $service->rating
+        ?? $service->average_rating
+        ?? 0
+    );
+
+    $reviewCount = (int) (
+        $service->reviews_count
+        ?? $service->review_count
+        ?? $reviews->count()
+    );
+
+    $startingPrice = (float) (
+        $service->starting_price
+        ?? $service->price
+        ?? 0
+    );
+
+    $deliveryDays = (int) (
+        $service->delivery_days
+        ?? 0
+    );
+
+    $categoryName = $service->category?->name ?? 'Layanan Profesional';
+    $categorySlug = $service->category?->slug;
+
+    $ratingLabel = $rating > 0
+        ? number_format($rating, 1)
+        : 'Baru';
 @endphp
 
-<div
-    x-data="{ favoriteLoading: false }"
-    class="min-h-screen bg-white pt-[48px] md:pt-[52px]"
->
+<style>
+    .pk-service-page {
+        background:
+            linear-gradient(180deg, #F8FBFF 0%, #F8FAFC 28%, #F8FAFC 100%);
+    }
+
+    .pk-service-card {
+        border: 1px solid #E2E8F0;
+        background: #FFFFFF;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, 0.035);
+    }
+
+    .pk-service-soft-card {
+        border: 1px solid #E2E8F0;
+        background: #F8FAFC;
+    }
+
+    .pk-hover-card {
+        transition:
+            transform .25s ease,
+            box-shadow .25s ease,
+            border-color .25s ease;
+    }
+
+    .pk-hover-card:hover {
+        transform: translateY(-2px);
+        border-color: #BFDBFE;
+        box-shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
+    }
+
+    .pk-service-image {
+        transition: transform .6s cubic-bezier(.22, 1, .36, 1);
+    }
+
+    .pk-service-media:hover .pk-service-image {
+        transform: scale(1.025);
+    }
+
+    .pk-service-prose {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    @media (max-width: 1023px) {
+        .pk-service-page {
+            padding-bottom: 2rem;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .pk-hover-card,
+        .pk-service-image {
+            transition: none !important;
+        }
+
+        .pk-hover-card:hover,
+        .pk-service-media:hover .pk-service-image {
+            transform: none !important;
+        }
+    }
+</style>
+
+<div class="pk-service-page min-h-screen text-slate-900">
 
     {{-- =========================================================
         BREADCRUMB
     ========================================================== --}}
-    <div class="border-b border-[#E2E8F0] bg-white">
-
-        <div class="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
-
-            <nav class="flex min-w-0 items-center gap-2 overflow-hidden text-[11px] text-[#64748B]">
-
+    <div class="border-b border-slate-200/80 bg-white/90 backdrop-blur">
+        <div class="mx-auto max-w-7xl px-4 py-3.5 sm:px-6 lg:px-8">
+            <nav
+                class="flex min-w-0 items-center gap-2 overflow-hidden text-[10px] sm:text-[11px]"
+                aria-label="Breadcrumb"
+            >
                 <a
                     href="{{ route('marketplace.home') }}"
-                    class="shrink-0 transition hover:text-[#2563EB]"
+                    class="shrink-0 font-medium text-slate-400 transition hover:text-blue-600"
                 >
                     Beranda
                 </a>
 
-                <i class="bi bi-chevron-right shrink-0 text-[8px] text-[#94A3B8]"></i>
+                <i class="bi bi-chevron-right shrink-0 text-[7px] text-slate-300"></i>
 
-                @if ($service->category)
-
+                @if ($categorySlug)
                     <a
-                        href="{{ route('marketplace.category', $service->category->slug) }}"
-                        class="max-w-[150px] shrink-0 truncate transition hover:text-[#2563EB]"
+                        href="{{ route('marketplace.category', $categorySlug) }}"
+                        class="max-w-[30vw] shrink-0 truncate font-medium text-slate-400 transition hover:text-blue-600 sm:max-w-none"
                     >
-                        {{ $service->category->name }}
+                        {{ $categoryName }}
                     </a>
 
+                    <i class="bi bi-chevron-right shrink-0 text-[7px] text-slate-300"></i>
                 @endif
 
-                @if ($service->subcategory)
-
-                    <i class="bi bi-chevron-right shrink-0 text-[8px] text-[#94A3B8]"></i>
-
-                    <span class="max-w-[150px] shrink-0 truncate">
-                        {{ $service->subcategory->name }}
-                    </span>
-
-                @endif
-
-                <i class="bi bi-chevron-right shrink-0 text-[8px] text-[#94A3B8]"></i>
-
-                <span class="min-w-0 truncate font-medium text-[#0F172A]">
+                <span class="min-w-0 truncate font-semibold text-slate-600">
                     {{ $service->title }}
                 </span>
-
             </nav>
-
         </div>
-
     </div>
 
 
     {{-- =========================================================
-        MAIN SERVICE
+        MAIN
     ========================================================== --}}
     <main>
+        <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
 
-        <div class="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-9 lg:px-8 lg:py-10">
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8">
 
-            <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_330px] xl:gap-14">
+                {{-- =====================================================
+                    LEFT COLUMN
+                ====================================================== --}}
+                <div class="min-w-0 space-y-5 sm:space-y-6">
 
-                {{-- =================================================
-                    LEFT
-                ================================================== --}}
-                <div class="min-w-0">
+                    {{-- -------------------------------------------------
+                        HERO MEDIA
+                    -------------------------------------------------- --}}
+                    <section class="pk-service-card pk-service-media overflow-hidden rounded-[24px] sm:rounded-[28px]">
+                        <div class="relative aspect-[16/10] overflow-hidden bg-slate-100 sm:aspect-[16/8.7]">
 
-                    {{-- =================================================
-                        SERVICE MEDIA
-                    ================================================== --}}
-                    <div class="relative">
-
-                        @if ($serviceImage)
-
-                            <div class="overflow-hidden rounded-xl bg-[#F1F5F9]">
-
+                            @if ($serviceImage)
                                 <img
                                     src="{{ $serviceImage }}"
                                     alt="{{ $service->title }}"
-                                    class="block aspect-[16/8] w-full object-cover"
+                                    class="pk-service-image h-full w-full object-cover"
                                 >
-
-                            </div>
-
-                        @else
-
-                            <div class="flex aspect-[16/8] items-center justify-center rounded-xl bg-[#EFF6FF]">
-
-                                <div class="text-center">
-
-                                    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-[#2563EB] shadow-sm">
-                                        <i class="bi bi-briefcase text-2xl"></i>
-                                    </div>
-
-                                    <p class="mt-3 text-xs font-semibold text-[#64748B]">
-                                        {{ $service->category?->name ?? 'Jasa Profesional' }}
-                                    </p>
-
+                            @else
+                                <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100 text-blue-500">
+                                    <i class="bi bi-image text-4xl"></i>
                                 </div>
-
-                            </div>
-
-                        @endif
-
-
-                        @auth
-
-                            @if (auth()->user()->role === 'client' && !$isOwnService)
-
-                                @if ($isFavorited)
-
-                                    <form
-                                        action="{{ route('client.favorites.destroy', $service) }}"
-                                        method="POST"
-                                        class="absolute right-4 top-4"
-                                        @submit="favoriteLoading = true"
-                                    >
-                                        @csrf
-                                        @method('DELETE')
-
-                                        <button
-                                            type="submit"
-                                            :disabled="favoriteLoading"
-                                            class="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#DC2626] shadow-md transition hover:bg-[#FEF2F2] disabled:opacity-60"
-                                            aria-label="Hapus dari favorit"
-                                        >
-                                            <i class="bi bi-heart-fill"></i>
-                                        </button>
-                                    </form>
-
-                                @else
-
-                                    <form
-                                        action="{{ route('client.favorites.store', $service) }}"
-                                        method="POST"
-                                        class="absolute right-4 top-4"
-                                        @submit="favoriteLoading = true"
-                                    >
-                                        @csrf
-
-                                        <button
-                                            type="submit"
-                                            :disabled="favoriteLoading"
-                                            class="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#475569] shadow-md transition hover:text-[#2563EB] disabled:opacity-60"
-                                            aria-label="Tambah ke favorit"
-                                        >
-                                            <i class="bi bi-heart"></i>
-                                        </button>
-                                    </form>
-
-                                @endif
-
                             @endif
 
-                        @endauth
+                            <div class="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/15 to-transparent"></div>
 
-                    </div>
+                            <div class="absolute left-3 top-3 flex flex-wrap gap-2 sm:left-4 sm:top-4">
+                                <span class="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/92 px-3 py-1.5 text-[9px] font-bold text-slate-700 shadow-sm backdrop-blur">
+                                    <i class="bi bi-grid text-blue-600"></i>
+                                    {{ $categoryName }}
+                                </span>
+
+                                @if ($service->is_featured ?? false)
+                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/92 px-3 py-1.5 text-[9px] font-bold text-blue-600 shadow-sm backdrop-blur">
+                                        <i class="bi bi-stars"></i>
+                                        Pilihan ProKerja
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    </section>
 
 
-                    {{-- =================================================
-                        SERVICE TITLE
-                    ================================================== --}}
-                    <section class="pt-7">
+                    {{-- -------------------------------------------------
+                        SERVICE SUMMARY
+                    -------------------------------------------------- --}}
+                    <section class="pk-service-card rounded-[24px] p-5 sm:rounded-[28px] sm:p-7 lg:p-8">
 
-                        <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px]">
-
-                            <span class="inline-flex items-center gap-1.5 font-semibold text-[#0F172A]">
-                                <i class="bi bi-star-fill text-[#F59E0B]"></i>
-                                {{ number_format((float) $service->rating, 1) }}
-                            </span>
-
-                            <span class="text-[#CBD5E1]">•</span>
-
-                            <span class="text-[#64748B]">
-                                {{ $service->reviews_count }} review
-                            </span>
-
-                            <span class="text-[#CBD5E1]">•</span>
-
-                            <span class="text-[#64748B]">
-                                {{ $service->orders_count }} terjual
-                            </span>
-
+                        <div class="flex flex-wrap items-center gap-2">
                             @if ($freelancer?->is_verified)
-
-                                <span class="inline-flex items-center gap-1 text-[#2563EB]">
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1.5 text-[9px] font-bold text-emerald-700">
                                     <i class="bi bi-patch-check-fill"></i>
                                     Freelancer terverifikasi
                                 </span>
-
                             @endif
 
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1.5 text-[9px] font-bold text-blue-600">
+                                <i class="bi bi-shield-check"></i>
+                                Transaksi melalui ProKerja
+                            </span>
                         </div>
 
-
-                        <h1 class="mt-3 max-w-4xl text-[25px] font-bold leading-[1.3] tracking-[-0.025em] text-[#0F172A] sm:text-[32px]">
+                        <h1 class="mt-4 max-w-4xl text-[23px] font-extrabold leading-tight tracking-[-0.03em] text-slate-900 sm:text-3xl lg:text-[34px] lg:leading-[1.16]">
                             {{ $service->title }}
                         </h1>
 
+                        {{-- Stats --}}
+                        <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2.5 text-[11px] text-slate-500 sm:text-xs">
+                            <span class="inline-flex items-center gap-1.5">
+                                <i class="bi bi-star-fill text-amber-400"></i>
+                                <strong class="font-bold text-slate-800">{{ $ratingLabel }}</strong>
+                                @if ($reviewCount > 0)
+                                    <span>({{ number_format($reviewCount) }} ulasan)</span>
+                                @endif
+                            </span>
 
-                        <div class="mt-4 flex flex-wrap items-center gap-2">
+                            <span class="hidden h-3.5 w-px bg-slate-200 sm:block"></span>
 
-                            @if ($service->category)
+                            <span class="inline-flex items-center gap-1.5">
+                                <i class="bi bi-bag-check text-slate-400"></i>
+                                <span><strong class="font-semibold text-slate-700">{{ number_format((int) ($service->orders_count ?? 0)) }}</strong> order</span>
+                            </span>
 
-                                <a
-                                    href="{{ route('marketplace.category', $service->category->slug) }}"
-                                    class="text-[11px] font-medium text-[#2563EB] hover:underline"
-                                >
-                                    {{ $service->category->name }}
-                                </a>
+                            @if ($deliveryDays > 0)
+                                <span class="hidden h-3.5 w-px bg-slate-200 sm:block"></span>
 
-                            @endif
-
-                            @if ($service->subcategory)
-
-                                <span class="text-[#CBD5E1]">/</span>
-
-                                <span class="text-[11px] text-[#64748B]">
-                                    {{ $service->subcategory->name }}
+                                <span class="inline-flex items-center gap-1.5">
+                                    <i class="bi bi-clock text-slate-400"></i>
+                                    Maks. {{ $deliveryDays }} hari
                                 </span>
-
                             @endif
-
                         </div>
 
-                    </section>
+                        <div class="my-6 h-px bg-slate-100"></div>
 
+                        {{-- Description --}}
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                                    <i class="bi bi-file-text"></i>
+                                </div>
 
-                    {{-- =================================================
-                        LOCAL NAV
-                    ================================================== --}}
-                    <div class="mt-7 border-y border-[#E2E8F0]">
-
-                        <div class="flex items-center gap-6 overflow-x-auto whitespace-nowrap">
-
-                            <a
-                                href="#ringkasan"
-                                class="border-b-2 border-[#2563EB] py-4 text-[12px] font-semibold text-[#2563EB]"
-                            >
-                                Ringkasan
-                            </a>
-
-                            <a
-                                href="#paket"
-                                class="py-4 text-[12px] font-medium text-[#64748B] transition hover:text-[#2563EB]"
-                            >
-                                Paket
-                            </a>
-
-                            <a
-                                href="#freelancer"
-                                class="py-4 text-[12px] font-medium text-[#64748B] transition hover:text-[#2563EB]"
-                            >
-                                Freelancer
-                            </a>
-
-                            <a
-                                href="#ulasan"
-                                class="py-4 text-[12px] font-medium text-[#64748B] transition hover:text-[#2563EB]"
-                            >
-                                Ulasan
-                            </a>
-
-                        </div>
-
-                    </div>
-
-
-                    {{-- =================================================
-                        SUMMARY
-                    ================================================== --}}
-                    <section id="ringkasan" class="scroll-mt-28 pt-8">
-
-                        <h2 class="text-lg font-bold text-[#0F172A]">
-                            Tentang jasa ini
-                        </h2>
-
-                        <div class="mt-4 max-w-4xl whitespace-pre-line text-sm leading-7 text-[#475569]">
-                            {{ $service->description }}
-                        </div>
-
-                    </section>
-
-
-                    {{-- =================================================
-                        PACKAGE
-                    ================================================== --}}
-                    <section id="paket" class="scroll-mt-28 border-t border-[#E2E8F0] pt-8 mt-9">
-
-                        <div class="flex items-end justify-between gap-4">
-
-                            <div>
-
-                                <h2 class="text-lg font-bold text-[#0F172A]">
-                                    Paket jasa
-                                </h2>
-
-                                <p class="mt-1 text-xs text-[#64748B]">
-                                    Detail harga dan waktu pengerjaan layanan.
-                                </p>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="mt-5 border border-[#E2E8F0]">
-
-                            <div class="border-b border-[#E2E8F0] bg-[#F8FAFC] px-5 py-4 sm:px-6">
-
-                                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-
-                                    <div>
-
-                                        <p class="text-sm font-bold text-[#0F172A]">
-                                            Paket layanan
-                                        </p>
-
-                                        <p class="mt-1 text-xs text-[#64748B]">
-                                            Harga awal berdasarkan jasa yang ditawarkan freelancer.
-                                        </p>
-
-                                    </div>
-
-                                    <p class="text-lg font-extrabold text-[#0F172A]">
-                                        Rp{{ number_format($service->starting_price, 0, ',', '.') }}
+                                <div>
+                                    <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-blue-600">
+                                        Detail layanan
                                     </p>
-
+                                    <h2 class="mt-0.5 text-base font-extrabold text-slate-900 sm:text-lg">
+                                        Tentang jasa ini
+                                    </h2>
                                 </div>
-
                             </div>
 
-
-                            <div class="divide-y divide-[#E2E8F0]">
-
-                                <div class="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
-
-                                    <span class="text-xs text-[#64748B]">
-                                        Waktu pengerjaan
-                                    </span>
-
-                                    <span class="text-xs font-semibold text-[#0F172A]">
-                                        {{ $service->delivery_days }} hari
-                                    </span>
-
-                                </div>
-
-
-                                <div class="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
-
-                                    <span class="text-xs text-[#64748B]">
-                                        Pesanan selesai
-                                    </span>
-
-                                    <span class="text-xs font-semibold text-[#0F172A]">
-                                        {{ $service->orders_count }}
-                                    </span>
-
-                                </div>
-
-
-                                <div class="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
-
-                                    <span class="text-xs text-[#64748B]">
-                                        Rating layanan
-                                    </span>
-
-                                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-[#0F172A]">
-                                        <i class="bi bi-star-fill text-[#F59E0B]"></i>
-                                        {{ number_format((float) $service->rating, 1) }}
-                                    </span>
-
-                                </div>
-
+                            <div class="pk-service-prose mt-4 whitespace-pre-line text-[13px] leading-7 text-slate-600 sm:text-sm sm:leading-7">
+                                {{ $service->description ?: 'Belum ada deskripsi jasa.' }}
                             </div>
-
                         </div>
-
                     </section>
 
 
-                    {{-- =================================================
-                        FREELANCER
-                    ================================================== --}}
-                    <section id="freelancer" class="scroll-mt-28 border-t border-[#E2E8F0] pt-8 mt-9">
+                    {{-- -------------------------------------------------
+                        FREELANCER CARD
+                    -------------------------------------------------- --}}
+                    <section class="pk-service-card rounded-[24px] p-5 sm:rounded-[28px] sm:p-7">
 
-                        <h2 class="text-lg font-bold text-[#0F172A]">
-                            Freelancer
-                        </h2>
+                        <div class="flex items-center justify-between gap-4">
+                            <div>
+                                <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-blue-600">
+                                    Penyedia jasa
+                                </p>
+                                <h2 class="mt-1 text-lg font-extrabold tracking-[-0.02em] text-slate-900">
+                                    Freelancer
+                                </h2>
+                            </div>
 
+                            @if ($freelancerUsername)
+                                <a
+                                    href="{{ route('marketplace.freelancer', $freelancerUsername) }}"
+                                    class="hidden items-center gap-1.5 rounded-xl px-3 py-2 text-[10px] font-bold text-blue-600 transition hover:bg-blue-50 sm:inline-flex"
+                                >
+                                    Lihat profil
+                                    <i class="bi bi-arrow-up-right"></i>
+                                </a>
+                            @endif
+                        </div>
 
-                        @if ($freelancer && $user)
+                        <div class="mt-5 flex items-start gap-4">
+                            <a
+                                href="{{ $freelancerUsername ? route('marketplace.freelancer', $freelancerUsername) : '#' }}"
+                                class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-blue-100 text-lg font-extrabold text-blue-700 ring-4 ring-blue-50 sm:h-[72px] sm:w-[72px] sm:rounded-3xl"
+                            >
+                                @if ($freelancerAvatar)
+                                    <img
+                                        src="{{ $freelancerAvatar }}"
+                                        alt="{{ $freelancerName }}"
+                                        class="h-full w-full object-cover"
+                                    >
+                                @else
+                                    {{ strtoupper(mb_substr($freelancerName, 0, 1)) }}
+                                @endif
+                            </a>
 
-                            <div class="mt-5">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <a
+                                        href="{{ $freelancerUsername ? route('marketplace.freelancer', $freelancerUsername) : '#' }}"
+                                        class="truncate text-[15px] font-extrabold text-slate-900 transition hover:text-blue-600 sm:text-base"
+                                    >
+                                        {{ $freelancerName }}
+                                    </a>
 
-                                <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-
-                                    <div class="flex min-w-0 items-start gap-4">
-
-                                        @if ($freelancerAvatar)
-
-                                            <img
-                                                src="{{ $freelancerAvatar }}"
-                                                alt="{{ $user->name }}"
-                                                class="h-16 w-16 shrink-0 rounded-full object-cover"
-                                            >
-
-                                        @else
-
-                                            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#DBEAFE] text-lg font-bold text-[#2563EB]">
-                                                {{ strtoupper(substr($user->name, 0, 1)) }}
-                                            </div>
-
-                                        @endif
-
-
-                                        <div class="min-w-0">
-
-                                            <div class="flex items-center gap-2">
-
-                                                <h3 class="truncate text-base font-bold text-[#0F172A]">
-                                                    {{ $user->name }}
-                                                </h3>
-
-                                                @if ($freelancer->is_verified)
-
-                                                    <span class="text-[12px] text-[#2563EB]" title="Terverifikasi">
-                                                        <i class="bi bi-patch-check-fill"></i>
-                                                    </span>
-
-                                                @endif
-
-                                            </div>
-
-
-                                            @if ($freelancer->headline)
-
-                                                <p class="mt-1 text-xs text-[#64748B]">
-                                                    {{ $freelancer->headline }}
-                                                </p>
-
-                                            @endif
-
-
-                                            <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-[#64748B]">
-
-                                                <span>
-                                                    <i class="bi bi-star-fill mr-1 text-[#F59E0B]"></i>
-                                                    {{ number_format((float) $freelancer->rating, 1) }}
-                                                </span>
-
-                                                <span>
-                                                    <i class="bi bi-bag-check mr-1"></i>
-                                                    {{ $freelancer->completed_orders }} order selesai
-                                                </span>
-
-                                                @if ($freelancer->location)
-
-                                                    <span>
-                                                        <i class="bi bi-geo-alt mr-1"></i>
-                                                        {{ $freelancer->location }}
-                                                    </span>
-
-                                                @endif
-
-                                            </div>
-
-                                        </div>
-
-                                    </div>
-
-
-                                    @if ($freelancer->username)
-
-                                        <a
-                                            href="{{ route('marketplace.freelancer', $freelancer->username) }}"
-                                            class="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-[#CBD5E1] px-4 text-[11px] font-semibold text-[#334155] transition hover:border-[#93C5FD] hover:text-[#2563EB]"
-                                        >
-                                            Lihat profil
-                                        </a>
-
+                                    @if ($freelancer?->is_verified)
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[8px] font-bold text-blue-600">
+                                            <i class="bi bi-patch-check-fill"></i>
+                                            Verified
+                                        </span>
                                     @endif
-
                                 </div>
 
-
-                                @if ($freelancer->bio)
-
-                                    <div class="mt-5 max-w-3xl whitespace-pre-line text-sm leading-7 text-[#475569]">
-                                        {{ $freelancer->bio }}
-                                    </div>
-
+                                @if ($freelancerUsername)
+                                    <p class="mt-1 text-[10px] font-medium text-slate-400">
+                                        @{{ ltrim($freelancerUsername, '@') }}
+                                    </p>
                                 @endif
 
+                                @if ($freelancer?->headline)
+                                    <p class="mt-2.5 line-clamp-2 max-w-2xl text-xs leading-5 text-slate-500">
+                                        {{ $freelancer->headline }}
+                                    </p>
+                                @endif
+                            </div>
+                        </div>
 
-                                <div class="mt-6 grid grid-cols-2 gap-5 border-t border-[#E2E8F0] pt-5 sm:grid-cols-3">
-
-                                    <div>
-
-                                        <p class="text-[10px] uppercase tracking-[0.1em] text-[#94A3B8]">
-                                            Penyelesaian
-                                        </p>
-
-                                        <p class="mt-1 text-sm font-bold text-[#0F172A]">
-                                            {{ $freelancer->completed_orders ? 'Aktif' : 'Baru' }}
-                                        </p>
-
-                                    </div>
-
-
-                                    <div>
-
-                                        <p class="text-[10px] uppercase tracking-[0.1em] text-[#94A3B8]">
-                                            Status
-                                        </p>
-
-                                        @if ($freelancer->is_available)
-
-                                            <p class="mt-1 text-sm font-bold text-[#16A34A]">
-                                                Tersedia
-                                            </p>
-
-                                        @else
-
-                                            <p class="mt-1 text-sm font-bold text-[#DC2626]">
-                                                Tidak tersedia
-                                            </p>
-
-                                        @endif
-
-                                    </div>
-
-
-                                    <div>
-
-                                        <p class="text-[10px] uppercase tracking-[0.1em] text-[#94A3B8]">
-                                            Order selesai
-                                        </p>
-
-                                        <p class="mt-1 text-sm font-bold text-[#0F172A]">
-                                            {{ $freelancer->completed_orders }}
-                                        </p>
-
-                                    </div>
-
+                        <div class="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                            <div class="rounded-2xl bg-slate-50 px-3 py-3.5 text-center">
+                                <p class="text-[8px] font-bold uppercase tracking-[0.1em] text-slate-400">Rating</p>
+                                <div class="mt-1 inline-flex items-center gap-1 text-sm font-extrabold text-slate-900">
+                                    <i class="bi bi-star-fill text-[10px] text-amber-400"></i>
+                                    {{ number_format((float) ($freelancer?->rating ?? 0), 1) }}
                                 </div>
-
                             </div>
 
-                        @else
+                            <div class="rounded-2xl bg-slate-50 px-3 py-3.5 text-center">
+                                <p class="text-[8px] font-bold uppercase tracking-[0.1em] text-slate-400">Selesai</p>
+                                <p class="mt-1 text-sm font-extrabold text-slate-900">
+                                    {{ number_format((int) ($freelancer?->completed_orders ?? 0)) }}
+                                </p>
+                            </div>
 
-                            <p class="mt-4 text-sm text-[#64748B]">
-                                Informasi freelancer belum tersedia.
-                            </p>
+                            <div class="col-span-2 rounded-2xl bg-slate-50 px-3 py-3.5 text-center sm:col-span-1">
+                                <p class="text-[8px] font-bold uppercase tracking-[0.1em] text-slate-400">Status</p>
+                                <p class="mt-1 text-xs font-bold text-emerald-700">
+                                    <i class="bi bi-circle-fill mr-1 text-[6px]"></i>
+                                    Aktif
+                                </p>
+                            </div>
+                        </div>
 
+                        @if ($freelancerUsername)
+                            <a
+                                href="{{ route('marketplace.freelancer', $freelancerUsername) }}"
+                                class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 sm:hidden"
+                            >
+                                Lihat profil freelancer
+                                <i class="bi bi-arrow-right"></i>
+                            </a>
                         @endif
-
                     </section>
 
 
-                    {{-- =================================================
+                    {{-- -------------------------------------------------
                         REVIEWS
-                    ================================================== --}}
-                    <section id="ulasan" class="scroll-mt-28 border-t border-[#E2E8F0] pt-8 mt-9">
+                    -------------------------------------------------- --}}
+                    <section class="pk-service-card rounded-[24px] p-5 sm:rounded-[28px] sm:p-7">
 
-                        <h2 class="text-lg font-bold text-[#0F172A]">
-                            Ulasan
-                        </h2>
-
-
-                        <div class="mt-5 flex flex-col gap-4 border-y border-[#E2E8F0] py-6 sm:flex-row sm:items-center sm:gap-10">
-
+                        <div class="flex items-start justify-between gap-5">
                             <div>
-
-                                <p class="text-3xl font-extrabold text-[#0F172A]">
-                                    {{ number_format((float) $service->rating, 1) }}
+                                <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-blue-600">
+                                    Ulasan pembeli
                                 </p>
-
-                                <div class="mt-1 flex items-center gap-1 text-[#F59E0B]">
-
-                                    @for ($i = 1; $i <= 5; $i++)
-
-                                        <i class="bi {{ $i <= round((float) $service->rating) ? 'bi-star-fill' : 'bi-star' }} text-[12px]"></i>
-
-                                    @endfor
-
-                                </div>
-
-                                <p class="mt-1 text-[11px] text-[#64748B]">
-                                    {{ $service->reviews_count }} ulasan
+                                <h2 class="mt-1 text-lg font-extrabold tracking-[-0.02em] text-slate-900 sm:text-xl">
+                                    Apa kata mereka?
+                                </h2>
+                                <p class="mt-1 text-[11px] leading-5 text-slate-400">
+                                    Pengalaman pengguna setelah menggunakan layanan ini.
                                 </p>
-
                             </div>
 
-
-                            <div class="h-px w-full bg-[#E2E8F0] sm:h-12 sm:w-px"></div>
-
-
-                            <p class="max-w-lg text-xs leading-5 text-[#64748B]">
-                                Rating dan ulasan membantu client memahami pengalaman pengguna sebelumnya terhadap layanan ini.
-                            </p>
-
+                            <div class="shrink-0 rounded-2xl bg-slate-50 px-3.5 py-3 text-center sm:px-4">
+                                <p class="text-lg font-extrabold text-slate-900">
+                                    {{ $ratingLabel }}
+                                </p>
+                                <div class="mt-1 flex items-center justify-center gap-0.5">
+                                    @for ($i = 1; $i <= 5; $i++)
+                                        <i class="bi bi-star-fill text-[8px] {{ $i <= round($rating) ? 'text-amber-400' : 'text-slate-200' }}"></i>
+                                    @endfor
+                                </div>
+                            </div>
                         </div>
 
+                        @forelse ($reviews->take(6) as $review)
+                            @php
+                                $reviewUser = $review->user ?? null;
+                                $reviewName = $reviewUser?->name ?? ($review->name ?? 'Pengguna ProKerja');
+                                $reviewText = $review->comment ?? $review->message ?? $review->content ?? '';
+                                $reviewRating = (int) ($review->rating ?? 5);
+                                $reviewInitial = strtoupper(mb_substr($reviewName, 0, 1));
+                                $reviewAvatar = $reviewUser?->avatar
+                                    ? asset('storage/' . ltrim($reviewUser->avatar, '/'))
+                                    : null;
+                            @endphp
+
+                            <article class="mt-5 border-t border-slate-100 pt-5">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-xs font-extrabold text-blue-700">
+                                        @if ($reviewAvatar)
+                                            <img
+                                                src="{{ $reviewAvatar }}"
+                                                alt="{{ $reviewName }}"
+                                                class="h-full w-full object-cover"
+                                            >
+                                        @else
+                                            {{ $reviewInitial }}
+                                        @endif
+                                    </div>
+
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div class="min-w-0">
+                                                <p class="truncate text-xs font-extrabold text-slate-900">
+                                                    {{ $reviewName }}
+                                                </p>
+
+                                                <div class="mt-1 flex items-center gap-0.5">
+                                                    @for ($i = 1; $i <= 5; $i++)
+                                                        <i class="bi bi-star-fill text-[8px] {{ $i <= $reviewRating ? 'text-amber-400' : 'text-slate-200' }}"></i>
+                                                    @endfor
+                                                </div>
+                                            </div>
+
+                                            <span class="shrink-0 text-[9px] text-slate-400">
+                                                {{ optional($review->created_at)->format('d M Y') }}
+                                            </span>
+                                        </div>
+
+                                        @if ($reviewText)
+                                            <p class="mt-3 whitespace-pre-line break-words text-xs leading-5 text-slate-600">
+                                                “{{ $reviewText }}”
+                                            </p>
+                                        @endif
+                                    </div>
+                                </div>
+                            </article>
+                        @empty
+                            <div class="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-9 text-center">
+                                <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-300 shadow-sm">
+                                    <i class="bi bi-chat-square-text"></i>
+                                </div>
+                                <p class="mt-3 text-xs font-semibold text-slate-500">
+                                    Belum ada ulasan untuk jasa ini.
+                                </p>
+                                <p class="mt-1 text-[10px] leading-4 text-slate-400">
+                                    Ulasan akan muncul setelah pembeli menyelesaikan transaksi.
+                                </p>
+                            </div>
+                        @endforelse
                     </section>
 
                 </div>
 
 
-                {{-- =================================================
-                    RIGHT PURCHASE AREA
-                ================================================== --}}
-                <aside>
+                {{-- =====================================================
+                    RIGHT COLUMN
+                ====================================================== --}}
+                <aside class="min-w-0 lg:sticky lg:top-24 lg:self-start">
 
-                    <div class="lg:sticky lg:top-24">
+                    <div class="space-y-4">
 
-                        <div class="border border-[#E2E8F0] bg-white">
+                        {{-- PURCHASE CARD --}}
+                        <section class="overflow-hidden rounded-[24px] border border-blue-100 bg-white shadow-[0_16px_40px_rgba(37,99,235,0.09)] sm:rounded-[28px]">
 
-                            {{-- PRICE --}}
-                            <div class="p-5 sm:p-6">
+                            <div class="border-b border-slate-100 bg-gradient-to-br from-blue-50 via-white to-white px-5 pb-5 pt-5 sm:px-6 sm:pt-6">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p class="text-[9px] font-bold uppercase tracking-[0.17em] text-blue-600">
+                                            Harga layanan
+                                        </p>
+                                        <p class="mt-1 text-[11px] text-slate-400">
+                                            Mulai dari paket dasar
+                                        </p>
+                                    </div>
 
-                                <p class="text-[11px] font-medium text-[#64748B]">
-                                    Harga awal
-                                </p>
-
-                                <p class="mt-1 text-[30px] font-extrabold tracking-tight text-[#0F172A]">
-                                    Rp{{ number_format($service->starting_price, 0, ',', '.') }}
-                                </p>
-
-
-                                <div class="mt-3 flex items-center gap-2 text-[11px] text-[#64748B]">
-
-                                    <i class="bi bi-clock"></i>
-
-                                    <span>
-                                        {{ $service->delivery_days }} hari pengerjaan
-                                    </span>
-
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm ring-1 ring-blue-100">
+                                        <i class="bi bi-bag-check"></i>
+                                    </div>
                                 </div>
 
-
-                                <div class="mt-5 border-t border-[#E2E8F0] pt-5">
-
-                                    <p class="text-xs leading-5 text-[#64748B]">
-                                        Diskusikan kebutuhan project dengan freelancer sebelum melakukan pemesanan.
+                                <div class="mt-4 flex flex-wrap items-end justify-between gap-3">
+                                    <p class="text-[27px] font-extrabold tracking-[-0.04em] text-slate-900 sm:text-[30px]">
+                                        Rp {{ number_format($startingPrice, 0, ',', '.') }}
                                     </p>
 
+                                    @if ($deliveryDays > 0)
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[9px] font-bold text-slate-500 shadow-sm ring-1 ring-slate-100">
+                                            <i class="bi bi-clock text-blue-500"></i>
+                                            {{ $deliveryDays }} hari
+                                        </span>
+                                    @endif
                                 </div>
-
                             </div>
 
-
-                            {{-- ACTION --}}
-                            <div class="border-t border-[#E2E8F0] p-5 sm:p-6">
+                            <div class="p-5 sm:p-6">
 
                                 @auth
 
-                                    @if (auth()->user()->role === 'client')
+                                    @if ($canBuyService)
 
-                                        @if (!$isOwnService)
+                                        <form
+                                            action="{{ route('client.messages.start', ['service' => $service]) }}"
+                                            method="POST"
+                                        >
+                                            @csrf
 
-                                            <form
-                                                action="{{ route('client.orders.store') }}"
-                                                method="POST"
+                                            <button
+                                                type="submit"
+                                                class="group inline-flex w-full items-center justify-center gap-2.5 rounded-2xl bg-blue-600 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_10px_22px_rgba(37,99,235,0.22)] transition duration-200 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-[0_13px_25px_rgba(37,99,235,0.25)] active:translate-y-0"
                                             >
-                                                @csrf
+                                                <i class="bi bi-chat-dots-fill text-[15px] transition duration-200 group-hover:scale-110"></i>
+                                                Pesan Jasa
+                                                <i class="bi bi-arrow-right ml-auto text-xs opacity-75 transition group-hover:translate-x-0.5"></i>
+                                            </button>
+                                        </form>
 
-                                                <input
-                                                    type="hidden"
-                                                    name="service_id"
-                                                    value="{{ $service->id }}"
-                                                >
+                                        <div class="mt-3 flex items-start gap-2.5 rounded-2xl bg-slate-50 px-3.5 py-3">
+                                            <i class="bi bi-chat-square-text mt-0.5 text-blue-500"></i>
+                                            <p class="text-[10px] leading-4.5 text-slate-500">
+                                                Diskusikan kebutuhan, detail pekerjaan, harga, dan waktu pengerjaan terlebih dahulu melalui chat.
+                                            </p>
+                                        </div>
 
+                                    @elseif ($isOwnService)
 
-                                                <label
-                                                    for="requirements"
-                                                    class="mb-2 block text-xs font-bold text-[#0F172A]"
-                                                >
-                                                    Detail kebutuhan
-                                                </label>
-
-                                                <textarea
-                                                    id="requirements"
-                                                    name="requirements"
-                                                    rows="5"
-                                                    placeholder="Jelaskan brief, kebutuhan, ukuran, format file, deadline, atau informasi penting lainnya..."
-                                                    class="w-full resize-none rounded-lg border border-[#CBD5E1] px-3.5 py-3 text-xs leading-5 text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#93C5FD] focus:ring-2 focus:ring-[#DBEAFE]"
-                                                >{{ old('requirements') }}</textarea>
-
-                                                @error('requirements')
-
-                                                    <p class="mt-1.5 text-[11px] text-[#DC2626]">
-                                                        {{ $message }}
+                                        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                            <div class="flex items-start gap-3">
+                                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm">
+                                                    <i class="bi bi-exclamation-circle"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="text-xs font-extrabold text-amber-800">
+                                                        Ini jasa milikmu
                                                     </p>
-
-                                                @enderror
-
-
-                                                <button
-                                                    type="submit"
-                                                    class="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#2563EB] px-4 text-sm font-bold text-white transition hover:bg-[#1D4ED8]"
-                                                >
-                                                    Pesan jasa
-                                                    <i class="bi bi-arrow-right"></i>
-                                                </button>
-
-                                            </form>
-
-                                        @else
-
-                                            <div class="border border-[#DBEAFE] bg-[#EFF6FF] p-4">
-
-                                                <p class="text-xs font-bold text-[#1E3A8A]">
-                                                    Ini jasa milikmu
-                                                </p>
-
-                                                <p class="mt-1 text-[11px] leading-5 text-[#64748B]">
-                                                    Jasa milik sendiri tidak dapat dipesan.
-                                                </p>
-
+                                                    <p class="mt-1 text-[10px] leading-4 text-amber-700">
+                                                        Jasa sendiri tidak dapat dibeli oleh pemiliknya.
+                                                    </p>
+                                                </div>
                                             </div>
-
-                                        @endif
+                                        </div>
 
                                     @else
 
-                                        <div class="border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-
-                                            <p class="text-xs font-bold text-[#0F172A]">
-                                                Akun freelancer
+                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                                            <p class="text-xs font-extrabold text-slate-800">
+                                                Akun belum dapat membeli jasa
                                             </p>
-
-                                            <p class="mt-1 text-[11px] leading-5 text-[#64748B]">
-                                                Akun freelancer tidak dapat memesan jasa.
+                                            <p class="mt-1 text-[10px] leading-4 text-slate-500">
+                                                Gunakan akun Client atau Freelancer untuk melanjutkan.
                                             </p>
-
                                         </div>
 
                                     @endif
 
                                 @else
 
-                                    <div>
+                                    <a
+                                        href="{{ route('login') }}"
+                                        class="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_10px_22px_rgba(37,99,235,0.22)] transition duration-200 hover:-translate-y-0.5 hover:bg-blue-700"
+                                    >
+                                        <i class="bi bi-chat-dots-fill"></i>
+                                        Masuk untuk Pesan
+                                        <i class="bi bi-arrow-right ml-auto text-xs opacity-75 transition group-hover:translate-x-0.5"></i>
+                                    </a>
 
-                                        <p class="text-xs font-bold text-[#0F172A]">
-                                            Tertarik dengan jasa ini?
-                                        </p>
-
-                                        <p class="mt-1 text-[11px] leading-5 text-[#64748B]">
-                                            Masuk ke akun untuk mulai memesan.
-                                        </p>
-
-
-                                        <a
-                                            href="{{ route('login') }}"
-                                            class="mt-4 flex h-11 w-full items-center justify-center rounded-lg bg-[#2563EB] px-4 text-xs font-bold text-white transition hover:bg-[#1D4ED8]"
-                                        >
-                                            Masuk untuk memesan
-                                        </a>
-
-
-                                        <a
-                                            href="{{ route('register') }}"
-                                            class="mt-2 flex h-10 w-full items-center justify-center rounded-lg border border-[#CBD5E1] text-xs font-semibold text-[#334155] transition hover:border-[#93C5FD] hover:text-[#2563EB]"
-                                        >
-                                            Buat akun
-                                        </a>
-
-                                    </div>
+                                    <p class="mt-2.5 text-center text-[10px] leading-4 text-slate-400">
+                                        Setelah masuk, kamu akan diarahkan ke chat dengan freelancer.
+                                    </p>
 
                                 @endauth
 
-
-                                <div class="mt-5 border-t border-[#E2E8F0] pt-4">
-
-                                    <div class="flex items-start gap-2">
-
-                                        <i class="bi bi-shield-check mt-0.5 text-sm text-[#16A34A]"></i>
-
-                                        <p class="text-[10px] leading-5 text-[#64748B]">
-                                            Transaksi diproses melalui ProKerja.
-                                        </p>
-
+                                {{-- Trust points --}}
+                                <div class="mt-5 grid grid-cols-3 gap-2">
+                                    <div class="rounded-2xl border border-slate-100 bg-slate-50 px-2 py-3 text-center">
+                                        <div class="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm">
+                                            <i class="bi bi-chat-square-text text-xs"></i>
+                                        </div>
+                                        <p class="mt-2 text-[8px] font-bold text-slate-500">Diskusi</p>
                                     </div>
 
+                                    <div class="rounded-2xl border border-slate-100 bg-slate-50 px-2 py-3 text-center">
+                                        <div class="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm">
+                                            <i class="bi bi-shield-check text-xs"></i>
+                                        </div>
+                                        <p class="mt-2 text-[8px] font-bold text-slate-500">Terstruktur</p>
+                                    </div>
+
+                                    <div class="rounded-2xl border border-slate-100 bg-slate-50 px-2 py-3 text-center">
+                                        <div class="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm">
+                                            <i class="bi bi-arrow-repeat text-xs"></i>
+                                        </div>
+                                        <p class="mt-2 text-[8px] font-bold text-slate-500">Revisi</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+
+                        {{-- FAVORITE --}}
+                        @auth
+                            @if (auth()->user()->role === 'client')
+                                <section class="pk-service-card rounded-2xl p-3.5">
+                                    @if ($isFavorited)
+                                        <form
+                                            action="{{ route('client.favorites.destroy', $service) }}"
+                                            method="POST"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <button
+                                                type="submit"
+                                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-xs font-bold text-red-600 transition hover:bg-red-100"
+                                            >
+                                                <i class="bi bi-heart-fill"></i>
+                                                Hapus dari favorit
+                                            </button>
+                                        </form>
+                                    @else
+                                        <form
+                                            action="{{ route('client.favorites.store', $service) }}"
+                                            method="POST"
+                                        >
+                                            @csrf
+
+                                            <button
+                                                type="submit"
+                                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                            >
+                                                <i class="bi bi-heart"></i>
+                                                Simpan ke favorit
+                                            </button>
+                                        </form>
+                                    @endif
+                                </section>
+                            @endif
+                        @endauth
+
+
+                        {{-- SERVICE INFO --}}
+                        <section class="pk-service-card rounded-2xl p-5">
+                            <div class="flex items-center gap-2">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                                    <i class="bi bi-info-circle"></i>
                                 </div>
 
+                                <div>
+                                    <p class="text-[9px] font-bold uppercase tracking-[0.15em] text-blue-600">
+                                        Ringkasan
+                                    </p>
+                                    <h2 class="mt-0.5 text-sm font-extrabold text-slate-900">
+                                        Informasi jasa
+                                    </h2>
+                                </div>
                             </div>
 
-                        </div>
+                            <div class="mt-4 divide-y divide-slate-100">
+                                <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
+                                    <span class="text-[11px] text-slate-400">Harga mulai</span>
+                                    <span class="text-xs font-extrabold text-slate-800">
+                                        Rp {{ number_format($startingPrice, 0, ',', '.') }}
+                                    </span>
+                                </div>
 
+                                @if ($deliveryDays > 0)
+                                    <div class="flex items-center justify-between gap-4 py-3">
+                                        <span class="text-[11px] text-slate-400">Pengerjaan</span>
+                                        <span class="text-xs font-extrabold text-slate-800">
+                                            {{ $deliveryDays }} hari
+                                        </span>
+                                    </div>
+                                @endif
 
-                        {{-- SERVICE QUICK INFO --}}
-                        <div class="mt-6">
+                                <div class="flex items-center justify-between gap-4 py-3">
+                                    <span class="text-[11px] text-slate-400">Rating</span>
+                                    <span class="inline-flex items-center gap-1 text-xs font-extrabold text-slate-800">
+                                        <i class="bi bi-star-fill text-[10px] text-amber-400"></i>
+                                        {{ $ratingLabel }}
+                                    </span>
+                                </div>
 
-                            <div class="border-b border-[#E2E8F0] pb-4">
-
-                                <p class="text-xs font-bold text-[#0F172A]">
-                                    Ringkasan layanan
-                                </p>
-
+                                <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
+                                    <span class="text-[11px] text-slate-400">Jumlah order</span>
+                                    <span class="text-xs font-extrabold text-slate-800">
+                                        {{ number_format((int) ($service->orders_count ?? 0)) }}
+                                    </span>
+                                </div>
                             </div>
+                        </section>
 
 
-                            <div class="divide-y divide-[#E2E8F0]">
-
-                                <div class="flex items-center justify-between gap-4 py-4">
-
-                                    <span class="text-xs text-[#64748B]">
-                                        Waktu pengerjaan
-                                    </span>
-
-                                    <span class="text-xs font-semibold text-[#0F172A]">
-                                        {{ $service->delivery_days }} hari
-                                    </span>
-
+                        {{-- HOW IT WORKS --}}
+                        <section class="rounded-2xl border border-blue-100 bg-blue-50/70 p-5">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm">
+                                    <i class="bi bi-lightning-charge-fill"></i>
                                 </div>
 
-
-                                <div class="flex items-center justify-between gap-4 py-4">
-
-                                    <span class="text-xs text-[#64748B]">
-                                        Rating
-                                    </span>
-
-                                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-[#0F172A]">
-                                        <i class="bi bi-star-fill text-[#F59E0B]"></i>
-                                        {{ number_format((float) $service->rating, 1) }}
-                                    </span>
-
+                                <div>
+                                    <h2 class="text-xs font-extrabold text-slate-900">
+                                        Cara mulai
+                                    </h2>
+                                    <p class="mt-1 text-[10px] leading-4.5 text-slate-500">
+                                        Pesan jasa dimulai dari diskusi. Setelah detail disepakati, freelancer dapat mengirim penawaran melalui chat.
+                                    </p>
                                 </div>
-
-
-                                <div class="flex items-center justify-between gap-4 py-4">
-
-                                    <span class="text-xs text-[#64748B]">
-                                        Terjual
-                                    </span>
-
-                                    <span class="text-xs font-semibold text-[#0F172A]">
-                                        {{ $service->orders_count }}
-                                    </span>
-
-                                </div>
-
                             </div>
-
-                        </div>
+                        </section>
 
                     </div>
-
                 </aside>
 
             </div>
 
-        </div>
 
-    </main>
+            {{-- =====================================================
+                RELATED SERVICES
+            ====================================================== --}}
+            @if ($relatedServices->isNotEmpty())
+                <section class="mt-10 sm:mt-12">
+                    <div class="flex items-end justify-between gap-4">
+                        <div class="min-w-0">
+                            <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-blue-600">
+                                Rekomendasi
+                            </p>
+                            <h2 class="mt-1 text-xl font-extrabold tracking-[-0.025em] text-slate-900 sm:text-2xl">
+                                Jasa serupa
+                            </h2>
+                            <p class="mt-1.5 text-xs leading-5 text-slate-400">
+                                Layanan lain yang masih relevan dengan kebutuhanmu.
+                            </p>
+                        </div>
 
+                        <a
+                            href="{{ route('marketplace.search') }}"
+                            class="hidden shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-[10px] font-bold text-blue-600 transition hover:bg-blue-50 sm:inline-flex"
+                        >
+                            Lihat semua
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
 
-    {{-- =========================================================
-        RELATED SERVICES
-    ========================================================== --}}
-    @if ($relatedServices->isNotEmpty())
+                    <div class="mt-5 grid grid-cols-2 gap-3.5 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
+                        @foreach ($relatedServices->take(8) as $related)
+                            @php
+                                $relatedImage = $related->thumbnail
+                                    ? asset('storage/' . ltrim($related->thumbnail, '/'))
+                                    : null;
 
-        <section class="border-t border-[#E2E8F0] bg-[#F8FAFC]">
+                                $relatedFreelancer = $related->freelancerProfile?->user?->name
+                                    ?? 'Freelancer';
 
-            <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
-
-                <div>
-
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2563EB]">
-                        Rekomendasi
-                    </p>
-
-                    <h2 class="mt-1 text-xl font-bold tracking-tight text-[#0F172A]">
-                        Jasa lainnya
-                    </h2>
-
-                </div>
-
-
-                <div class="mt-6 grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-4">
-
-                    @foreach ($relatedServices as $related)
-
-                        @php
-                            $relatedImage = $related->thumbnail
-                                ? asset('storage/' . $related->thumbnail)
-                                : null;
-
-                            $relatedFreelancer = $related->freelancerProfile;
-                            $relatedUser = $relatedFreelancer?->user;
-                        @endphp
-
-                        <article class="group min-w-0">
+                                $relatedRating = (float) ($related->rating ?? $related->average_rating ?? 0);
+                                $relatedPrice = (float) ($related->starting_price ?? $related->price ?? 0);
+                            @endphp
 
                             <a
                                 href="{{ route('marketplace.service', $related->slug) }}"
-                                class="block overflow-hidden rounded-xl bg-[#E2E8F0]"
+                                class="pk-hover-card group overflow-hidden rounded-2xl border border-slate-200 bg-white"
                             >
-
-                                <div class="aspect-[4/3] overflow-hidden bg-[#EFF6FF]">
-
+                                <div class="relative aspect-[4/3] overflow-hidden bg-slate-100">
                                     @if ($relatedImage)
-
                                         <img
                                             src="{{ $relatedImage }}"
                                             alt="{{ $related->title }}"
                                             class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+                                            loading="lazy"
                                         >
-
                                     @else
-
-                                        <div class="flex h-full items-center justify-center">
-                                            <i class="bi bi-briefcase text-xl text-[#2563EB]"></i>
+                                        <div class="flex h-full w-full items-center justify-center bg-blue-50 text-blue-500">
+                                            <i class="bi bi-image text-2xl"></i>
                                         </div>
-
                                     @endif
-
                                 </div>
 
+                                <div class="p-3.5 sm:p-4">
+                                    <p class="truncate text-[10px] font-semibold text-slate-400">
+                                        {{ $relatedFreelancer }}
+                                    </p>
+
+                                    <h3 class="mt-2 line-clamp-2 text-[12px] font-extrabold leading-5 text-slate-900 transition group-hover:text-blue-600 sm:text-sm">
+                                        {{ $related->title }}
+                                    </h3>
+
+                                    <div class="mt-3.5 flex items-center justify-between gap-2">
+                                        <span class="inline-flex items-center gap-1 text-[9px] font-semibold text-slate-500 sm:text-[10px]">
+                                            <i class="bi bi-star-fill text-amber-400"></i>
+                                            {{ $relatedRating > 0 ? number_format($relatedRating, 1) : 'Baru' }}
+                                        </span>
+
+                                        <span class="truncate text-[11px] font-extrabold text-slate-900 sm:text-xs">
+                                            Rp {{ number_format($relatedPrice, 0, ',', '.') }}
+                                        </span>
+                                    </div>
+                                </div>
                             </a>
+                        @endforeach
+                    </div>
 
+                    <a
+                        href="{{ route('marketplace.search') }}"
+                        class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 sm:hidden"
+                    >
+                        Lihat semua jasa
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                </section>
+            @endif
 
-                            @if ($relatedUser)
-
-                                <p class="mt-3 truncate text-[10px] font-medium text-[#64748B]">
-                                    {{ $relatedUser->name }}
-                                </p>
-
-                            @endif
-
-
-                            <a
-                                href="{{ route('marketplace.service', $related->slug) }}"
-                                class="block"
-                            >
-
-                                <h3 class="mt-1.5 line-clamp-2 min-h-[36px] text-[12px] font-semibold leading-4.5 text-[#0F172A] transition group-hover:text-[#2563EB]">
-                                    {{ $related->title }}
-                                </h3>
-
-                            </a>
-
-
-                            <div class="mt-3 flex items-center justify-between gap-2">
-
-                                <p class="text-sm font-extrabold text-[#0F172A]">
-                                    Rp{{ number_format($related->starting_price, 0, ',', '.') }}
-                                </p>
-
-                                <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-[#475569]">
-                                    <i class="bi bi-star-fill text-[9px] text-[#F59E0B]"></i>
-                                    {{ number_format((float) $related->rating, 1) }}
-                                </span>
-
-                            </div>
-
-                        </article>
-
-                    @endforeach
-
-                </div>
-
-            </div>
-
-        </section>
-
-    @endif
+        </div>
+    </main>
 
 </div>
-
 
 </x-layouts.marketplace>

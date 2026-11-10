@@ -174,6 +174,8 @@ class OrderController extends Controller
             ],
         ]);
 
+        $buyer = $request->user();
+
         $service = Service::query()
             ->with('freelancerProfile.user')
             ->where(
@@ -193,6 +195,19 @@ class OrderController extends Controller
         */
         if (!$service->freelancerProfile) {
             abort(404);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cegah pembelian jasa milik akun sendiri
+        |--------------------------------------------------------------------------
+        | Berlaku untuk Client maupun Freelancer. Role akun tidak diubah;
+        | setiap user hanya boleh membeli jasa dari user lain.
+        */
+        if ((int) $service->freelancerProfile->user_id === (int) $buyer->id) {
+            return back()
+                ->withInput()
+                ->with('error', 'Kamu tidak dapat membeli jasa milik akunmu sendiri.');
         }
 
         /*
@@ -337,9 +352,11 @@ class OrderController extends Controller
                 title: 'Order baru masuk',
 
                 message:
-                    'Ada order baru dari client untuk jasa "' .
+                    'Ada pesanan baru dari pembeli ' .
+                    $buyer->name .
+                    ' untuk jasa "' .
                     $service->title .
-                    '". Order menunggu pembayaran client.',
+                    '". Pesanan menunggu pembayaran.',
 
                 actionUrl: route(
                     'freelancer.orders.show',
